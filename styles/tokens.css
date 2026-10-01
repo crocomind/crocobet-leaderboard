@@ -1,0 +1,125 @@
+/*
+ * Croco Creators design tokens: the only place colors and effects are defined.
+ *
+ * Swap these values for the official brand values. Components never hardcode
+ * colors; they use the Tailwind names mapped in app/globals.css (bg-surface,
+ * text-brand-text, shadow-glow, ...), so a change here restyles the whole app.
+ *
+ * Dark is the default theme. `.light` overrides the same tokens.
+ */
+
+:root,
+.dark {
+  color-scheme: dark;
+
+  /* Brand */
+  --brand-primary: #00a651;
+  --brand-primary-bright: #3ddc84; /* hover, glows, highlights */
+  --brand-primary-deep: #007a3d; /* pressed states, gradients */
+  --on-brand: #04130b; /* text and icons on --brand-primary (AA: 5.8:1) */
+  --brand-text: #3ddc84; /* brand-colored text on page surfaces */
+
+  /* Surfaces */
+  --bg-base: #0b1410;
+  --bg-surface: #13201a;
+  --bg-elevated: #1b2c23;
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Text */
+  --text-primary: #f5f7f6;
+  --text-secondary: #a3b3aa;
+
+  /* Medal accents */
+  --medal-gold: #f5c451;
+  --medal-silver: #c9d1d6;
+  --medal-bronze: #d08a57;
+  --on-medal: #1c1608;
+
+  /* Semantic */
+  --success: var(--brand-primary);
+  --success-text: var(--brand-primary-bright);
+  --warning: #f5b841;
+  --warning-text: #f5b841;
+  --error: #f0565b;
+  --error-text: #ff7378; /* AA on tinted badges */
+
+  --focus-ring: var(--brand-primary-bright);
+
+  /* Glass, overlay and background glow */
+  --glass: rgba(11, 20, 16, 0.68);
+  --overlay: rgba(2, 6, 4, 0.62);
+  --blob: rgba(0, 166, 81, 0.3);
+  --blob-secondary: rgba(61, 220, 132, 0.12);
+  --spotlight: rgba(61, 220, 132, 0.1); /* cursor spotlight on cards */
+
+  /* Elevation */
+  --elevation-soft:
+    0 1px 2px rgba(0, 0, 0, 0.25), 0 12px 32px -18px rgba(0, 0, 0, 0.7);
+  --elevation-lifted:
+    0 2px 6px rgba(0, 0, 0, 0.3), 0 28px 56px -24px rgba(0, 0, 0, 0.8);
+  --glow-brand:
+    0 0 0 1px rgba(61, 220, 132, 0.28), 0 10px 32px -10px rgba(0, 166, 81, 0.75);
+  --glow-gold:
+    0 0 0 1px rgba(245, 196, 81, 0.35),
+    0 24px 64px -24px rgba(245, 196, 81, 0.5);
+
+  /* Initials avatars. Dark enough for white text (AA). */
+  --avatar-1: linear-gradient(135deg, #0f7a46, #075c33);
+  --avatar-2: linear-gradient(135deg, #1d5c8f, #133f63);
+  --avatar-3: linear-gradient(135deg, #8a3b6b, #5e2549);
+  --avatar-4: linear-gradient(135deg, #9a5a14, #6b3d0a);
+  --avatar-5: linear-gradient(135deg, #2f6b5e, #1d4a40);
+  --avatar-6: linear-gradient(135deg, #5b4a9e, #3c2f70);
+}
+
+.light {
+  color-scheme: light;
+
+  --brand-primary: #00a651;
+  --brand-primary-bright: #3ddc84;
+  --brand-primary-deep: #007a3d;
+  --on-brand: #04130b;
+  --brand-text: #006633; /* AA on white and on brand tints */
+
+  --bg-base: #f3f7f4;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-hover: rgba(11, 20, 16, 0.045);
+  --border-subtle: rgba(11, 20, 16, 0.09);
+  --border-strong: rgba(11, 20, 16, 0.18);
+
+  --text-primary: #0b1410;
+  --text-secondary: #4f6157;
+
+  --medal-gold: #f5c451;
+  --medal-silver: #c9d1d6;
+  --medal-bronze: #d08a57;
+  --on-medal: #1c1608;
+
+  --success: var(--brand-primary);
+  --success-text: #006633;
+  --warning: #f5b841;
+  --warning-text: #8a5a00;
+  --error: #e0474d;
+  --error-text: #c42f36;
+
+  --focus-ring: var(--brand-primary-deep);
+
+  --glass: rgba(243, 247, 244, 0.75);
+  --overlay: rgba(11, 20, 16, 0.38);
+  --blob: rgba(0, 166, 81, 0.2);
+  --blob-secondary: rgba(61, 220, 132, 0.14);
+  --spotlight: rgba(0, 166, 81, 0.07);
+
+  --elevation-soft:
+    0 1px 2px rgba(11, 20, 16, 0.06), 0 12px 32px -18px rgba(11, 20, 16, 0.22);
+  --elevation-lifted:
+    0 2px 6px rgba(11, 20, 16, 0.08), 0 28px 56px -24px rgba(11, 20, 16, 0.3);
+  --glow-brand:
+    0 0 0 1px rgba(0, 166, 81, 0.25), 0 10px 28px -10px rgba(0, 166, 81, 0.55);
+  --glow-gold:
+    0 0 0 1px rgba(214, 160, 40, 0.4),
+    0 24px 56px -24px rgba(214, 160, 40, 0.45);
+}

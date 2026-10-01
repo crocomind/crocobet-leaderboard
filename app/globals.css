@@ -1,68 +1,469 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "../styles/tokens.css";
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Hover styles only on devices with a real hover (mouse/trackpad), so touch
+   devices never get stuck hover states. Applies to every hover: utility. */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
   }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+}
+
+/* Maps the raw tokens in styles/tokens.css to Tailwind utilities. The shadcn/ui
+   names (background, primary, muted, ...) are included so components added
+   later with `npx shadcn add` pick up the design system automatically. */
+@theme inline {
+  --color-background: var(--bg-base);
+  --color-foreground: var(--text-primary);
+  --color-surface: var(--bg-surface);
+  --color-elevated: var(--bg-elevated);
+  --color-hover: var(--bg-hover);
+  --color-glass: var(--glass);
+  --color-overlay: var(--overlay);
+
+  --color-card: var(--bg-surface);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--bg-elevated);
+  --color-popover-foreground: var(--text-primary);
+  --color-primary: var(--brand-primary);
+  --color-primary-foreground: var(--on-brand);
+  --color-secondary: var(--bg-hover);
+  --color-secondary-foreground: var(--text-primary);
+  --color-muted: var(--bg-hover);
+  --color-muted-foreground: var(--text-secondary);
+  --color-accent: var(--bg-hover);
+  --color-accent-foreground: var(--text-primary);
+  --color-destructive: var(--error);
+  --color-border: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--border-strong);
+  --color-ring: var(--focus-ring);
+
+  --color-brand: var(--brand-primary);
+  --color-brand-bright: var(--brand-primary-bright);
+  --color-brand-deep: var(--brand-primary-deep);
+  --color-brand-text: var(--brand-text);
+  --color-on-brand: var(--on-brand);
+
+  --color-gold: var(--medal-gold);
+  --color-silver: var(--medal-silver);
+  --color-bronze: var(--medal-bronze);
+  --color-on-medal: var(--on-medal);
+
+  --color-success: var(--success);
+  --color-success-text: var(--success-text);
+  --color-warning: var(--warning);
+  --color-warning-text: var(--warning-text);
+  --color-danger: var(--error);
+  --color-danger-text: var(--error-text);
+
+  --font-sans:
+    var(--font-inter), var(--font-georgian), ui-sans-serif, system-ui,
+    sans-serif;
+
+  --shadow-soft: var(--elevation-soft);
+  --shadow-lifted: var(--elevation-lifted);
+  --shadow-glow: var(--glow-brand);
+  --shadow-glow-gold: var(--glow-gold);
+}
+
+@theme {
+  /* 16px inputs and buttons, 24px cards, 32px modals and podium cards. */
+  --radius-control: 1rem;
+  --radius-card: 1.5rem;
+  --radius-panel: 2rem;
+
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+
+  @keyframes shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
   }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-foreground antialiased;
+    min-height: 100dvh;
+  }
+
+  /* The focus ring animates in: it fades in and settles from 6px to 2px
+     away. The zero-specificity transition is overridden by any motion-*
+     utility, and those include outline-* as well. */
+  :where(
+    a,
+    button,
+    input,
+    select,
+    textarea,
+    summary,
+    [tabindex],
+    [role="radio"],
+    [role="menuitem"],
+    [role="menuitemradio"]
+  ) {
+    outline: 0 solid transparent;
+    outline-offset: 6px;
+    transition-property: outline-color, outline-width, outline-offset;
+    transition-duration: var(--dur-fast), var(--dur-fast), var(--dur-base);
+    transition-timing-function: var(--ease-out-soft);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--brand-primary) 35%, transparent);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="radio"],
+  [role="menuitemradio"],
+  label[for] {
+    cursor: pointer;
+  }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility skeleton {
+  background-color: var(--bg-hover);
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in oklab, var(--text-primary) 7%, transparent) 50%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+@utility fade-x {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 1rem,
+    black calc(100% - 1.5rem),
+    transparent
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   Motion system. Mirrors lib/motion.ts; tune both together.
+   --------------------------------------------------------------------------- */
+:root {
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1); /* hovers, entrances */
+  --ease-in-out-soft: cubic-bezier(
+    0.65,
+    0,
+    0.35,
+    1
+  ); /* toggles, theme switch */
+  --dur-fast: 200ms; /* color, opacity */
+  --dur-base: 300ms; /* hover lifts, shadows, focus */
+  --dur-slow: 450ms; /* modals, view changes, large elements */
+  --hover-out: 1.3; /* hover-out is this much slower than hover-in */
+  --lift: 2px; /* hover lift for rows and cards (override per element) */
+  --press-scale: 0.97; /* CSS press for chips and rows */
+}
+
+/* Color changes plus the focus ring. Safe on Motion elements: it never
+   transitions opacity or transforms, which Motion animates itself. */
+@utility motion-colors {
+  transition-property:
+    color, background-color, border-color, fill, stroke, outline-color,
+    outline-width, outline-offset;
+  transition-duration:
+    var(--dur-fast), var(--dur-fast), var(--dur-base), var(--dur-fast),
+    var(--dur-fast), var(--dur-fast), var(--dur-fast), var(--dur-base);
+  transition-timing-function: var(--ease-out-soft);
+}
+
+/* motion-colors plus a CSS press (scale). For chips and nav pills, which
+   aren't Motion elements. Pair with the `press` utility. */
+@utility motion-press {
+  transition-property:
+    color, background-color, border-color, scale, outline-color, outline-width,
+    outline-offset;
+  transition-duration:
+    var(--dur-base), var(--dur-fast), var(--dur-base), var(--dur-fast),
+    var(--dur-fast), var(--dur-fast), var(--dur-base);
+  transition-timing-function: var(--ease-out-soft);
+}
+
+/* Surfaces that lift on hover (rows, cards). Hover-in uses the base duration;
+   hover-out is --hover-out times slower, so the element settles back. */
+@utility motion-lift {
+  --_out: var(--hover-out);
+  transition-property:
+    translate, scale, border-color, background-color, color, outline-color,
+    outline-width, outline-offset;
+  transition-duration:
+    calc(var(--dur-base) * var(--_out)), var(--dur-fast),
+    calc(var(--dur-base) * var(--_out)), var(--dur-fast), var(--dur-fast),
+    var(--dur-fast), var(--dur-fast), var(--dur-base);
+  transition-timing-function: var(--ease-out-soft);
+  &:hover {
+    --_out: 1;
+  }
+}
+
+/* The hover lift itself (fine pointers only, never with reduced motion). */
+@utility hover-lift {
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    &:hover {
+      translate: 0 calc(var(--lift) * -1);
+    }
+  }
+}
+
+/* A soft press that works on touch too. */
+@utility press {
+  @media (prefers-reduced-motion: no-preference) {
+    &:active {
+      scale: var(--press-scale);
+    }
+  }
+}
+
+/* Deeper shadow on hover, drawn on a pseudo-element so only opacity animates.
+   Needs a positioned element; uses ::after. */
+@utility card-depth {
+  isolation: isolate;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    box-shadow: var(--elevation-lifted);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity calc(var(--dur-base) * var(--hover-out))
+      var(--ease-out-soft);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover::after {
+      opacity: 1;
+      transition-duration: var(--dur-base);
+    }
+  }
+}
+
+/* Brand-green light that follows the cursor (see lib/spotlight.ts, which sets
+   --spot-x/--spot-y). Uses ::before. Off on touch and with reduced motion. */
+@utility card-spotlight {
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: radial-gradient(
+      var(--spot-size, 22rem) circle at var(--spot-x, 50%) var(--spot-y, 50%),
+      var(--spotlight),
+      transparent 70%
+    );
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity calc(var(--dur-base) * var(--hover-out))
+      var(--ease-out-soft);
+  }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    &:hover::before {
+      opacity: 1;
+      transition-duration: var(--dur-base);
+    }
+  }
+}
+
+/* Focus glow for inputs: a pseudo-element whose opacity fades in. Set
+   data-invalid="true" for the error color, data-glow="on" to keep it lit. */
+@utility field-glow {
+  position: relative;
+  --_glow: var(--brand-primary);
+  &[data-invalid="true"] {
+    --_glow: var(--error);
+  }
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    box-shadow:
+      0 0 0 4px color-mix(in oklab, var(--_glow) 20%, transparent),
+      0 10px 30px -12px color-mix(in oklab, var(--_glow) 60%, transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-base) var(--ease-out-soft);
+  }
+  &:focus-within::after,
+  &[data-glow="on"]::after {
+    opacity: 1;
+  }
+}
+
+/* Primary button layers (rendered by MotionButton). The glow is a separate
+   layer whose opacity and scale animate; box-shadow itself never animates. */
+@layer components {
+  .btn-primary {
+    --_out: var(--hover-out);
+  }
+
+  .btn-glow,
+  .btn-sheen {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .btn-glow {
+    box-shadow: var(--glow-brand);
+    opacity: 0.6;
+    transition:
+      opacity calc(var(--dur-base) * var(--_out)) var(--ease-out-soft),
+      scale calc(var(--dur-base) * var(--_out)) var(--ease-out-soft);
+  }
+
+  .btn-sheen {
+    overflow: hidden;
+  }
+
+  .btn-sheen::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 55%;
+    background: linear-gradient(
+      105deg,
+      transparent 0%,
+      rgb(255 255 255 / 0.32) 50%,
+      transparent 100%
+    );
+    translate: -110% 0;
+  }
+
+  .btn-primary:active .btn-glow {
+    opacity: 0.85;
+    scale: 0.98;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover {
+      --_out: 1;
+    }
+
+    .btn-primary:hover .btn-glow {
+      opacity: 1;
+      scale: 1.04;
+    }
+
+    /* Sweeps once on hover-in; on hover-out it jumps back unseen. */
+    .btn-primary:hover .btn-sheen::before {
+      translate: 190% 0;
+      transition: translate 700ms var(--ease-out-soft);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn-sheen {
+      display: none;
+    }
+  }
+}
+
+/* Slow idle "breathing" for the #1 podium glow. */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    scale: 1;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.015;
+  }
+}
+
+@utility animate-breathe {
+  animation: breathe 4.8s var(--ease-in-out-soft) infinite;
+}
+
+/* Theme and language switches crossfade the whole page (lib/motion.ts). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--dur-slow);
+  animation-timing-function: var(--ease-in-out-soft);
+}
+
+/* Reduced motion: no movement, scaling, tilt or springs; only ~150ms opacity
+   and color fades. Looping animations (shimmer, breathing, ping, spin) stop.
+   Motion (JS) animations are handled by MotionConfig and useReducedMotion. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 150ms;
+    --dur-base: 150ms;
+    --dur-slow: 150ms;
+    --hover-out: 1;
+  }
+
+  *,
+  ::before,
+  ::after {
+    scroll-behavior: auto !important;
+    /* tw-animate-css enter/exit (menus, tooltips): fade only. */
+    --tw-enter-scale: 1 !important;
+    --tw-exit-scale: 1 !important;
+    --tw-enter-translate-x: 0 !important;
+    --tw-enter-translate-y: 0 !important;
+    --tw-exit-translate-x: 0 !important;
+    --tw-exit-translate-y: 0 !important;
+    --tw-enter-rotate: 0 !important;
+    --tw-exit-rotate: 0 !important;
+  }
+
+  .skeleton,
+  .animate-spin,
+  .animate-ping,
+  .animate-breathe {
+    animation: none !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 150ms !important;
   }
 }

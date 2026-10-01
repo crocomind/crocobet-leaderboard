@@ -1,40 +1,54 @@
-import type { Metadata } from "next";
-import { Geist } from "next/font/google";
-import { ThemeProvider } from "next-themes";
+import type { Metadata, Viewport } from "next";
+import { Inter, Noto_Sans_Georgian } from "next/font/google";
+import { cookies, headers } from "next/headers";
+import type { ReactNode } from "react";
+import { AppProviders } from "@/components/providers/app-providers";
+import { LOCALE_COOKIE, resolveLocale } from "@/lib/i18n/config";
 import "./globals.css";
 
-const defaultUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
-
-export const metadata: Metadata = {
-  metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
-};
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Inter covers Latin; Georgian characters fall through to Noto Sans Georgian.
+const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-inter",
   display: "swap",
-  subsets: ["latin"],
 });
 
-export default function RootLayout({
+const notoSansGeorgian = Noto_Sans_Georgian({
+  subsets: ["georgian"],
+  variable: "--font-georgian",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "Croco Creators",
+  description: "The video creators leaderboard for the Crocobet team.",
+  robots: { index: false, follow: false },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
+export default async function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: ReactNode }>) {
+  // Rendering in the saved language avoids a flash of English for Georgian users.
+  const [cookieStore, headerList] = await Promise.all([cookies(), headers()]);
+  const locale = resolveLocale(
+    cookieStore.get(LOCALE_COOKIE)?.value,
+    headerList.get("accept-language"),
+  );
+
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+    <html
+      lang={locale}
+      className={`${inter.variable} ${notoSansGeorgian.variable}`}
+      suppressHydrationWarning
+    >
+      <body>
+        <AppProviders locale={locale}>{children}</AppProviders>
       </body>
     </html>
   );
