@@ -15,6 +15,7 @@ import {
   ModerationDialog,
 } from "@/components/admin/moderation-dialog";
 import { PostReviewDrawer } from "@/components/admin/post-review-drawer";
+import { RoundsManager } from "@/components/admin/rounds-manager";
 import { SyncPanel } from "@/components/admin/sync-panel";
 import { Crossfade } from "@/components/common/crossfade";
 import { GlowBackdrop } from "@/components/common/glow-backdrop";
@@ -23,6 +24,7 @@ import { ListSkeleton } from "@/components/leaderboard/leaderboard-skeleton";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { ChipGroup } from "@/components/ui/chip-group";
 import { MotionButton } from "@/components/ui/motion-button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { isApiError } from "@/lib/api/errors";
 import {
   useAdminPostsQuery,
@@ -56,6 +58,7 @@ export default function AdminPanel() {
   const { t, format } = useI18n();
   const { toast, show } = useToast();
 
+  const [section, setSection] = useState<"queue" | "leaderboards">("queue");
   const [tab, setTab] = useState<AdminQueueTab>("pending");
   const [filters, setFilters] = useState(DEFAULT_ADMIN_FILTERS);
   const [searchText, setSearchText] = useState("");
@@ -193,157 +196,178 @@ export default function AdminPanel() {
         </MotionButton>
       </div>
 
-      <SyncPanel onMessage={show} className="mt-6" />
+      <SegmentedControl
+        label={t.admin.sections.label}
+        value={section}
+        onValueChange={setSection}
+        options={[
+          { value: "queue", label: t.admin.sections.queue },
+          { value: "leaderboards", label: t.admin.sections.leaderboards },
+        ]}
+        className="mt-6 w-full sm:w-auto"
+      />
 
-      <div className="-mx-4 mt-6 no-scrollbar overflow-x-auto fade-x px-4 py-1 md:mx-0 md:overflow-visible md:[mask-image:none] md:px-0">
-        <ChipGroup
-          label={t.admin.tabsLabel}
-          value={tab}
-          onValueChange={setTab}
-          options={TABS.map((value) => ({
-            value,
-            label: (
-              <>
-                {t.admin.tabs[value]}
-                {counts && (
-                  <span className="rounded-full bg-hover px-1.5 py-0.5 text-xs font-semibold tabular-nums">
-                    {counts[value]}
-                  </span>
-                )}
-              </>
-            ),
-          }))}
-          className="w-max"
-        />
-      </div>
-
-      <div className="mt-4">
-        <AdminFilters
-          filters={filters}
-          onChange={setFilters}
-          search={searchText}
-          onSearchChange={setSearchText}
-        />
-      </div>
-
-      {tab === "pending" && selected.size > 0 && (
-        <div
-          role="region"
-          aria-label={t.admin.bulk.label}
-          className="sticky top-20 z-20 mt-4 flex flex-wrap items-center gap-2 rounded-card border border-brand/40 bg-glass p-2.5 pl-4 shadow-lifted backdrop-blur-xl"
-        >
-          <p className="mr-auto text-sm font-semibold" aria-live="polite">
-            {format(t.admin.bulk.selected, { count: selected.size })}
-          </p>
-          <MotionButton
-            size="sm"
-            disabled={approvable.length === 0 || busy}
-            loading={bulk.isPending && dialog === null}
-            onClick={() =>
-              runModeration(
-                "approve",
-                approvable.map((post) => post.id),
-                {},
-              )
-            }
-          >
-            {t.admin.bulk.approve} ({approvable.length})
-          </MotionButton>
-          <MotionButton
-            size="sm"
-            variant="danger"
-            disabled={busy}
-            onClick={() => {
-              setDialogError(null);
-              setDialog({ action: "reject", postIds: [...selected] });
-            }}
-          >
-            {t.admin.bulk.reject}
-          </MotionButton>
-          <MotionButton
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelected(new Set())}
-          >
-            {t.admin.bulk.clear}
-          </MotionButton>
+      {section === "leaderboards" ? (
+        <div className="mt-6">
+          <RoundsManager onMessage={show} />
         </div>
-      )}
+      ) : (
+        <>
+          <SyncPanel onMessage={show} className="mt-6" />
 
-      <Crossfade
-        className="mt-5"
-        stateKey={
-          queue.isPending
-            ? "loading"
-            : queue.isError && !queue.data
-              ? "error"
-              : posts.length === 0
-                ? "empty"
-                : "list"
-        }
-      >
-        {queue.isPending ? (
-          <div role="status" aria-busy="true">
-            <span className="sr-only">{t.leaderboard.updating}</span>
-            <ListSkeleton rows={6} />
+          <div className="-mx-4 mt-6 no-scrollbar overflow-x-auto fade-x px-4 py-1 md:mx-0 md:overflow-visible md:[mask-image:none] md:px-0">
+            <ChipGroup
+              label={t.admin.tabsLabel}
+              value={tab}
+              onValueChange={setTab}
+              options={TABS.map((value) => ({
+                value,
+                label: (
+                  <>
+                    {t.admin.tabs[value]}
+                    {counts && (
+                      <span className="rounded-full bg-hover px-1.5 py-0.5 text-xs font-semibold tabular-nums">
+                        {counts[value]}
+                      </span>
+                    )}
+                  </>
+                ),
+              }))}
+              className="w-max"
+            />
           </div>
-        ) : queue.isError && !queue.data ? (
-          <ErrorState
-            title={t.admin.error}
-            description={t.leaderboard.error.description}
-            retryLabel={t.common.retry}
-            onRetry={() => void queue.refetch()}
-            retrying={queue.isFetching}
-          />
-        ) : posts.length === 0 ? (
-          <StatePanel
-            role="status"
-            icon={<Inbox />}
-            title={t.admin.empty.title}
-            description={t.admin.empty.description}
-          />
-        ) : (
-          <div
-            className={
-              queue.isPlaceholderData
-                ? "opacity-60 transition-opacity"
-                : "transition-opacity"
+
+          <div className="mt-4">
+            <AdminFilters
+              filters={filters}
+              onChange={setFilters}
+              search={searchText}
+              onSearchChange={setSearchText}
+            />
+          </div>
+
+          {tab === "pending" && selected.size > 0 && (
+            <div
+              role="region"
+              aria-label={t.admin.bulk.label}
+              className="sticky top-20 z-20 mt-4 flex flex-wrap items-center gap-2 rounded-card border border-brand/40 bg-glass p-2.5 pl-4 shadow-lifted backdrop-blur-xl"
+            >
+              <p className="mr-auto text-sm font-semibold" aria-live="polite">
+                {format(t.admin.bulk.selected, { count: selected.size })}
+              </p>
+              <MotionButton
+                size="sm"
+                disabled={approvable.length === 0 || busy}
+                loading={bulk.isPending && dialog === null}
+                onClick={() =>
+                  runModeration(
+                    "approve",
+                    approvable.map((post) => post.id),
+                    {},
+                  )
+                }
+              >
+                {t.admin.bulk.approve} ({approvable.length})
+              </MotionButton>
+              <MotionButton
+                size="sm"
+                variant="danger"
+                disabled={busy}
+                onClick={() => {
+                  setDialogError(null);
+                  setDialog({ action: "reject", postIds: [...selected] });
+                }}
+              >
+                {t.admin.bulk.reject}
+              </MotionButton>
+              <MotionButton
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelected(new Set())}
+              >
+                {t.admin.bulk.clear}
+              </MotionButton>
+            </div>
+          )}
+
+          <Crossfade
+            className="mt-5"
+            stateKey={
+              queue.isPending
+                ? "loading"
+                : queue.isError && !queue.data
+                  ? "error"
+                  : posts.length === 0
+                    ? "empty"
+                    : "list"
             }
           >
-            <AdminQueue
-              posts={posts}
-              selectable={tab === "pending"}
-              selected={selected}
-              onToggle={(postId) =>
-                setSelected((current) => {
-                  const next = new Set(current);
-                  if (!next.delete(postId)) next.add(postId);
-                  return next;
-                })
-              }
-              onToggleAll={(select) =>
-                setSelected(
-                  select ? new Set(posts.map((post) => post.id)) : new Set(),
-                )
-              }
-              onOpen={openPost}
-              onAction={handleAction}
-              busy={busy}
-            />
-            {queue.hasNextPage && (
-              <div className="mt-5 flex justify-center">
-                <MotionButton
-                  variant="secondary"
-                  loading={queue.isFetchingNextPage}
-                  onClick={() => void queue.fetchNextPage()}
-                >
-                  {t.common.loadMore}
-                </MotionButton>
+            {queue.isPending ? (
+              <div role="status" aria-busy="true">
+                <span className="sr-only">{t.leaderboard.updating}</span>
+                <ListSkeleton rows={6} />
+              </div>
+            ) : queue.isError && !queue.data ? (
+              <ErrorState
+                title={t.admin.error}
+                description={t.leaderboard.error.description}
+                retryLabel={t.common.retry}
+                onRetry={() => void queue.refetch()}
+                retrying={queue.isFetching}
+              />
+            ) : posts.length === 0 ? (
+              <StatePanel
+                role="status"
+                icon={<Inbox />}
+                title={t.admin.empty.title}
+                description={t.admin.empty.description}
+              />
+            ) : (
+              <div
+                className={
+                  queue.isPlaceholderData
+                    ? "opacity-60 transition-opacity"
+                    : "transition-opacity"
+                }
+              >
+                <AdminQueue
+                  posts={posts}
+                  selectable={tab === "pending"}
+                  selected={selected}
+                  onToggle={(postId) =>
+                    setSelected((current) => {
+                      const next = new Set(current);
+                      if (!next.delete(postId)) next.add(postId);
+                      return next;
+                    })
+                  }
+                  onToggleAll={(select) =>
+                    setSelected(
+                      select
+                        ? new Set(posts.map((post) => post.id))
+                        : new Set(),
+                    )
+                  }
+                  onOpen={openPost}
+                  onAction={handleAction}
+                  busy={busy}
+                />
+                {queue.hasNextPage && (
+                  <div className="mt-5 flex justify-center">
+                    <MotionButton
+                      variant="secondary"
+                      loading={queue.isFetchingNextPage}
+                      onClick={() => void queue.fetchNextPage()}
+                    >
+                      {t.common.loadMore}
+                    </MotionButton>
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
-      </Crossfade>
+          </Crossfade>
+        </>
+      )}
 
       <PostReviewDrawer
         postId={drawerPostId}

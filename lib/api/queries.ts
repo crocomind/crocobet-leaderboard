@@ -10,6 +10,12 @@ import {
 } from "@tanstack/react-query";
 import {
   bulkModerate,
+  createRound,
+  deleteRound,
+  generateRounds,
+  getRounds,
+  updateChallenge,
+  updateRound,
   exportStandings,
   getAdminPost,
   getAdminPosts,
@@ -36,7 +42,11 @@ import type {
   ExportQuery,
   LeaderboardQuery,
   ModerationPayload,
+  ChallengeInput,
   PostCheck,
+  RoundInput,
+  RoundKind,
+  RoundPatch,
   SubmitPostPayload,
 } from "@/lib/api/types";
 import { syncInProgress } from "@/lib/api/sync-status";
@@ -53,6 +63,7 @@ export const queryKeys = {
   adminPosts: (query: AdminPostsQuery) => ["admin", "posts", query] as const,
   adminPost: (postId: string) => ["admin", "post", postId] as const,
   syncStatus: ["admin", "sync"] as const,
+  rounds: ["rounds"] as const,
 };
 
 /** Metrics refresh twice a day on the backend; no need to refetch more often. */
@@ -281,4 +292,51 @@ export function useExportStandingsMutation() {
   return useMutation({
     mutationFn: (query: ExportQuery) => exportStandings(query),
   });
+}
+
+// ------------------------------------------------------------------ rounds
+
+/** The challenge window and every round, for the period menu and the admin panel. */
+export function useRoundsQuery() {
+  return useQuery({
+    queryKey: queryKeys.rounds,
+    queryFn: ({ signal }) => getRounds({ signal }),
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Round and challenge edits change which posts every board counts. */
+function useRoundsMutation<V, R>(mutationFn: (variables: V) => Promise<R>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.rounds }),
+        invalidateAfterChange(queryClient),
+      ]),
+  });
+}
+
+export function useCreateRoundMutation() {
+  return useRoundsMutation((input: RoundInput) => createRound(input));
+}
+
+export function useUpdateRoundMutation() {
+  return useRoundsMutation(
+    ({ roundId, patch }: { roundId: string; patch: RoundPatch }) =>
+      updateRound(roundId, patch),
+  );
+}
+
+export function useDeleteRoundMutation() {
+  return useRoundsMutation((roundId: string) => deleteRound(roundId));
+}
+
+export function useGenerateRoundsMutation() {
+  return useRoundsMutation((kind: RoundKind) => generateRounds(kind));
+}
+
+export function useUpdateChallengeMutation() {
+  return useRoundsMutation((input: ChallengeInput) => updateChallenge(input));
 }

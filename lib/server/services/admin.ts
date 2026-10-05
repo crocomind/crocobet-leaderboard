@@ -32,12 +32,7 @@ import {
   type ModerationError,
   NOTE_MAX_LENGTH,
 } from "@/lib/moderation";
-import {
-  isWithin,
-  postedDateToInstant,
-  resolvePeriod,
-  zonedToday,
-} from "@/lib/periods";
+import { isWithin, postedDateToInstant, zonedToday } from "@/lib/periods";
 import {
   CONTENT_CATEGORIES,
   CONTENT_TYPE_INFO,
@@ -68,7 +63,7 @@ import {
   loadEmployees,
   toEmployee,
 } from "@/lib/server/services/employees";
-import { rowsAsOf } from "@/lib/server/services/leaderboard";
+import { resolveBoard, rowsAsOf } from "@/lib/server/services/leaderboard";
 import { toPost } from "@/lib/server/services/mappers";
 import { claimRun, executeRun } from "@/lib/server/services/sync";
 
@@ -133,6 +128,7 @@ export const bulkSchema = moderationSchema.extend({
 export const exportQuerySchema = z.object({
   category: z.enum(CONTENT_CATEGORIES).default("video"),
   period: z.enum(LEADERBOARD_PERIODS).default("all"),
+  round: z.uuid().optional(),
   periodStart: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -708,13 +704,20 @@ export async function exportStandings(
     query.period !== "all" && query.periodStart
       ? (postedDateToInstant(query.periodStart, timeZone) ?? now)
       : now;
-  const range = resolvePeriod(query.period, reference, config.campaign);
+  const { filter } = await resolveBoard(
+    db,
+    config,
+    {
+      category: query.category,
+      platform: "all",
+      period: query.period,
+      round: query.round ?? null,
+    },
+    reference,
+    now,
+  );
+  const range = filter.range;
   const asOf = query.asOf ? new Date(query.asOf) : now;
-  const filter = {
-    category: query.category,
-    platform: "all" as const,
-    range: { start: range.start, end: range.end },
-  };
   const rows = await rowsAsOf(db, filter, asOf);
   const ids = [...new Set(rows.map((row) => row.employeeId))];
   const [profiles, emails] = await Promise.all([

@@ -6,6 +6,7 @@ import type {
 import type { Period } from "@/lib/periods";
 import type { ContentCategory, ContentType, Platform } from "@/lib/platforms";
 import type { PostStatus } from "@/lib/ranking";
+import type { RoundKind } from "@/lib/rounds";
 
 export type {
   AdminAction,
@@ -15,6 +16,7 @@ export type {
   ModerationReason,
   Platform,
   PostStatus,
+  RoundKind,
 };
 
 /** ISO 8601 timestamp, e.g. "2026-10-01T09:30:00.000Z". */
@@ -110,8 +112,61 @@ export interface LeaderboardQuery {
   /** Only platforms in CATEGORY_PLATFORMS[category]. */
   platform: PlatformFilter;
   period: LeaderboardPeriod;
+  /** A weekly or monthly round of that period. null: the current one. */
+  round: string | null;
   /** Employee name filter. Empty string means no filter. */
   search: string;
+}
+
+/** A weekly or monthly leaderboard round, defined by admins. */
+export interface Round {
+  id: string;
+  kind: RoundKind;
+  /** null: show the automatic label ("Week 3", "October"). */
+  name: string | null;
+  /** 1-based position among the rounds of its kind. */
+  number: number;
+  startsAt: IsoDateTime;
+  /** Exclusive. */
+  endsAt: IsoDateTime;
+  /** Inclusive calendar dates in the campaign time zone. */
+  startDate: IsoDate;
+  endDate: IsoDate;
+}
+
+export type RoundRef = Pick<Round, "id" | "kind" | "name" | "number">;
+
+export interface ChallengeWindow {
+  startsAt: IsoDateTime;
+  /** Exclusive. */
+  endsAt: IsoDateTime;
+  startDate: IsoDate;
+  endDate: IsoDate;
+  timeZone: string;
+  /** "admin": set in the admin panel; "default": from the server settings. */
+  source: "admin" | "default";
+}
+
+export interface RoundsResponse {
+  challenge: ChallengeWindow;
+  /** Weekly rounds, then monthly, each by start date. */
+  rounds: Round[];
+}
+
+export interface RoundInput {
+  kind: RoundKind;
+  name: string | null;
+  startDate: IsoDate;
+  endDate: IsoDate;
+}
+
+export type RoundPatch = Partial<
+  Pick<RoundInput, "name" | "startDate" | "endDate">
+>;
+
+export interface ChallengeInput {
+  startDate: IsoDate;
+  endDate: IsoDate;
 }
 
 export type TopPost = Pick<
@@ -145,6 +200,8 @@ export interface BoardPeriod {
   /** Exclusive. */
   end: IsoDateTime;
   isCurrent: boolean;
+  /** The round shown, or null for a calendar week/month or the whole challenge. */
+  round: RoundRef | null;
   /** The campaign time zone the dates are computed in, e.g. "Asia/Tbilisi". */
   timeZone: string;
 }
@@ -187,6 +244,7 @@ export interface EmployeePostsQuery {
   category: ContentCategory;
   platform: PlatformFilter;
   period: LeaderboardPeriod;
+  round: string | null;
 }
 
 export interface SubmitPostPayload {
@@ -314,6 +372,8 @@ export interface SyncStatusResponse {
 export interface ExportQuery {
   category: ContentCategory;
   period: Exclude<LeaderboardPeriod, "all"> | "all";
+  /** A round of that period. Wins over periodStart. */
+  round?: string;
   /** Any date inside the wanted week or month. Ignored for "all". */
   periodStart?: IsoDate;
   /** Standings as of this time (from the snapshots). Default: now. */
@@ -372,4 +432,22 @@ export interface ApiAdapter {
   getSyncStatus(options?: RequestOptions): Promise<SyncStatusResponse>;
   startSync(options?: RequestOptions): Promise<SyncRun>;
   exportStandings(query: ExportQuery, options?: RequestOptions): Promise<Blob>;
+
+  getRounds(options?: RequestOptions): Promise<RoundsResponse>;
+  createRound(input: RoundInput, options?: RequestOptions): Promise<Round>;
+  updateRound(
+    roundId: string,
+    patch: RoundPatch,
+    options?: RequestOptions,
+  ): Promise<Round>;
+  deleteRound(roundId: string, options?: RequestOptions): Promise<void>;
+  /** Creates rounds of that kind for the whole challenge (none may exist yet). */
+  generateRounds(
+    kind: RoundKind,
+    options?: RequestOptions,
+  ): Promise<RoundsResponse>;
+  updateChallenge(
+    input: ChallengeInput,
+    options?: RequestOptions,
+  ): Promise<ChallengeWindow>;
 }

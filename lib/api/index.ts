@@ -38,6 +38,12 @@ export const refreshPost = forward("refreshPost");
 export const getSyncStatus = forward("getSyncStatus");
 export const startSync = forward("startSync");
 export const exportStandings = forward("exportStandings");
+export const getRounds = forward("getRounds");
+export const createRound = forward("createRound");
+export const updateRound = forward("updateRound");
+export const deleteRound = forward("deleteRound");
+export const generateRounds = forward("generateRounds");
+export const updateChallenge = forward("updateChallenge");
 
 export * from "./types";
 export { ApiError, isApiError } from "./errors";

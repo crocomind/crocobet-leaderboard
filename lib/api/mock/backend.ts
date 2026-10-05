@@ -7,7 +7,6 @@ import {
 import {
   isWithin,
   postedDateToInstant,
-  resolvePeriod,
   submissionsOpen,
   zonedToday,
 } from "@/lib/periods";
@@ -27,6 +26,19 @@ import {
   rankBoard,
   rankMap,
 } from "@/lib/ranking";
+import {
+  type BoardRange,
+  dayRange,
+  generateRounds,
+  rangeDates,
+  resolveBoardRange,
+  ROUND_PROBLEM_CODES,
+  type RoundKind,
+  roundNumbers,
+  roundProblem,
+  type RoundRange,
+  toRoundsResponse,
+} from "@/lib/rounds";
 import { displayedViews, postScore } from "@/lib/scoring";
 import { standingsCsv } from "@/lib/standings-csv";
 import { normalizeForSearch } from "@/lib/utils";
@@ -42,6 +54,8 @@ import type {
   BoardSummary,
   BulkModerationPayload,
   BulkModerationResult,
+  ChallengeInput,
+  ChallengeWindow,
   ContentCategory,
   Employee,
   EmployeePostsQuery,
@@ -53,6 +67,11 @@ import type {
   ModerationPayload,
   MyPostsResponse,
   Post,
+  Round,
+  RoundInput,
+  RoundPatch,
+  RoundRef,
+  RoundsResponse,
   SubmitPostPayload,
   SyncRun,
   SyncStatusResponse,
@@ -268,31 +287,61 @@ export class MockBackend {
     };
   }
 
-  private boardFilter(
-    category: ContentCategory,
-    platform: LeaderboardQuery["platform"],
-    period: LeaderboardQuery["period"],
-    now: Date,
-  ): BoardFilter & { platform: LeaderboardQuery["platform"] } {
-    const range = resolvePeriod(period, now, campaignOf(this.state));
+  private roundRanges(): RoundRange[] {
+    return this.state.rounds.map((round) => ({
+      ...round,
+      startsAt: new Date(round.startsAt),
+      endsAt: new Date(round.endsAt),
+    }));
+  }
+
+  /** The same resolution as the server: a chosen round, the current round, or the calendar. */
+  private resolveBoard(
+    query: {
+      category: ContentCategory;
+      platform: LeaderboardQuery["platform"];
+      period: LeaderboardQuery["period"];
+      round: string | null;
+    },
+    reference: Date,
+    now: Date = reference,
+  ): {
+    filter: BoardFilter & { platform: LeaderboardQuery["platform"] };
+    range: BoardRange;
+    round: RoundRef | null;
+  } {
+    const rounds = this.roundRanges();
+    const range = resolveBoardRange(query.period, {
+      roundId: query.round,
+      reference,
+      now,
+      campaign: campaignOf(this.state),
+      rounds,
+    });
     const valid =
-      platform === "all" || CATEGORY_PLATFORMS[category].includes(platform);
+      query.platform === "all" ||
+      CATEGORY_PLATFORMS[query.category].includes(query.platform);
     return {
-      category,
-      platform: valid ? platform : "all",
-      range: { start: range.start, end: range.end },
+      filter: {
+        category: query.category,
+        platform: valid ? query.platform : "all",
+        range: { start: range.start, end: range.end },
+      },
+      range,
+      round: range.round
+        ? {
+            id: range.round.id,
+            kind: range.round.kind,
+            name: range.round.name,
+            number: roundNumbers(rounds).get(range.round.id) ?? 1,
+          }
+        : null,
     };
   }
 
   getLeaderboard(query: LeaderboardQuery, now: Date): LeaderboardResponse {
     const campaign = campaignOf(this.state);
-    const range = resolvePeriod(query.period, now, campaign);
-    const filter = this.boardFilter(
-      query.category,
-      query.platform,
-      query.period,
-      now,
-    );
+    const { filter, range, round } = this.resolveBoard(query, now);
     const posts = this.rankables();
     const yesterday = rankBoard(
       postsAsOf(posts, new Date(now.getTime() - DAY_MS)),
@@ -305,12 +354,17 @@ export class MockBackend {
       previousRanks: rankMap(yesterday),
     });
     return {
-      query: { ...query, platform: filter.platform },
+      query: {
+        ...query,
+        platform: filter.platform,
+        round: query.round && round?.id === query.round ? query.round : null,
+      },
       period: {
         start: range.start.toISOString(),
         end: range.end.toISOString(),
         isCurrent: range.isCurrent,
         timeZone: campaign.timeZone,
+        round,
       },
       entries: board.entries,
       totalParticipants: board.totalParticipants,
@@ -328,7 +382,10 @@ export class MockBackend {
       const board = rankBoard(
         posts,
         PUBLIC_EMPLOYEES,
-        this.boardFilter(category, "all", "all", now),
+        this.resolveBoard(
+          { category, platform: "all", period: "all", round: null },
+          now,
+        ).filter,
         { meId: this.me.id },
       );
       const entry = board.myStanding?.entry;
@@ -356,12 +413,7 @@ export class MockBackend {
     query: EmployeePostsQuery,
     now: Date,
   ): Post[] {
-    const filter = this.boardFilter(
-      query.category,
-      query.platform,
-      query.period,
-      now,
-    );
+    const { filter } = this.resolveBoard(query, now);
     const byId = new Map(this.state.posts.map((post) => [post.id, post]));
     return countedPosts(this.rankables(), employeeId, filter).map((post) =>
       toPost(byId.get(post.id)!),
@@ -862,17 +914,21 @@ export class MockBackend {
       query.period !== "all" && query.periodStart
         ? (postedDateToInstant(query.periodStart, campaign.timeZone) ?? now)
         : now;
-    const range = resolvePeriod(query.period, reference, campaign);
+    const { filter } = this.resolveBoard(
+      {
+        category: query.category,
+        platform: "all",
+        period: query.period,
+        round: query.round ?? null,
+      },
+      reference,
+      now,
+    );
     const asOf = query.asOf ? new Date(query.asOf) : now;
     if (Number.isNaN(asOf.getTime()))
       fail(422, "validation_error", "Invalid asOf");
 
     const posts = postsAsOf(this.rankables(), asOf);
-    const filter: BoardFilter = {
-      category: query.category,
-      platform: "all",
-      range: { start: range.start, end: range.end },
-    };
     const board = rankBoard(posts, PUBLIC_EMPLOYEES, filter);
     return standingsCsv(
       board.entries.map((entry) => {
@@ -892,5 +948,125 @@ export class MockBackend {
         };
       }),
     );
+  }
+
+  // ----------------------------------------------------------- rounds
+
+  getRounds(): RoundsResponse {
+    return toRoundsResponse(
+      this.roundRanges(),
+      campaignOf(this.state),
+      this.state.campaignSource,
+    );
+  }
+
+  private findRound(roundId: string): Round {
+    const round = this.getRounds().rounds.find(
+      (candidate) => candidate.id === roundId,
+    );
+    if (!round) fail(404, "not_found", "Round not found");
+    return round;
+  }
+
+  private checkRound(candidate: {
+    id?: string;
+    kind: RoundKind;
+    startsAt: Date;
+    endsAt: Date;
+  }) {
+    const problem = roundProblem(
+      candidate,
+      this.roundRanges(),
+      campaignOf(this.state),
+    );
+    if (problem) fail(422, ROUND_PROBLEM_CODES[problem], problem);
+  }
+
+  createRound(input: RoundInput): Round {
+    this.requireAdmin();
+    const range = dayRange(
+      input.startDate,
+      input.endDate,
+      this.state.campaign.timeZone,
+    );
+    if (!range) fail(422, "invalid_dates", "Invalid dates");
+    this.checkRound({ kind: input.kind, ...range });
+    const id = nextId(this.state, "round");
+    this.state.rounds.push({
+      id,
+      kind: input.kind,
+      name: input.name?.trim() || null,
+      startsAt: range.startsAt.toISOString(),
+      endsAt: range.endsAt.toISOString(),
+    });
+    return this.findRound(id);
+  }
+
+  updateRound(roundId: string, patch: RoundPatch): Round {
+    this.requireAdmin();
+    const round = this.state.rounds.find(
+      (candidate) => candidate.id === roundId,
+    );
+    if (!round) fail(404, "not_found", "Round not found");
+    const { timeZone } = this.state.campaign;
+    const current = rangeDates(
+      new Date(round.startsAt),
+      new Date(round.endsAt),
+      timeZone,
+    );
+    const range = dayRange(
+      patch.startDate ?? current.startDate,
+      patch.endDate ?? current.endDate,
+      timeZone,
+    );
+    if (!range) fail(422, "invalid_dates", "Invalid dates");
+    this.checkRound({ id: round.id, kind: round.kind, ...range });
+    round.startsAt = range.startsAt.toISOString();
+    round.endsAt = range.endsAt.toISOString();
+    if (patch.name !== undefined) round.name = patch.name?.trim() || null;
+    return this.findRound(roundId);
+  }
+
+  deleteRound(roundId: string): void {
+    this.requireAdmin();
+    const before = this.state.rounds.length;
+    this.state.rounds = this.state.rounds.filter(
+      (round) => round.id !== roundId,
+    );
+    if (this.state.rounds.length === before)
+      fail(404, "not_found", "Round not found");
+  }
+
+  generateRounds(kind: RoundKind): RoundsResponse {
+    this.requireAdmin();
+    if (this.state.rounds.some((round) => round.kind === kind))
+      fail(409, "rounds_exist", "Rounds of this kind already exist");
+    for (const round of generateRounds(kind, campaignOf(this.state)))
+      this.state.rounds.push({
+        id: nextId(this.state, "round"),
+        kind,
+        name: null,
+        startsAt: round.startsAt.toISOString(),
+        endsAt: round.endsAt.toISOString(),
+      });
+    return this.getRounds();
+  }
+
+  updateChallenge(input: ChallengeInput): ChallengeWindow {
+    this.requireAdmin();
+    const range = dayRange(
+      input.startDate,
+      input.endDate,
+      this.state.campaign.timeZone,
+    );
+    if (!range || !(range.endsAt > range.startsAt))
+      fail(422, "invalid_dates", "Invalid dates");
+    this.state.campaign = {
+      ...this.state.campaign,
+      startsAt: range.startsAt.toISOString(),
+      endsAt: range.endsAt.toISOString(),
+    };
+    this.state.campaignSource = "admin";
+    return this.getRounds().challenge;
   }
 }

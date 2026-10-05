@@ -18,14 +18,16 @@ import type {
   LeaderboardQuery,
   LeaderboardResponse,
   PlatformFilter,
+  RoundRef,
 } from "@/lib/api/types";
-import { resolvePeriod } from "@/lib/periods";
+import { type BoardRange, resolveBoardRange, roundNumbers } from "@/lib/rounds";
 import { CATEGORY_PLATFORMS } from "@/lib/platforms";
 import { type BoardFilter, rankBoard, rankMap } from "@/lib/ranking";
 import type { ServerConfig } from "@/lib/server/config";
 import type { Db } from "@/lib/server/db/client";
 import { postMetricSnapshots, posts, syncRuns } from "@/lib/server/db/schema";
 import { loadEmployees } from "@/lib/server/services/employees";
+import { loadRounds } from "@/lib/server/services/rounds";
 import { toRankable } from "@/lib/server/services/mappers";
 
 const DAY_MS = 86_400_000;
@@ -99,18 +101,57 @@ export async function lastSyncedAt(db: Db): Promise<Date | null> {
   return row?.at ?? null;
 }
 
-export function boardFilter(
+export interface ResolvedBoard {
+  filter: BoardFilter & { platform: PlatformFilter };
+  range: BoardRange;
+  /** The round shown, with its number, or null. */
+  round: RoundRef | null;
+}
+
+/**
+ * Which posts a board counts: the category, the platform (only one that's
+ * on the board) and the dates (a chosen round, the current round, or the
+ * calendar week/month; always inside the challenge).
+ */
+export async function resolveBoard(
+  db: Db,
   config: ServerConfig,
-  category: ContentCategory,
-  platform: PlatformFilter,
-  period: LeaderboardPeriod,
-  now: Date,
-): BoardFilter & { platform: PlatformFilter } {
-  const range = resolvePeriod(period, now, config.campaign);
+  query: {
+    category: ContentCategory;
+    platform: PlatformFilter;
+    period: LeaderboardPeriod;
+    round: string | null;
+  },
+  reference: Date,
+  now: Date = reference,
+): Promise<ResolvedBoard> {
+  const rounds =
+    query.period === "all" ? [] : await loadRounds(db, query.period);
+  const range = resolveBoardRange(query.period, {
+    roundId: query.round,
+    reference,
+    now,
+    campaign: config.campaign,
+    rounds,
+  });
+  const number = range.round
+    ? roundNumbers(rounds).get(range.round.id)
+    : undefined;
   return {
-    category,
-    platform: boardPlatform(category, platform),
-    range: { start: range.start, end: range.end },
+    filter: {
+      category: query.category,
+      platform: boardPlatform(query.category, query.platform),
+      range: { start: range.start, end: range.end },
+    },
+    range,
+    round: range.round
+      ? {
+          id: range.round.id,
+          kind: range.round.kind,
+          name: range.round.name,
+          number: number ?? 1,
+        }
+      : null,
   };
 }
 
@@ -121,14 +162,7 @@ export async function getLeaderboard(
   meId: string,
   now: Date,
 ): Promise<LeaderboardResponse> {
-  const range = resolvePeriod(query.period, now, config.campaign);
-  const filter = boardFilter(
-    config,
-    query.category,
-    query.platform,
-    query.period,
-    now,
-  );
+  const { filter, range, round } = await resolveBoard(db, config, query, now);
   const [current, yesterday, syncedAt] = await Promise.all([
     countedRows(db, filter),
     rowsAsOf(db, filter, new Date(now.getTime() - DAY_MS)),
@@ -146,12 +180,18 @@ export async function getLeaderboard(
   });
 
   return {
-    query: { ...query, platform: filter.platform },
+    query: {
+      ...query,
+      platform: filter.platform,
+      // The round actually shown, so the UI can mark it in the menu.
+      round: query.round && round?.id === query.round ? query.round : null,
+    },
     period: {
       start: range.start.toISOString(),
       end: range.end.toISOString(),
       isCurrent: range.isCurrent,
       timeZone: config.campaign.timeZone,
+      round,
     },
     entries: board.entries,
     totalParticipants: board.totalParticipants,
@@ -168,7 +208,12 @@ export async function boardSummary(
   meId: string,
   now: Date,
 ): Promise<BoardSummary> {
-  const filter = boardFilter(config, category, "all", "all", now);
+  const { filter } = await resolveBoard(
+    db,
+    config,
+    { category, platform: "all", period: "all", round: null },
+    now,
+  );
   const rows = await countedRows(db, filter);
   const employees = await loadEmployees(
     db,

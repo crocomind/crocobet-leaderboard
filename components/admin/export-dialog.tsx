@@ -1,6 +1,14 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { ChevronDown, Download } from "lucide-react";
+import { useRoundLabel } from "@/components/leaderboard/use-round-label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { type FormEvent, useId, useState } from "react";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { Input } from "@/components/ui/input";
@@ -13,7 +21,7 @@ import {
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { useExportStandingsMutation } from "@/lib/api/queries";
+import { useExportStandingsMutation, useRoundsQuery } from "@/lib/api/queries";
 import type { ContentCategory, ExportQuery } from "@/lib/api/types";
 import { standingsFilename } from "@/lib/standings-csv";
 import {
@@ -38,21 +46,43 @@ export function ExportDialog({
 }
 
 function ExportForm({ onDone }: { onDone: () => void }) {
-  const { t } = useI18n();
+  const { t, formatDateRange } = useI18n();
   const ids = useId();
   const copy = t.admin.export;
+  const roundsQuery = useRoundsQuery();
+  const roundLabel = useRoundLabel();
+  const [roundId, setRoundId] = useState<string | null>(null);
   const [category, setCategory] = useState<ContentCategory>("video");
   const [period, setPeriod] = useState<ExportQuery["period"]>("week");
   const [day, setDay] = useState(() => toIsoDate(new Date()));
   const [asOf, setAsOf] = useState(() => toLocalDateTimeInput(new Date()));
   const exportStandings = useExportStandingsMutation();
 
+  // With rounds of that kind, pick a round; otherwise any day in the week or month.
+  const timeZone = roundsQuery.data?.challenge.timeZone ?? "Asia/Tbilisi";
+  const kindRounds =
+    period === "all"
+      ? []
+      : (roundsQuery.data?.rounds ?? []).filter(
+          (round) => round.kind === period,
+        );
+  const selectedRound =
+    kindRounds.find((round) => round.id === roundId) ??
+    kindRounds.find(
+      (round) => round.startDate <= day && day <= round.endDate,
+    ) ??
+    kindRounds.at(-1);
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     const query: ExportQuery = {
       category,
       period,
-      ...(period !== "all" && day ? { periodStart: day } : {}),
+      ...(selectedRound
+        ? { round: selectedRound.id }
+        : period !== "all" && day
+          ? { periodStart: day }
+          : {}),
       ...(fromLocalDateTimeInput(asOf)
         ? { asOf: fromLocalDateTimeInput(asOf)! }
         : {}),
@@ -65,7 +95,9 @@ function ExportForm({ onDone }: { onDone: () => void }) {
         link.download = standingsFilename(
           category,
           period,
-          period === "all" ? toIsoDate(new Date()) : day,
+          period === "all"
+            ? toIsoDate(new Date())
+            : (selectedRound?.startDate ?? day),
         );
         document.body.append(link);
         link.click();
@@ -121,18 +153,73 @@ function ExportForm({ onDone }: { onDone: () => void }) {
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          {period !== "all" && (
+          {selectedRound ? (
             <div>
-              <Label htmlFor={`${ids}-day`} className="mb-2 block">
-                {copy.periodDate}
-              </Label>
-              <Input
-                id={`${ids}-day`}
-                type="date"
-                value={day}
-                onChange={(event) => setDay(event.target.value)}
-              />
+              <p className="mb-2 text-sm font-medium" id={`${ids}-round`}>
+                {copy.round}
+              </p>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <MotionButton
+                    variant="secondary"
+                    aria-labelledby={`${ids}-round`}
+                    className="h-12 w-full justify-between"
+                  >
+                    <span className="truncate">
+                      {roundLabel(
+                        selectedRound,
+                        selectedRound.startsAt,
+                        timeZone,
+                      )}{" "}
+                      ·{" "}
+                      {formatDateRange(
+                        selectedRound.startsAt,
+                        selectedRound.endsAt,
+                        timeZone,
+                      )}
+                    </span>
+                    <ChevronDown
+                      className="size-4 opacity-60"
+                      aria-hidden="true"
+                    />
+                  </MotionButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  className="max-h-[min(18rem,var(--radix-dropdown-menu-content-available-height))] overflow-y-auto"
+                >
+                  <DropdownMenuRadioGroup
+                    value={selectedRound.id}
+                    onValueChange={setRoundId}
+                  >
+                    {kindRounds.map((round) => (
+                      <DropdownMenuRadioItem key={round.id} value={round.id}>
+                        {roundLabel(round, round.startsAt, timeZone)} ·{" "}
+                        {formatDateRange(
+                          round.startsAt,
+                          round.endsAt,
+                          timeZone,
+                        )}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
+          ) : (
+            period !== "all" && (
+              <div>
+                <Label htmlFor={`${ids}-day`} className="mb-2 block">
+                  {copy.periodDate}
+                </Label>
+                <Input
+                  id={`${ids}-day`}
+                  type="date"
+                  value={day}
+                  onChange={(event) => setDay(event.target.value)}
+                />
+              </div>
+            )
           )}
           <div className={period === "all" ? "sm:col-span-2" : ""}>
             <Label htmlFor={`${ids}-as-of`} className="mb-2 block">

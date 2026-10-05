@@ -8,6 +8,7 @@ import {
 import { getServerConfig, type ServerConfig } from "@/lib/server/config";
 import { type Db, getDb } from "@/lib/server/db/client";
 import { assertSameOrigin, handle } from "@/lib/server/http";
+import { withCampaign } from "@/lib/server/services/rounds";
 
 export interface RouteContext<P> {
   request: Request;
@@ -36,9 +37,10 @@ export function employeeRoute<
     handle(async () => {
       if (request.method !== "GET" && request.method !== "HEAD")
         assertSameOrigin(request);
-      const config = getServerConfig();
       const db = getDb();
-      const auth = await requireEmployee(request, db, config);
+      const auth = await requireEmployee(request, db, getServerConfig());
+      // The challenge dates admins set in the app win over the server settings.
+      const config = await withCampaign(db, getServerConfig());
       if (admin) requireAdmin(auth);
       return handler({
         request,

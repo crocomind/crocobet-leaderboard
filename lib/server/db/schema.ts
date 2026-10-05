@@ -27,6 +27,7 @@ import type {
   SyncTrigger,
 } from "@/lib/api/types";
 import type { ContentCategory, ContentType, Platform } from "@/lib/platforms";
+import type { RoundKind } from "@/lib/rounds";
 
 /**
  * Supabase Postgres, accessed only by the server (Drizzle over the
@@ -255,8 +256,60 @@ export const syncRuns = pgTable(
   (table) => [index("sync_runs_started_idx").on(table.startedAt.desc())],
 ).enableRLS();
 
+/** Weekly and monthly leaderboard rounds, defined by admins. Rounds of one kind never overlap. */
+export const leaderboardRounds = pgTable(
+  "leaderboard_rounds",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: text("kind").$type<RoundKind>().notNull(),
+    name: text("name"),
+    startsAt: timestamptz("starts_at").notNull(),
+    /** Exclusive. */
+    endsAt: timestamptz("ends_at").notNull(),
+    createdBy: uuid("created_by").references(() => employees.id, {
+      onDelete: "set null",
+    }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("leaderboard_rounds_kind_idx").on(table.kind, table.startsAt),
+    check(
+      "leaderboard_rounds_kind_check",
+      sql`${table.kind} in ('week', 'month')`,
+    ),
+    check(
+      "leaderboard_rounds_dates_check",
+      sql`${table.endsAt} > ${table.startsAt}`,
+    ),
+  ],
+).enableRLS();
+
+/** The challenge window set in the admin panel (one row). Without it, the server settings apply. */
+export const challengeSettings = pgTable(
+  "challenge_settings",
+  {
+    id: integer("id").primaryKey().default(1),
+    startsAt: timestamptz("starts_at").notNull(),
+    /** Exclusive. */
+    endsAt: timestamptz("ends_at").notNull(),
+    updatedBy: uuid("updated_by").references(() => employees.id, {
+      onDelete: "set null",
+    }),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check("challenge_settings_single_row", sql`${table.id} = 1`),
+    check(
+      "challenge_settings_dates_check",
+      sql`${table.endsAt} > ${table.startsAt}`,
+    ),
+  ],
+).enableRLS();
+
 export type EmployeeRow = typeof employees.$inferSelect;
 export type PostRow = typeof posts.$inferSelect;
 export type SnapshotRow = typeof postMetricSnapshots.$inferSelect;
 export type EventRow = typeof moderationEvents.$inferSelect;
 export type SyncRunRow = typeof syncRuns.$inferSelect;
+export type RoundRow = typeof leaderboardRounds.$inferSelect;

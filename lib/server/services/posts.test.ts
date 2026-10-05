@@ -372,6 +372,7 @@ describe("reads", () => {
         category: "video",
         platform: "all",
         period: "all",
+        round: null,
       },
     );
     expect(list.map((post) => post.id)).toEqual([counted.id]);

@@ -26,7 +26,7 @@ import {
 import { HttpError } from "@/lib/server/http";
 import { resolveShortLink } from "@/lib/server/link-resolver";
 import { runCheck } from "@/lib/server/services/checks";
-import { boardFilter, boardSummary } from "@/lib/server/services/leaderboard";
+import { boardSummary, resolveBoard } from "@/lib/server/services/leaderboard";
 import { toPost, toRankable } from "@/lib/server/services/mappers";
 import { TITLE_MAX_LENGTH } from "@/lib/validation/submit-post";
 
@@ -82,13 +82,7 @@ export async function getEmployeePosts(
   employeeId: string,
   query: EmployeePostsQuery,
 ): Promise<Post[]> {
-  const filter = boardFilter(
-    config,
-    query.category,
-    query.platform,
-    query.period,
-    now,
-  );
+  const { filter } = await resolveBoard(db, config, query, now);
   const rows = await db
     .select()
     .from(posts)

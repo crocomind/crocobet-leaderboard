@@ -1,5 +1,6 @@
 import { weekRange, zonedToday } from "@/lib/periods";
 import { analyzePostUrl, type ContentType } from "@/lib/platforms";
+import { generateRounds } from "@/lib/rounds";
 import type { CheckError, ModerationReason } from "../types";
 import {
   addEvent,
@@ -14,7 +15,7 @@ import {
 import type { MockEmployee, MockPost, MockState, ProviderTruth } from "./types";
 
 /** Bump when the shape or the generator changes; stored mock state is then regenerated. */
-export const MOCK_STATE_VERSION = 2;
+export const MOCK_STATE_VERSION = 3;
 
 /** The employee the mock backend treats as signed in. */
 export const MOCK_CURRENT_USER_ID = "emp-tamar-lomidze";
@@ -614,11 +615,28 @@ export function createInitialState(now: Date): MockState {
       ).toISOString(),
       timeZone: MOCK_TIMEZONE,
     },
+    campaignSource: "default",
+    rounds: [],
     posts: [],
     socialAccounts: [],
     syncRuns: [],
     nextId: 0,
   };
+  // Weekly and monthly rounds for the whole challenge, as an admin would generate them.
+  const window = {
+    startsAt: campaignStart,
+    endsAt: new Date(state.campaign.endsAt),
+    timeZone: MOCK_TIMEZONE,
+  };
+  state.rounds = (["week", "month"] as const).flatMap((kind) =>
+    generateRounds(kind, window).map((round, index) => ({
+      id: `round-${kind}-${index + 1}`,
+      kind,
+      name: null,
+      startsAt: round.startsAt.toISOString(),
+      endsAt: round.endsAt.toISOString(),
+    })),
+  );
   const context: Context = { random, now, campaignStart };
   const schedule: Scheduled[] = [];
   let order = 0;

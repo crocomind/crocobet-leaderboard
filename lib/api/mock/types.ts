@@ -88,10 +88,21 @@ export interface MockPost {
   truth: ProviderTruth;
 }
 
+export interface MockRound {
+  id: string;
+  kind: "week" | "month";
+  name: string | null;
+  startsAt: IsoDateTime;
+  endsAt: IsoDateTime;
+}
+
 export interface MockState {
   version: number;
   generatedAt: IsoDateTime;
   campaign: { startsAt: IsoDateTime; endsAt: IsoDateTime; timeZone: string };
+  /** "admin" once an admin saved the challenge dates. */
+  campaignSource: "admin" | "default";
+  rounds: MockRound[];
   posts: MockPost[];
   socialAccounts: LinkedHandle[];
   /** Newest first. */

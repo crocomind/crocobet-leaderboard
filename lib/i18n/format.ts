@@ -26,6 +26,8 @@ interface LocaleFormatters {
   day: (year: number, month: number, day: number, withYear: boolean) => string;
   /** Local date and time, e.g. "5 Oct, 08:00". */
   dateTime: (date: Date, withYear: boolean) => string;
+  /** A month's full name, e.g. "October". */
+  month: (month: number) => string;
   relative: (value: number, unit: RelativeUnit) => string;
   list: (items: readonly string[], type: "and" | "or") => string;
   plural: (count: number) => "one" | "other";
@@ -70,6 +72,10 @@ function englishFormatters(): LocaleFormatters {
     minute: "2-digit",
     hourCycle: "h23",
   });
+  const monthName = new Intl.DateTimeFormat("en-GB", {
+    month: "long",
+    timeZone: "UTC",
+  });
   const relative = new Intl.RelativeTimeFormat(tag, { numeric: "auto" });
   const and = new Intl.ListFormat(tag, { type: "conjunction" });
   const or = new Intl.ListFormat(tag, { type: "disjunction" });
@@ -83,6 +89,7 @@ function englishFormatters(): LocaleFormatters {
       (withYear ? dayWithYear : day).format(Date.UTC(y, m - 1, d, 12)),
     dateTime: (value, withYear) =>
       (withYear ? dateTimeWithYear : dateTime).format(value),
+    month: (month) => monthName.format(Date.UTC(2026, month - 1, 15)),
     relative: (value, unit) => relative.format(value, unit),
     list: (items, type) => (type === "and" ? and : or).format(items),
     plural: (count) => (plurals.select(count) === "one" ? "one" : "other"),
@@ -108,6 +115,20 @@ const KA_MONTHS = [
   "ოქტ",
   "ნოე",
   "დეკ",
+];
+const KA_MONTH_NAMES = [
+  "იანვარი",
+  "თებერვალი",
+  "მარტი",
+  "აპრილი",
+  "მაისი",
+  "ივნისი",
+  "ივლისი",
+  "აგვისტო",
+  "სექტემბერი",
+  "ოქტომბერი",
+  "ნოემბერი",
+  "დეკემბერი",
 ];
 const KA_RELATIVE: Record<RelativeUnit, { past: string; future: string }> = {
   minute: { past: "{n} წუთის წინ", future: "{n} წუთში" },
@@ -137,6 +158,7 @@ const georgianFormatters: LocaleFormatters = {
     `${value.getDate()} ${KA_MONTHS[value.getMonth()]}. ${value.getFullYear()}`,
   day: (y, m, d, withYear) =>
     `${d} ${KA_MONTHS[m - 1]}.${withYear ? ` ${y}` : ""}`,
+  month: (month) => KA_MONTH_NAMES[month - 1] ?? "",
   dateTime: (value, withYear) =>
     `${value.getDate()} ${KA_MONTHS[value.getMonth()]}.${withYear ? ` ${value.getFullYear()}` : ""}, ${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`,
   relative: (value, unit) => {
@@ -189,6 +211,9 @@ export function createFormatters(locale: Locale) {
       const last = f.day(to.year, to.month, to.day, withYear);
       return first === last ? first : `${first} – ${last}`;
     },
+    /** The month an instant falls in, in a time zone, e.g. "October". */
+    formatMonth: (value: string, timeZone: string) =>
+      f.month(zonedParts(new Date(value), timeZone).month),
     /** Local date and time; the year only when it isn't this year. */
     formatDateTime: (value: string) => {
       const date = new Date(value);

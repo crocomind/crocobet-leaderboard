@@ -19,11 +19,12 @@ import {
   type StandingAction,
 } from "@/components/leaderboard/my-standing-bar";
 import { Podium } from "@/components/leaderboard/podium";
+import { useRoundLabel } from "@/components/leaderboard/use-round-label";
 import { useCurrentUser } from "@/components/providers/current-user-provider";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { useSubmitPost } from "@/components/submit/submit-post-provider";
 import { MotionButton } from "@/components/ui/motion-button";
-import { useLeaderboardQuery } from "@/lib/api/queries";
+import { useLeaderboardQuery, useRoundsQuery } from "@/lib/api/queries";
 import type { LeaderboardEntry, LeaderboardQuery } from "@/lib/api/types";
 import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
@@ -49,10 +50,13 @@ export function LeaderboardView() {
       category: state.category,
       platform: state.platform,
       period: state.period,
+      round: state.round || null,
       search,
     }),
-    [state.category, state.platform, state.period, search],
+    [state.category, state.platform, state.period, state.round, search],
   );
+  const rounds = useRoundsQuery();
+  const roundLabel = useRoundLabel();
   const leaderboard = useLeaderboardQuery(query);
   const { data } = leaderboard;
   // While new filters load, the previous result stays on screen; render it
@@ -121,12 +125,17 @@ export function LeaderboardView() {
     myEntryElement?.focus({ preventScroll: true });
   };
 
+  // A chosen past round is named after itself; the current one is "This week".
+  const periodLabel =
+    shown.round && data?.period.round
+      ? roundLabel(data.period.round, data.period.start, data.period.timeZone)
+      : t.periods[shown.period];
   const announcement =
     data && !leaderboard.isPlaceholderData
       ? [
           format(t.leaderboard.announce, {
             category: t.categories[shown.category],
-            period: t.periods[shown.period],
+            period: periodLabel,
             count: data.totalParticipants,
           }),
           standing
@@ -166,6 +175,8 @@ export function LeaderboardView() {
           category={state.category}
           platform={state.platform}
           period={state.period}
+          round={state.round}
+          rounds={rounds.data}
           search={searchText}
           onCategoryChange={(category) =>
             update({
@@ -174,7 +185,7 @@ export function LeaderboardView() {
             })
           }
           onPlatformChange={(platform) => update({ platform })}
-          onPeriodChange={(period) => update({ period })}
+          onPeriodChange={(period, round) => update({ period, round })}
           onSearchChange={setSearchText}
         />
       </div>
@@ -279,6 +290,8 @@ export function LeaderboardView() {
         category={shown.category}
         platform={shown.platform}
         period={shown.period}
+        round={shown.round}
+        periodLabel={periodLabel}
         isMe={selected?.employee.id === userId}
       />
 

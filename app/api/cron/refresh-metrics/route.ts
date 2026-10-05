@@ -1,6 +1,7 @@
 import { getServerConfig } from "@/lib/server/config";
 import { getDb } from "@/lib/server/db/client";
 import { handle, HttpError, json, safeEqual } from "@/lib/server/http";
+import { withCampaign } from "@/lib/server/services/rounds";
 import { runSync } from "@/lib/server/services/sync";
 
 /** Within Vercel's limit; the job stops starting new batches 30 seconds before it. */
@@ -18,7 +19,8 @@ export async function GET(request: Request) {
     const header = request.headers.get("authorization") ?? "";
     if (!config.cronSecret || !safeEqual(header, `Bearer ${config.cronSecret}`))
       throw new HttpError(401, "unauthorized", "Missing or wrong cron secret");
-    const result = await runSync(getDb(), config, {
+    const db = getDb();
+    const result = await runSync(db, await withCampaign(db, config), {
       trigger: "cron",
       deadline: Date.now() + (maxDuration - 30) * 1000,
     });

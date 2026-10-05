@@ -8,6 +8,10 @@ export const boardQuerySchema = z.object({
   category: z.enum(CONTENT_CATEGORIES).default("video"),
   platform: z.enum(["all", ...PLATFORM_IDS]).default("all"),
   period: z.enum(LEADERBOARD_PERIODS).default("month"),
+  round: z
+    .uuid()
+    .optional()
+    .transform((value) => value ?? null),
 });
 
 export const leaderboardQuerySchema = boardQuerySchema.extend({

@@ -59,7 +59,13 @@ const board = () =>
   getLeaderboard(
     db,
     testConfig,
-    { category: "video", platform: "all", period: "all", search: "" },
+    {
+      category: "video",
+      platform: "all",
+      period: "all",
+      round: null,
+      search: "",
+    },
     "nobody",
     later(60),
   );

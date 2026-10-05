@@ -84,6 +84,12 @@ const en = {
     month: "This month",
     all: "3-Month Challenge",
   },
+  rounds: {
+    week: "Week {number}",
+    weekly: "Weekly rounds",
+    monthly: "Monthly rounds",
+    now: "now",
+  },
   leaderboard: {
     title: "Leaderboard",
     subtitle:
@@ -275,6 +281,57 @@ const en = {
   admin: {
     title: "Admin",
     subtitle: "Review submissions, fix numbers and keep the boards fair.",
+    sections: {
+      label: "Admin sections",
+      queue: "Review queue",
+      leaderboards: "Leaderboards",
+    },
+    leaderboards: {
+      challenge: "3-Month Challenge",
+      challengeHint:
+        "Posts published outside these dates never count on any board.",
+      sourceAdmin: "Set here",
+      sourceDefault: "From the server settings",
+      editDates: "Edit dates",
+      firstDay: "First day",
+      lastDay: "Last day",
+      save: "Save",
+      weeklyTitle: "Weekly rounds",
+      monthlyTitle: "Monthly rounds",
+      weeklyEmpty:
+        'No weekly rounds yet. Until you add some, "This week" uses calendar weeks (Monday to Sunday).',
+      monthlyEmpty:
+        'No monthly rounds yet. Until you add some, "This month" uses calendar months.',
+      add: "Add round",
+      generateWeeks: "Create weekly rounds for the whole challenge",
+      generateMonths: "Create monthly rounds for the whole challenge",
+      addWeekTitle: "Add a weekly round",
+      addMonthTitle: "Add a monthly round",
+      editTitle: "Edit round",
+      name: "Name",
+      namePlaceholder: 'Optional. Shown instead of "{label}"',
+      status: {
+        current: "Current",
+        upcoming: "Upcoming",
+        finished: "Finished",
+      },
+      edit: "Edit",
+      delete: "Delete",
+      deleteTitle: "Delete this round?",
+      deleteDescription:
+        "It disappears from the period menu. Posts and their numbers aren't affected.",
+      deleteConfirm: "Delete round",
+      errors: {
+        round_overlap: "It overlaps another round of the same kind.",
+        outside_challenge: "The round must be inside the challenge dates.",
+        invalid_dates: "The last day must be on or after the first day.",
+        rounds_exist: "Rounds of this kind already exist.",
+        generic: "Couldn't save. Try again.",
+      },
+      saved: "Saved.",
+      deleted: "Round deleted.",
+      generated: "Rounds created.",
+    },
     forbidden: {
       title: "Admins only",
       description: "You don't have access to this page.",
@@ -500,6 +557,7 @@ const en = {
       month: "Month",
       all: "Whole challenge",
       periodDate: "Any day in that week or month",
+      round: "Round",
       asOf: "As of (your local time)",
       download: "Download CSV",
       error: "Couldn't create the file. Try again.",
@@ -612,6 +670,12 @@ const ka: Dictionary = {
     week: "ეს კვირა",
     month: "ეს თვე",
     all: "3-თვიანი გამოწვევა",
+  },
+  rounds: {
+    week: "კვირა {number}",
+    weekly: "კვირის რაუნდები",
+    monthly: "თვის რაუნდები",
+    now: "ახლა",
   },
   leaderboard: {
     title: "რეიტინგი",
@@ -806,6 +870,57 @@ const ka: Dictionary = {
     title: "ადმინი",
     subtitle:
       "განიხილეთ პოსტები, შეასწორეთ მონაცემები და დაიცავით რეიტინგის სამართლიანობა.",
+    sections: {
+      label: "ადმინის განყოფილებები",
+      queue: "განსახილველი რიგი",
+      leaderboards: "რეიტინგები",
+    },
+    leaderboards: {
+      challenge: "3-თვიანი გამოწვევა",
+      challengeHint:
+        "ამ თარიღების გარეთ გამოქვეყნებული პოსტები არცერთ რეიტინგში არ ითვლება.",
+      sourceAdmin: "მითითებულია აქ",
+      sourceDefault: "სერვერის პარამეტრებიდან",
+      editDates: "თარიღების შეცვლა",
+      firstDay: "პირველი დღე",
+      lastDay: "ბოლო დღე",
+      save: "შენახვა",
+      weeklyTitle: "კვირის რაუნდები",
+      monthlyTitle: "თვის რაუნდები",
+      weeklyEmpty:
+        "კვირის რაუნდები ჯერ არ არის. სანამ არ დაამატებთ, „ეს კვირა“ კალენდარულ კვირას იყენებს (ორშაბათიდან კვირამდე).",
+      monthlyEmpty:
+        "თვის რაუნდები ჯერ არ არის. სანამ არ დაამატებთ, „ეს თვე“ კალენდარულ თვეს იყენებს.",
+      add: "რაუნდის დამატება",
+      generateWeeks: "კვირის რაუნდების შექმნა მთელი გამოწვევისთვის",
+      generateMonths: "თვის რაუნდების შექმნა მთელი გამოწვევისთვის",
+      addWeekTitle: "კვირის რაუნდის დამატება",
+      addMonthTitle: "თვის რაუნდის დამატება",
+      editTitle: "რაუნდის რედაქტირება",
+      name: "სახელი",
+      namePlaceholder: "არასავალდებულო. გამოჩნდება „{label}“-ის ნაცვლად",
+      status: {
+        current: "მიმდინარე",
+        upcoming: "მომავალი",
+        finished: "დასრულებული",
+      },
+      edit: "რედაქტირება",
+      delete: "წაშლა",
+      deleteTitle: "წავშალოთ ეს რაუნდი?",
+      deleteDescription:
+        "რაუნდი გაქრება პერიოდის მენიუდან. პოსტებსა და მათ მონაცემებზე არ აისახება.",
+      deleteConfirm: "რაუნდის წაშლა",
+      errors: {
+        round_overlap: "ემთხვევა იმავე ტიპის სხვა რაუნდს.",
+        outside_challenge: "რაუნდი გამოწვევის თარიღებში უნდა იყოს.",
+        invalid_dates: "ბოლო დღე პირველ დღეზე ადრე ვერ იქნება.",
+        rounds_exist: "ამ ტიპის რაუნდები უკვე არსებობს.",
+        generic: "შენახვა ვერ მოხერხდა. სცადეთ თავიდან.",
+      },
+      saved: "შენახულია.",
+      deleted: "რაუნდი წაიშალა.",
+      generated: "რაუნდები შეიქმნა.",
+    },
     forbidden: {
       title: "მხოლოდ ადმინისტრატორებისთვის",
       description: "ამ გვერდზე წვდომა არ გაქვთ.",
@@ -1031,6 +1146,7 @@ const ka: Dictionary = {
       month: "თვე",
       all: "მთელი გამოწვევა",
       periodDate: "ამ კვირის ან თვის ნებისმიერი დღე",
+      round: "რაუნდი",
       asOf: "მდგომარეობა (თქვენი დროით)",
       download: "CSV-ის ჩამოტვირთვა",
       error: "ფაილის შექმნა ვერ მოხერხდა. სცადეთ თავიდან.",

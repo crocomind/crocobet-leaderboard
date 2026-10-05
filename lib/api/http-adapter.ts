@@ -4,10 +4,13 @@ import type {
   AdminPostsResponse,
   ApiAdapter,
   BulkModerationResult,
+  ChallengeWindow,
   LeaderboardResponse,
   Me,
   MyPostsResponse,
   Post,
+  Round,
+  RoundsResponse,
   SyncRun,
   SyncStatusResponse,
 } from "./types";
@@ -29,6 +32,7 @@ export const httpAdapter: ApiAdapter = {
         category: query.category,
         platform: query.platform,
         period: query.period,
+        round: query.round,
         search: query.search.trim(),
       },
       signal,
@@ -43,6 +47,7 @@ export const httpAdapter: ApiAdapter = {
         category: query.category,
         platform: query.platform,
         period: query.period,
+        round: query.round,
       },
       signal,
     }),
@@ -111,10 +116,44 @@ export const httpAdapter: ApiAdapter = {
       query: {
         category: query.category,
         period: query.period,
+        round: query.round,
         periodStart: query.periodStart,
         asOf: query.asOf,
       },
       responseType: "blob",
+      signal,
+    }),
+
+  getRounds: ({ signal } = {}) =>
+    request<RoundsResponse>("/rounds", { signal }),
+
+  createRound: (input, { signal } = {}) =>
+    request<Round>("/admin/rounds", { method: "POST", body: input, signal }),
+
+  updateRound: (roundId, patch, { signal } = {}) =>
+    request<Round>(`/admin/rounds/${encodeURIComponent(roundId)}`, {
+      method: "PATCH",
+      body: patch,
+      signal,
+    }),
+
+  deleteRound: (roundId, { signal } = {}) =>
+    request<void>(`/admin/rounds/${encodeURIComponent(roundId)}`, {
+      method: "DELETE",
+      signal,
+    }),
+
+  generateRounds: (kind, { signal } = {}) =>
+    request<RoundsResponse>("/admin/rounds/generate", {
+      method: "POST",
+      body: { kind },
+      signal,
+    }),
+
+  updateChallenge: (input, { signal } = {}) =>
+    request<ChallengeWindow>("/admin/challenge", {
+      method: "PUT",
+      body: input,
       signal,
     }),
 };

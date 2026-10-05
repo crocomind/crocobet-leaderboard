@@ -39,6 +39,9 @@ interface EmployeeSheetProps {
   category: ContentCategory;
   platform: PlatformFilter;
   period: LeaderboardPeriod;
+  round: string | null;
+  /** "This week", or the chosen round's name. */
+  periodLabel: string;
   isMe: boolean;
 }
 
@@ -50,6 +53,8 @@ export function EmployeeSheet({
   category,
   platform,
   period,
+  round,
+  periodLabel,
   isMe,
 }: EmployeeSheetProps) {
   const { t, format, formatNumber } = useI18n();
@@ -58,6 +63,7 @@ export function EmployeeSheet({
     category,
     platform,
     period,
+    round,
   });
 
   const platformLabel =
@@ -130,7 +136,7 @@ export function EmployeeSheet({
                 {format(t.employee.counting, {
                   category: t.categories[category],
                   platform: platformLabel,
-                  period: t.periods[period],
+                  period: periodLabel,
                 })}
               </p>
             </div>

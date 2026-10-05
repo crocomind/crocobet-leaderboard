@@ -38,6 +38,7 @@ const board = (
   category: "video",
   platform: "all",
   period: "all",
+  round: null,
   search: "",
   ...overrides,
 });
@@ -445,5 +446,77 @@ describe("admin", () => {
       start,
     );
     expect(earlier.trim().split("\r\n").length).toBeLessThanOrEqual(total + 1);
+  });
+});
+
+describe("rounds", () => {
+  it("seeds weekly and monthly rounds and shows the current one", () => {
+    const { rounds, challenge } = admin.getRounds();
+    expect(challenge.source).toBe("default");
+    expect(
+      rounds.filter((round) => round.kind === "week").length,
+    ).toBeGreaterThan(10);
+    expect(
+      rounds.filter((round) => round.kind === "month").length,
+    ).toBeGreaterThan(2);
+    const week = admin.getLeaderboard(board({ period: "week" }), start);
+    expect(week.period.round).toMatchObject({ kind: "week" });
+    expect(week.period.isCurrent).toBe(true);
+  });
+
+  it("opens a past round by id and refuses overlapping rounds", () => {
+    const first = admin
+      .getRounds()
+      .rounds.find((round) => round.kind === "week")!;
+    const past = admin.getLeaderboard(
+      board({ period: "week", round: first.id }),
+      start,
+    );
+    expect(past.period).toMatchObject({
+      isCurrent: false,
+      round: { id: first.id, number: 1 },
+    });
+    expect(past.query.round).toBe(first.id);
+    expect(
+      errorOf(() =>
+        admin.createRound({
+          kind: "week",
+          name: null,
+          startDate: first.startDate,
+          endDate: first.endDate,
+        }),
+      ),
+    ).toMatchObject({ status: 422, code: "round_overlap" });
+    expect(errorOf(() => admin.generateRounds("week"))).toMatchObject({
+      status: 409,
+      code: "rounds_exist",
+    });
+    expect(
+      errorOf(() =>
+        employee.createRound({
+          kind: "month",
+          name: null,
+          startDate: first.startDate,
+          endDate: first.endDate,
+        }),
+      ),
+    ).toMatchObject({ status: 403 });
+  });
+
+  it("lets admins rename, move and delete rounds and change the challenge", () => {
+    const month = admin
+      .getRounds()
+      .rounds.find((round) => round.kind === "month")!;
+    const renamed = admin.updateRound(month.id, { name: "Kickoff month" });
+    expect(renamed.name).toBe("Kickoff month");
+    admin.deleteRound(month.id);
+    expect(
+      admin.getRounds().rounds.some((round) => round.id === month.id),
+    ).toBe(false);
+    const challenge = admin.updateChallenge({
+      startDate: admin.getRounds().challenge.startDate,
+      endDate: "2027-02-28",
+    });
+    expect(challenge).toMatchObject({ source: "admin", endDate: "2027-02-28" });
   });
 });

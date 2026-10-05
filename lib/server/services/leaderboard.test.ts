@@ -28,6 +28,7 @@ const board = (overrides = {}) => ({
   category: "video" as const,
   platform: "all" as const,
   period: "all" as const,
+  round: null,
   search: "",
   ...overrides,
 });
@@ -143,6 +144,7 @@ describe("getLeaderboard", () => {
       end: "2026-12-31T20:00:00.000Z",
       isCurrent: true,
       timeZone: "Asia/Tbilisi",
+      round: null,
     });
   });
 

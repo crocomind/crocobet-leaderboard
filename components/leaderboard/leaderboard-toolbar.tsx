@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { PlatformBadge } from "@/components/common/platform-badge";
+import { useRoundLabel } from "@/components/leaderboard/use-round-label";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { type ChipOption, ChipGroup } from "@/components/ui/chip-group";
 import {
@@ -18,6 +19,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -31,7 +33,10 @@ import {
   LEADERBOARD_PERIODS,
   type LeaderboardPeriod,
   type PlatformFilter,
+  type RoundKind,
+  type RoundsResponse,
 } from "@/lib/api/types";
+import { useNow } from "@/lib/hooks/use-now";
 import { DURATION, exitTween, tween } from "@/lib/motion";
 import { CATEGORY_PLATFORMS, PLATFORMS } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
@@ -40,10 +45,12 @@ interface LeaderboardToolbarProps {
   category: ContentCategory;
   platform: PlatformFilter;
   period: LeaderboardPeriod;
+  round: string;
+  rounds: RoundsResponse | undefined;
   search: string;
   onCategoryChange: (category: ContentCategory) => void;
   onPlatformChange: (platform: PlatformFilter) => void;
-  onPeriodChange: (period: LeaderboardPeriod) => void;
+  onPeriodChange: (period: LeaderboardPeriod, round: string) => void;
   onSearchChange: (search: string) => void;
 }
 
@@ -51,6 +58,8 @@ export function LeaderboardToolbar({
   category,
   platform,
   period,
+  round,
+  rounds,
   search,
   onCategoryChange,
   onPlatformChange,
@@ -95,6 +104,8 @@ export function LeaderboardToolbar({
       <div className="order-1 flex gap-2 md:order-2 md:justify-self-end">
         <PeriodMenu
           period={period}
+          round={round}
+          rounds={rounds}
           onPeriodChange={onPeriodChange}
           className="hidden md:inline-flex"
         />
@@ -110,6 +121,8 @@ export function LeaderboardToolbar({
         <div className="flex w-max items-center gap-2">
           <PeriodMenu
             period={period}
+            round={round}
+            rounds={rounds}
             onPeriodChange={onPeriodChange}
             className="md:hidden"
           />
@@ -128,41 +141,91 @@ export function LeaderboardToolbar({
 
 function PeriodMenu({
   period,
+  round,
+  rounds,
   onPeriodChange,
   className,
 }: {
   period: LeaderboardPeriod;
-  onPeriodChange: (period: LeaderboardPeriod) => void;
+  round: string;
+  rounds: RoundsResponse | undefined;
+  onPeriodChange: (period: LeaderboardPeriod, round: string) => void;
   className?: string;
 }) {
-  const { t } = useI18n();
+  const { t, formatDateRange } = useI18n();
+  const roundLabel = useRoundLabel();
+  const now = useNow();
+  const timeZone = rounds?.challenge.timeZone ?? "Asia/Tbilisi";
+
+  // Rounds that have started, most recent first.
+  const started = (kind: RoundKind) =>
+    (rounds?.rounds ?? [])
+      .filter(
+        (item) =>
+          item.kind === kind && now > 0 && Date.parse(item.startsAt) <= now,
+      )
+      .reverse();
+  const chosen = round
+    ? rounds?.rounds.find((item) => item.id === round && item.kind === period)
+    : undefined;
+  const label = chosen
+    ? roundLabel(chosen, chosen.startsAt, timeZone)
+    : t.periods[period];
+
+  const group = (kind: RoundKind, title: string) => {
+    const items = started(kind);
+    if (items.length === 0) return null;
+    return (
+      <>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>{title}</DropdownMenuLabel>
+        {items.map((item) => (
+          <DropdownMenuRadioItem key={item.id} value={`${kind}:${item.id}`}>
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate">
+                {roundLabel(item, item.startsAt, timeZone)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {formatDateRange(item.startsAt, item.endsAt, timeZone)}
+                {now < Date.parse(item.endsAt) && <> · {t.rounds.now}</>}
+              </span>
+            </span>
+          </DropdownMenuRadioItem>
+        ))}
+      </>
+    );
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <MotionButton
           variant="secondary"
-          aria-label={`${t.leaderboard.periodLabel}: ${t.periods[period]}`}
+          aria-label={`${t.leaderboard.periodLabel}: ${label}`}
           className={cn(
             "group/period h-10 rounded-full px-4 font-medium data-[state=open]:border-brand/50",
             className,
           )}
         >
           <CalendarDays className="size-4 text-brand-text" aria-hidden="true" />
-          {t.periods[period]}
+          <span className="max-w-44 truncate">{label}</span>
           <ChevronDown
             className="size-4 opacity-60 transition-[rotate] duration-(--dur-base) ease-(--ease-in-out-soft) motion-safe:group-data-[state=open]/period:rotate-180"
             aria-hidden="true"
           />
         </MotionButton>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
+      <DropdownMenuContent
+        align="start"
+        className="max-h-[min(32rem,var(--radix-dropdown-menu-content-available-height))] overflow-y-auto"
+      >
         <DropdownMenuLabel>{t.leaderboard.periodLabel}</DropdownMenuLabel>
         <DropdownMenuRadioGroup
-          value={period}
+          value={chosen ? `${period}:${chosen.id}` : period}
           onValueChange={(value) => {
-            const next = LEADERBOARD_PERIODS.find((option) => option === value);
-            if (next) onPeriodChange(next);
+            const [kind, id = ""] = value.split(":");
+            const next = LEADERBOARD_PERIODS.find((option) => option === kind);
+            if (next) onPeriodChange(next, id);
           }}
         >
           {LEADERBOARD_PERIODS.map((option) => (
@@ -170,6 +233,8 @@ function PeriodMenu({
               {t.periods[option]}
             </DropdownMenuRadioItem>
           ))}
+          {group("week", t.rounds.weekly)}
+          {group("month", t.rounds.monthly)}
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>

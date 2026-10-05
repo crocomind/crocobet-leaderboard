@@ -13,12 +13,14 @@ import {
 export const VIEWS = ["leaderboard", "my-posts", "admin"] as const;
 export type AppView = (typeof VIEWS)[number];
 
-/** Everything shareable lives in the URL: ?view=&category=&platform=&period=&q= */
+/** Everything shareable lives in the URL: ?view=&category=&platform=&period=&round=&q= */
 export interface AppUrlState {
   view: AppView;
   category: ContentCategory;
   platform: PlatformFilter;
   period: LeaderboardPeriod;
+  /** A past weekly or monthly round; empty means the current one. */
+  round: string;
   q: string;
 }
 
@@ -27,8 +29,11 @@ export const DEFAULT_URL_STATE: AppUrlState = {
   category: "video",
   platform: "all",
   period: "month",
+  round: "",
   q: "",
 };
+
+const ROUND_ID = /^[\w-]{1,64}$/;
 
 function oneOf<T extends string>(
   options: readonly T[],
@@ -69,6 +74,11 @@ export function parseUrlState(params: ReadableParams): AppUrlState {
     params.get("category"),
     DEFAULT_URL_STATE.category,
   );
+  const period = oneOf(
+    LEADERBOARD_PERIODS,
+    params.get("period"),
+    DEFAULT_URL_STATE.period,
+  );
   return {
     view: oneOf(
       VIEWS,
@@ -80,11 +90,11 @@ export function parseUrlState(params: ReadableParams): AppUrlState {
       isPlatform(platform) ? platform : DEFAULT_URL_STATE.platform,
       category,
     ),
-    period: oneOf(
-      LEADERBOARD_PERIODS,
-      params.get("period"),
-      DEFAULT_URL_STATE.period,
-    ),
+    period,
+    round:
+      period !== "all" && ROUND_ID.test(params.get("round") ?? "")
+        ? params.get("round")!
+        : "",
     q: (params.get("q") ?? "").slice(0, 100),
   };
 }

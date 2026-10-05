@@ -160,4 +160,18 @@ export const mockAdapter: ApiAdapter = {
         }),
       options,
     ),
+
+  getRounds: (options) => respond((mock) => mock.getRounds(), options),
+  createRound: (input, options) =>
+    respond((mock) => mock.createRound(input), options, { mutates: true }),
+  updateRound: (roundId, patch, options) =>
+    respond((mock) => mock.updateRound(roundId, patch), options, {
+      mutates: true,
+    }),
+  deleteRound: (roundId, options) =>
+    respond((mock) => mock.deleteRound(roundId), options, { mutates: true }),
+  generateRounds: (kind, options) =>
+    respond((mock) => mock.generateRounds(kind), options, { mutates: true }),
+  updateChallenge: (input, options) =>
+    respond((mock) => mock.updateChallenge(input), options, { mutates: true }),
 };

@@ -21,7 +21,7 @@ export const testConfig: ServerConfig = parseServerConfig({
 
 export async function resetDb(db: Db) {
   await db.execute(
-    sql`truncate employees, employee_photos, social_accounts, posts, post_metric_snapshots, moderation_events, sync_runs cascade`,
+    sql`truncate employees, employee_photos, social_accounts, posts, post_metric_snapshots, moderation_events, sync_runs, leaderboard_rounds, challenge_settings cascade`,
   );
 }
 

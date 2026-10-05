@@ -23,6 +23,7 @@ describe("parseUrlState", () => {
       category: "static",
       platform: "linkedin",
       period: "all",
+      round: "",
       q: "nino",
     });
   });
@@ -40,6 +41,20 @@ describe("parseUrlState", () => {
     expect(parse("category=static&platform=facebook").platform).toBe(
       "facebook",
     );
+  });
+});
+
+describe("rounds in the URL", () => {
+  it("keeps a round for weekly and monthly boards only", () => {
+    expect(parse("period=week&round=round-week-3")).toMatchObject({
+      period: "week",
+      round: "round-week-3",
+    });
+    expect(parse("period=all&round=round-week-3").round).toBe("");
+    expect(parse("period=week&round=<script>").round).toBe("");
+    expect(
+      serializeUrlState({ ...DEFAULT_URL_STATE, period: "week", round: "r1" }),
+    ).toBe("?period=week&round=r1");
   });
 });
 
