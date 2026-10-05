@@ -9,6 +9,7 @@ import { useI18n } from "@/components/providers/i18n-provider";
 import { MotionButton } from "@/components/ui/motion-button";
 import { useCurrentUserQuery } from "@/lib/api/queries";
 import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
+import { useIsClient } from "@/lib/hooks/use-is-client";
 
 /**
  * Renders the admin panel only for admins, so other employees never download
@@ -19,15 +20,18 @@ export function AdminGate({ children }: { children: ReactNode }) {
   const currentUser = useCurrentUser();
   const me = useCurrentUserQuery(currentUser.status === "signed-in");
   const { setView } = useAppUrlState();
+  // This subtree can hydrate after /me has answered; render what the server
+  // did until then, so hydration matches.
+  const isClient = useIsClient();
 
-  if (me.isPending)
+  if (!isClient || me.isPending)
     return (
       <div role="status" aria-busy="true">
         <span className="sr-only">{t.leaderboard.updating}</span>
         <ListSkeleton />
       </div>
     );
-  if (currentUser.user?.role !== "admin")
+  if (me.data?.role !== "admin")
     return (
       <StatePanel
         icon={<ShieldX />}
