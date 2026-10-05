@@ -41,8 +41,10 @@ Non-2xx responses use this body. `message` is for logs; the UI shows its own tra
 | 404  | `not_found`                                                  | Unknown post or employee                               |
 | 409  | `duplicate_post`                                             | The post was already submitted, by anyone              |
 | 409  | `invalid_transition`                                         | That moderation action isn't allowed from this status  |
+| 409  | `rounds_exist`                                               | Generating rounds when rounds of that kind exist       |
 | 422  | `invalid_url`, `unsupported_platform`, `unsupported_content` | The link isn't a post we can count                     |
 | 422  | `validation_error`                                           | A rule wasn't met (for example, a missing reason)      |
+| 422  | `invalid_dates`, `outside_challenge`, `round_overlap`        | A round or challenge date range that can't be saved    |
 | 429  | `rate_limited`                                               | Too many submissions, re-checks or syncs               |
 | 5xx  | `service_unavailable`                                        | Anything else                                          |
 
@@ -66,19 +68,26 @@ There are two independent leaderboards:
 
 ### Periods
 
-| `period` | Window                                                            |
-| -------- | ----------------------------------------------------------------- |
-| `week`   | ISO week, Monday 00:00 to the next Monday 00:00                   |
-| `month`  | The 1st 00:00 to the next 1st 00:00                               |
-| `all`    | The 3-month challenge: `[CHALLENGE_STARTS_AT, CHALLENGE_ENDS_AT)` |
+| `period` | Window                                                                                           |
+| -------- | ------------------------------------------------------------------------------------------------ |
+| `week`   | The weekly round (admin-set dates); without weekly rounds, the ISO week, Monday to Monday        |
+| `month`  | The monthly round (admin-set dates); without monthly rounds, the 1st to the next 1st             |
+| `all`    | The challenge: the dates set in the admin panel, else `[CHALLENGE_STARTS_AT, CHALLENGE_ENDS_AT)` |
 
-- Weeks and months are intersected with the challenge window. Posts published outside it never
-  count anywhere.
+- **Rounds** are whole days in the campaign time zone: from 00:00 on `startDate` to 00:00 after
+  `endDate`. Rounds of a kind never overlap and lie inside the challenge.
+- Without `round`, `week`/`month` show the current round: the one covering now; before the first
+  one, the first; between or after rounds, the last one that started. With `round=<id>`, that
+  round (an unknown id falls back to the current one, and `query.round` is then `null`).
+- Rounds, weeks and months are intersected with the challenge window. Posts published outside it
+  never count anywhere.
 - **A post belongs to the period containing its `publishedAt`** (when it was published on the
   platform), not when it was submitted or approved. It counts with its lifetime metrics as of the
   latest refresh.
-- Before the challenge starts, `week`/`month` show its first period; after it ends, its last.
-  Every response says which dates it covers (`period.start`, `period.end`, `period.isCurrent`).
+- Without rounds, before the challenge starts `week`/`month` show its first period; after it ends,
+  its last. Every response says which dates it covers (`period.start`, `period.end`,
+  `period.isCurrent`) and which round it is (`period.round`, `null` for calendar periods and
+  `all`).
 - `publishedAt` comes from, in order: the data provider; the post ID (TikTok and LinkedIn encode
   the time); the submitter's optional `postedAt` (read as 12:00 in the campaign time zone, flag
   `published_date_uncertain`); an admin edit. The source is stored.
@@ -187,6 +196,7 @@ interface LeaderboardQuery {
   category: ContentCategory;
   platform: PlatformFilter; // only platforms on that board
   period: LeaderboardPeriod;
+  round: string | null; // a round of that period's kind; null = the current one
   search: string;
 }
 interface LeaderboardEntry {
@@ -210,6 +220,7 @@ interface LeaderboardResponse {
     start: IsoDateTime;
     end: IsoDateTime;
     isCurrent: boolean;
+    round: RoundRef | null;
     timeZone: string;
   };
   entries: LeaderboardEntry[];
@@ -284,6 +295,41 @@ interface SyncRun {
 }
 ```
 
+### Rounds and the challenge
+
+```ts
+type RoundKind = "week" | "month";
+interface Round {
+  id: string;
+  kind: RoundKind;
+  name: string | null; // null: the UI labels it "Week 3" or by month
+  number: number; // 1-based among the rounds of its kind
+  startsAt: IsoDateTime;
+  endsAt: IsoDateTime; // exclusive
+  startDate: IsoDate; // inclusive, in the campaign time zone
+  endDate: IsoDate; // inclusive
+}
+type RoundRef = Pick<Round, "id" | "kind" | "name" | "number">;
+interface ChallengeWindow {
+  startsAt: IsoDateTime;
+  endsAt: IsoDateTime; // exclusive
+  startDate: IsoDate;
+  endDate: IsoDate; // inclusive
+  timeZone: string;
+  source: "admin" | "default"; // set in the admin panel, or the server settings
+}
+interface RoundsResponse {
+  challenge: ChallengeWindow;
+  rounds: Round[]; // weekly, then monthly, each by start date
+}
+interface RoundInput {
+  kind: RoundKind;
+  name: string | null;
+  startDate: IsoDate;
+  endDate: IsoDate;
+}
+```
+
 ### Admin queue
 
 - `status` is one of the tabs: `pending`, `approved`, `rejected`, `disqualified`, or `flagged`
@@ -311,9 +357,10 @@ All paths are under `/api/v1` unless noted.
 | Endpoint                                                                                                | Who             | Result                                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GET /me`                                                                                               | employee        | `Me` (creates or updates the employee row)                                                                                                                                         |
-| `GET /leaderboard?category=&platform=&period=&search=`                                                  | employee        | `LeaderboardResponse`. Defaults: `video`, `all`, `month`, `""`                                                                                                                     |
+| `GET /leaderboard?category=&platform=&period=&round=&search=`                                           | employee        | `LeaderboardResponse`. Defaults: `video`, `all`, `month`, current round, `""`                                                                                                      |
+| `GET /rounds`                                                                                           | employee        | `RoundsResponse`                                                                                                                                                                   |
 | `GET /me/posts`                                                                                         | employee        | `MyPostsResponse`                                                                                                                                                                  |
-| `GET /employees/{id}/posts?category=&platform=&period=`                                                 | employee        | `Post[]`: the posts counted in that entry, highest score first                                                                                                                     |
+| `GET /employees/{id}/posts?category=&platform=&period=&round=`                                          | employee        | `Post[]`: the posts counted in that entry, highest score first                                                                                                                     |
 | `GET /employees/{id}/photo`                                                                             | employee        | Image bytes, `Cache-Control: private, max-age=86400`, with an ETag                                                                                                                 |
 | `POST /posts` `{url, title?, postedAt?}`                                                                | employee        | `201 Post` (`pending`, check `queued`). Errors: `409 duplicate_post`; `422 invalid_url \| unsupported_platform \| unsupported_content`; `403 challenge_closed`; `429 rate_limited` |
 | `POST /posts/{id}/recheck`                                                                              | owner (pending) | `202`, or `429` within 10 minutes                                                                                                                                                  |
@@ -324,7 +371,12 @@ All paths are under `/api/v1` unless noted.
 | `POST /admin/posts/{id}/{approve\|reject\|disqualify\|reinstate\|reopen}` `{reason?, note?, override?}` | admin           | `AdminPostDetail`, or `409 invalid_transition`                                                                                                                                     |
 | `POST /admin/posts/{id}/refresh`                                                                        | admin           | `202`                                                                                                                                                                              |
 | `POST /admin/posts/bulk` `{ids, action, reason?, note?}`                                                | admin           | `BulkModerationResult`, one result per ID (each runs the same rules as the single action)                                                                                          |
-| `GET /admin/export?category=&period=&periodStart=&asOf=`                                                | admin           | `text/csv` standings (rank, name, email, department, posts, views, reactions, score, post URLs) for any week or month, computed from snapshots as of `asOf`                        |
+| `GET /admin/export?category=&period=&round=&periodStart=&asOf=`                                         | admin           | `text/csv` standings (rank, name, email, department, posts, views, reactions, score, post URLs) for a round, or the week or month containing `periodStart`, as of `asOf`           |
+| `POST /admin/rounds` `RoundInput`                                                                       | admin           | `201 Round`. Errors: `422 invalid_dates \| outside_challenge \| round_overlap`                                                                                                     |
+| `PATCH /admin/rounds/{id}` `{name?, startDate?, endDate?}`                                              | admin           | `Round`, with the same errors                                                                                                                                                      |
+| `DELETE /admin/rounds/{id}`                                                                             | admin           | `204`                                                                                                                                                                              |
+| `POST /admin/rounds/generate` `{kind}`                                                                  | admin           | `201 RoundsResponse`: 7-day weeks from the challenge start, or calendar months. `409 rounds_exist` if that kind has rounds                                                         |
+| `PUT /admin/challenge` `{startDate, endDate}`                                                           | admin           | `ChallengeWindow` (inclusive dates; overrides `CHALLENGE_STARTS_AT`/`CHALLENGE_ENDS_AT`). `422 invalid_dates`                                                                      |
 | `GET /admin/sync`, `POST /admin/sync`                                                                   | admin           | `{runs: SyncRun[]}` (newest first), or start a run now: `202 SyncRun`, `429` within 15 minutes of the last manual run                                                              |
 | `GET /api/cron/refresh-metrics` (not under v1)                                                          | Vercel Cron     | Requires `Authorization: Bearer $CRON_SECRET`, otherwise `401`                                                                                                                     |
 
