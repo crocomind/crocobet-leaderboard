@@ -40,6 +40,8 @@ export const motionButtonVariants = cva(
         secondary:
           "border border-border bg-surface text-foreground shadow-soft hover:border-border-strong hover:bg-elevated",
         ghost: "text-foreground hover:bg-hover",
+        danger:
+          "border border-danger/40 bg-danger/12 text-danger-text shadow-soft hover:border-danger/70 hover:bg-danger/20",
         icon: "rounded-full text-foreground hover:bg-hover",
       },
       size: {
@@ -138,7 +140,7 @@ export interface MotionButtonProps
   loadingLabel?: ReactNode;
 }
 
-/** The app's button: primary, secondary, ghost or icon. */
+/** The app's button: primary, secondary, ghost, danger or icon. */
 export function MotionButton({
   className,
   variant,

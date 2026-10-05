@@ -1,18 +1,9 @@
-import type { LeaderboardEntry, LeaderboardMetric } from "@/lib/api/types";
-
-export function metricValue(
-  entry: Pick<LeaderboardEntry, "totalViews" | "totalReactions" | "score">,
-  metric: LeaderboardMetric,
-): number {
-  if (metric === "views") return entry.totalViews;
-  if (metric === "reactions") return entry.totalReactions;
-  return entry.score;
-}
+import type { LeaderboardEntry } from "@/lib/api/types";
 
 export type RankChange =
   { kind: "up" | "down"; places: number } | { kind: "same" } | { kind: "new" };
 
-/** Movement since the previous period. Positive "up" means the employee climbed. */
+/** Movement since yesterday. Positive "up" means the employee climbed. */
 export function rankChange(
   entry: Pick<LeaderboardEntry, "rank" | "previousRank">,
 ): RankChange {

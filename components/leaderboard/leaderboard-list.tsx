@@ -4,30 +4,35 @@ import { AnimatePresence, motion } from "motion/react";
 import { memo, type RefCallback } from "react";
 import { AnimatedNumber } from "@/components/common/animated-number";
 import { EmployeeAvatar } from "@/components/common/employee-avatar";
+import { PlatformLogos } from "@/components/common/platform-logos";
 import { RankChange } from "@/components/leaderboard/rank-change";
+import { TopPostLink } from "@/components/leaderboard/top-post-link";
 import { useEntryLabel } from "@/components/leaderboard/use-entry-label";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { Badge } from "@/components/ui/badge";
-import type { LeaderboardEntry, LeaderboardMetric } from "@/lib/api/types";
-import { metricValue } from "@/lib/leaderboard";
+import type { ContentCategory, LeaderboardEntry } from "@/lib/api/types";
 import { enterUp, springLayout, STAGGER } from "@/lib/motion";
 import { trackSpotlight } from "@/lib/spotlight";
 import { cn } from "@/lib/utils";
 
-// rank | employee | posts | views | reactions | score | change
-const DESKTOP_COLUMNS =
-  "md:grid-cols-[3rem_minmax(0,1fr)_4.5rem_6.5rem_6.5rem_6.5rem_4.5rem] md:gap-4";
-const MOBILE_COLUMNS = "grid-cols-[2.25rem_minmax(0,1fr)_auto] gap-3";
+// rank | employee | posts | [views] | reactions | score | change | top post
+const DESKTOP_COLUMNS: Record<ContentCategory, string> = {
+  video:
+    "md:grid-cols-[3rem_minmax(0,1fr)_4rem_6rem_6rem_6.5rem_4.5rem_2.25rem] md:gap-4",
+  static:
+    "md:grid-cols-[3rem_minmax(0,1fr)_4rem_6rem_6.5rem_4.5rem_2.25rem] md:gap-4",
+};
+const MOBILE_COLUMNS = "grid-cols-[2.25rem_minmax(0,1fr)_auto_2.25rem] gap-3";
 
-const MEDAL_TEXT: Record<number, string> = {
-  1: "text-gold",
-  2: "text-silver",
-  3: "text-bronze",
+export const MEDAL_CHIP: Record<number, string> = {
+  1: "bg-gold",
+  2: "bg-silver",
+  3: "bg-bronze",
 };
 
 interface LeaderboardListProps {
   entries: LeaderboardEntry[];
-  metric: LeaderboardMetric;
+  category: ContentCategory;
   currentUserId: string | undefined;
   onSelect: (entry: LeaderboardEntry) => void;
   myEntryRef: RefCallback<HTMLElement>;
@@ -37,28 +42,14 @@ interface LeaderboardListProps {
 // Memoized so typing in the search box doesn't re-measure every row's layout.
 export const LeaderboardList = memo(function LeaderboardList({
   entries,
-  metric,
+  category,
   currentUserId,
   onSelect,
   myEntryRef,
   dimmed,
 }: LeaderboardListProps) {
   const { t } = useI18n();
-
-  const columns: Array<{
-    key: string;
-    label: string;
-    metric?: LeaderboardMetric;
-  }> = [
-    { key: "posts", label: t.leaderboard.columns.posts },
-    { key: "views", label: t.leaderboard.columns.views, metric: "views" },
-    {
-      key: "reactions",
-      label: t.leaderboard.columns.reactions,
-      metric: "reactions",
-    },
-    { key: "score", label: t.leaderboard.columns.score, metric: "score" },
-  ];
+  const video = category === "video";
 
   return (
     <section
@@ -77,23 +68,21 @@ export const LeaderboardList = memo(function LeaderboardList({
         aria-hidden="true"
         className={cn(
           "mb-2 hidden px-5 text-xs font-semibold tracking-wide text-muted-foreground uppercase md:grid",
-          DESKTOP_COLUMNS,
+          DESKTOP_COLUMNS[category],
         )}
       >
         <span>{t.leaderboard.columns.rank}</span>
         <span>{t.leaderboard.columns.employee}</span>
-        {columns.map((column) => (
-          <span
-            key={column.key}
-            className={cn(
-              "text-right motion-colors [transition-duration:var(--dur-base)]",
-              column.metric === metric && "text-brand-text",
-            )}
-          >
-            {column.label}
-          </span>
-        ))}
+        <span className="text-right">{t.leaderboard.columns.posts}</span>
+        {video && (
+          <span className="text-right">{t.leaderboard.columns.views}</span>
+        )}
+        <span className="text-right">{t.leaderboard.columns.reactions}</span>
+        <span className="text-right text-brand-text">
+          {t.leaderboard.columns.score}
+        </span>
         <span className="text-right">{t.leaderboard.columns.change}</span>
+        <span />
       </div>
 
       <ol className="relative flex flex-col gap-2">
@@ -103,7 +92,7 @@ export const LeaderboardList = memo(function LeaderboardList({
               key={entry.employee.id}
               entry={entry}
               index={index}
-              metric={metric}
+              category={category}
               isMe={entry.employee.id === currentUserId}
               onSelect={onSelect}
               myEntryRef={myEntryRef}
@@ -118,7 +107,7 @@ export const LeaderboardList = memo(function LeaderboardList({
 interface LeaderboardRowProps {
   entry: LeaderboardEntry;
   index: number;
-  metric: LeaderboardMetric;
+  category: ContentCategory;
   isMe: boolean;
   onSelect: (entry: LeaderboardEntry) => void;
   myEntryRef: RefCallback<HTMLElement>;
@@ -127,27 +116,33 @@ interface LeaderboardRowProps {
 function LeaderboardRow({
   entry,
   index,
-  metric,
+  category,
   isMe,
   onSelect,
   myEntryRef,
 }: LeaderboardRowProps) {
   const { t, formatCompact, plural } = useI18n();
   const entryLabel = useEntryLabel();
+  const medal = MEDAL_CHIP[entry.rank];
 
-  // Numbers count to their new value when filters change.
-  const stat = (value: number, highlighted: boolean) => (
-    <AnimatedNumber
-      value={value}
-      format={formatCompact}
-      animateOnMount={false}
-      className={cn(
-        "hidden text-right motion-colors md:block",
-        highlighted
-          ? "text-base font-bold text-foreground"
-          : "text-sm text-muted-foreground",
-      )}
-    />
+  // Numbers count to their new value when filters change. The cells are
+  // hidden from screen readers: the row's button label says it all.
+  const stat = (value: number, highlighted = false) => (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none hidden text-right md:block"
+    >
+      <AnimatedNumber
+        value={value}
+        format={formatCompact}
+        animateOnMount={false}
+        className={
+          highlighted
+            ? "text-base font-bold text-foreground"
+            : "text-sm text-muted-foreground"
+        }
+      />
+    </span>
   );
 
   return (
@@ -157,34 +152,53 @@ function LeaderboardRow({
       {...enterUp(index, STAGGER.rows)}
       transition={{ layout: springLayout }}
     >
-      <button
-        type="button"
-        ref={isMe ? myEntryRef : undefined}
-        aria-label={entryLabel(entry, isMe)}
-        aria-haspopup="dialog"
-        onClick={() => onSelect(entry)}
+      {/* The card holds the row's button and, beside it, the top-post link. */}
+      <div
         onPointerMove={trackSpotlight}
         className={cn(
-          "relative grid w-full scroll-mt-24 scroll-mb-32 items-center rounded-control border px-3 py-3 text-left md:rounded-card md:px-5",
+          "relative grid w-full items-center rounded-control border px-3 py-3 md:rounded-card md:px-5",
           // Hover: lift 2px, faint green border, deeper shadow, cursor spotlight.
-          "card-depth card-spotlight hover-lift press motion-lift [--press-scale:0.99]",
+          "card-depth card-spotlight hover-lift motion-lift motion-safe:has-[>button:active]:scale-[0.99]",
           MOBILE_COLUMNS,
-          DESKTOP_COLUMNS,
+          DESKTOP_COLUMNS[category],
           isMe
             ? "border-brand/45 bg-brand/10 shadow-glow hover:border-brand/60 hover:bg-brand/15"
             : "border-border bg-surface/80 shadow-soft hover:border-brand/30 hover:bg-surface",
         )}
       >
+        <button
+          type="button"
+          ref={isMe ? myEntryRef : undefined}
+          aria-label={entryLabel(entry, isMe)}
+          aria-haspopup="dialog"
+          onClick={() => onSelect(entry)}
+          className="absolute inset-0 scroll-mt-24 scroll-mb-32 rounded-[inherit]"
+        />
+
         <span
-          className={cn(
-            "text-center text-sm font-bold tabular-nums md:text-left md:text-base",
-            MEDAL_TEXT[entry.rank] ?? "text-muted-foreground",
-          )}
+          aria-hidden="true"
+          className="pointer-events-none flex justify-center md:justify-start"
         >
-          {entry.rank}
+          {medal ? (
+            <span
+              className={cn(
+                "inline-flex size-7 items-center justify-center rounded-full text-sm font-extrabold text-on-medal shadow-sm",
+                medal,
+              )}
+            >
+              {entry.rank}
+            </span>
+          ) : (
+            <span className="text-sm font-bold text-muted-foreground tabular-nums md:text-base">
+              {entry.rank}
+            </span>
+          )}
         </span>
 
-        <span className="flex min-w-0 items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none flex min-w-0 items-center gap-3"
+        >
           <EmployeeAvatar
             employee={entry.employee}
             size="sm"
@@ -200,6 +214,7 @@ function LeaderboardRow({
                   {t.common.you}
                 </Badge>
               )}
+              <PlatformLogos platforms={entry.platforms} className="ml-0.5" />
             </span>
             <span className="block truncate text-xs text-muted-foreground">
               {entry.employee.department}
@@ -211,25 +226,40 @@ function LeaderboardRow({
           </span>
         </span>
 
-        <span className="hidden text-right text-sm text-muted-foreground tabular-nums md:block">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none hidden text-right text-sm text-muted-foreground tabular-nums md:block"
+        >
           {entry.postCount}
         </span>
-        {stat(entry.totalViews, metric === "views")}
-        {stat(entry.totalReactions, metric === "reactions")}
-        {stat(entry.score, metric === "score")}
+        {category === "video" && stat(entry.totalViews ?? 0)}
+        {stat(entry.totalReactions)}
+        {stat(entry.score, true)}
 
-        {/* Mobile: the selected metric and the change, stacked on the right. */}
-        <span className="flex flex-col items-end gap-0.5 md:hidden">
+        {/* Mobile: the score and the change, stacked. */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none flex flex-col items-end gap-0.5 md:hidden"
+        >
           <AnimatedNumber
-            value={metricValue(entry, metric)}
+            value={entry.score}
             format={formatCompact}
             animateOnMount={false}
             className="font-bold"
           />
           <RankChange entry={entry} />
         </span>
-        <RankChange entry={entry} className="hidden justify-end md:flex" />
-      </button>
+        <span
+          aria-hidden="true"
+          className="pointer-events-none hidden justify-end md:flex"
+        >
+          <RankChange entry={entry} />
+        </span>
+
+        <span className="flex justify-end">
+          <TopPostLink entry={entry} className="-mr-1.5" />
+        </span>
+      </div>
     </motion.li>
   );
 }

@@ -205,7 +205,13 @@ interface LeaderboardEntry {
 }
 interface LeaderboardResponse {
   query: LeaderboardQuery;
-  period: { start: IsoDateTime; end: IsoDateTime; isCurrent: boolean };
+  // The dates are computed in timeZone (CAMPAIGN_TIMEZONE); end is exclusive.
+  period: {
+    start: IsoDateTime;
+    end: IsoDateTime;
+    isCurrent: boolean;
+    timeZone: string;
+  };
   entries: LeaderboardEntry[];
   totalParticipants: number;
   myStanding: { entry: LeaderboardEntry; gapToNext: number | null } | null;
@@ -262,7 +268,41 @@ interface AdminPostsResponse {
   nextCursor: string | null;
   counts: Record<PostStatus | "flagged", number>;
 }
+
+interface BulkModerationResult {
+  results: { id: string; ok: boolean; error: string | null }[]; // error = an error code
+}
+interface SyncRun {
+  id: string;
+  trigger: "cron" | "manual" | "submit";
+  startedAt: IsoDateTime;
+  finishedAt: IsoDateTime | null; // null while running
+  postsTotal: number;
+  postsOk: number;
+  postsFailed: number;
+  error: string | null;
+}
 ```
+
+### Admin queue
+
+- `status` is one of the tabs: `pending`, `approved`, `rejected`, `disqualified`, or `flagged`
+  (pending or approved posts with at least one flag). Each filter's `all` value is left out of the
+  query string.
+- Pending is oldest submission first; approved, rejected and disqualified show the latest
+  decisions first; flagged is newest submission first. Pages hold 20 posts; pass `nextCursor` back
+  as `cursor`.
+- `counts` has every tab, with the other filters (check, flag, category, platform, `q`) applied.
+- `q` matches the employee's name or email, the post's author handle, or any handle linked to the
+  employee.
+
+### Audit events
+
+`ModerationEvent.action` is one of: `submitted`, `check_passed`, `check_failed`, `check_error`,
+`approve`, `approve_override` (approved although the check didn't pass), `reject`, `disqualify`,
+`reinstate`, `reopen`, `recheck`, `refresh`, `edit_metrics`, `edit_published_at`,
+`edit_content_type`, `lock_metrics`, `unlock_metrics`, `reclassified`, and `flag:<PostFlag>` when the
+system raises a flag. `actor` is `null` for the system.
 
 ## Endpoints
 
@@ -283,9 +323,9 @@ All paths are under `/api/v1` unless noted.
 | `PATCH /admin/posts/{id}` `{views?, reactions?, metricsLocked?, publishedAt?, contentType?, note?}`     | admin           | `AdminPostDetail` (audited)                                                                                                                                                        |
 | `POST /admin/posts/{id}/{approve\|reject\|disqualify\|reinstate\|reopen}` `{reason?, note?, override?}` | admin           | `AdminPostDetail`, or `409 invalid_transition`                                                                                                                                     |
 | `POST /admin/posts/{id}/refresh`                                                                        | admin           | `202`                                                                                                                                                                              |
-| `POST /admin/posts/bulk` `{ids, action, reason?, note?}`                                                | admin           | A result per ID                                                                                                                                                                    |
+| `POST /admin/posts/bulk` `{ids, action, reason?, note?}`                                                | admin           | `BulkModerationResult`, one result per ID (each runs the same rules as the single action)                                                                                          |
 | `GET /admin/export?category=&period=&periodStart=&asOf=`                                                | admin           | `text/csv` standings (rank, name, email, department, posts, views, reactions, score, post URLs) for any week or month, computed from snapshots as of `asOf`                        |
-| `GET /admin/sync`, `POST /admin/sync`                                                                   | admin           | The last sync runs, or start one now                                                                                                                                               |
+| `GET /admin/sync`, `POST /admin/sync`                                                                   | admin           | `{runs: SyncRun[]}` (newest first), or start a run now: `202 SyncRun`, `429` within 15 minutes of the last manual run                                                              |
 | `GET /api/cron/refresh-metrics` (not under v1)                                                          | Vercel Cron     | Requires `Authorization: Bearer $CRON_SECRET`, otherwise `401`                                                                                                                     |
 
 ## Submissions and links

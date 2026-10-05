@@ -26,6 +26,24 @@ describe("Georgian formatting", () => {
       "Instagram, TikTok ან LinkedIn",
     );
   });
+
+  it("formats a board's date range in the campaign time zone", () => {
+    // Monday 28 Sept 00:00 to Monday 5 Oct 00:00 in Tbilisi (exclusive end).
+    expect(
+      ka.formatDateRange(
+        "2026-09-27T20:00:00Z",
+        "2026-10-04T20:00:00Z",
+        "Asia/Tbilisi",
+      ),
+    ).toBe("28 სექ. – 4 ოქტ.");
+    expect(
+      ka.formatDateRange(
+        "2026-12-27T20:00:00Z",
+        "2027-01-03T20:00:00Z",
+        "Asia/Tbilisi",
+      ),
+    ).toBe("28 დეკ. 2026 – 3 იან. 2027");
+  });
 });
 
 describe("English formatting", () => {
@@ -41,5 +59,12 @@ describe("English formatting", () => {
     expect(
       en.plural({ one: "{count} view", other: "{count} views" }, 2300),
     ).toBe("2,300 views");
+    expect(
+      en.formatDateRange(
+        "2026-09-27T20:00:00Z",
+        "2026-10-04T20:00:00Z",
+        "Asia/Tbilisi",
+      ),
+    ).toMatch(/^28 Sept? – 4 Oct$/);
   });
 });

@@ -1,62 +1,84 @@
 "use client";
 
-import { Eye, Film, Heart, Trophy } from "lucide-react";
+import { CircleCheck, Clapperboard, Hourglass, ImageIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { AnimatedNumber } from "@/components/common/animated-number";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { MyPostsSummary } from "@/lib/api/types";
+import type { BoardSummary, MyPostsResponse } from "@/lib/api/types";
 
 export function SummaryCards({
   summary,
-  verifiedCount,
 }: {
-  summary: MyPostsSummary;
-  verifiedCount: number;
+  summary: MyPostsResponse["summary"];
 }) {
-  const { t, format, formatNumber } = useI18n();
+  const { t, formatNumber } = useI18n();
 
   return (
     <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-      <SummaryCard icon={<Eye />} label={t.myPosts.summary.views}>
-        <AnimatedNumber value={summary.totalViews} format={formatNumber} />
-      </SummaryCard>
-      <SummaryCard icon={<Heart />} label={t.myPosts.summary.reactions}>
-        <AnimatedNumber value={summary.totalReactions} format={formatNumber} />
+      <BoardCard
+        icon={<Clapperboard />}
+        label={t.categories.videoBoard}
+        board={summary.boards.video}
+      />
+      <BoardCard
+        icon={<ImageIcon />}
+        label={t.categories.staticBoard}
+        board={summary.boards.static}
+      />
+      <SummaryCard
+        icon={<CircleCheck />}
+        label={t.myPosts.summary.approved}
+        hint={t.myPosts.summary.approvedHint}
+      >
+        <AnimatedNumber value={summary.approvedCount} format={formatNumber} />
       </SummaryCard>
       <SummaryCard
-        icon={<Trophy />}
-        label={t.myPosts.summary.rank}
-        hint={t.myPosts.summary.rankHint}
-        highlight
+        icon={<Hourglass />}
+        label={t.myPosts.summary.pending}
+        hint={t.myPosts.summary.pendingHint}
       >
-        {summary.rank === null ? (
-          <span className="text-lg font-semibold text-muted-foreground">
-            {t.myPosts.summary.notRanked}
-          </span>
-        ) : (
-          <span className="flex items-baseline gap-1.5">
-            <span>
-              #<AnimatedNumber value={summary.rank} format={formatNumber} />
-            </span>
-            <span className="text-sm font-medium text-muted-foreground">
-              {format(t.myPosts.summary.rankOf, {
-                total: formatNumber(summary.totalParticipants),
-              })}
-            </span>
-          </span>
-        )}
-      </SummaryCard>
-      <SummaryCard
-        icon={<Film />}
-        label={t.myPosts.summary.posts}
-        hint={format(t.myPosts.summary.postsHint, {
-          count: formatNumber(verifiedCount),
-        })}
-      >
-        <AnimatedNumber value={summary.postCount} format={formatNumber} />
+        <AnimatedNumber value={summary.pendingCount} format={formatNumber} />
       </SummaryCard>
     </dl>
+  );
+}
+
+/** Rank and score on one board, for the whole challenge. */
+function BoardCard({
+  icon,
+  label,
+  board,
+}: {
+  icon: ReactNode;
+  label: string;
+  board: BoardSummary;
+}) {
+  const { t, format, formatNumber, plural } = useI18n();
+  return (
+    <SummaryCard
+      icon={icon}
+      label={label}
+      hint={`${plural(t.metrics.units.score, board.score)} · ${t.myPosts.summary.period}`}
+      highlight
+    >
+      {board.rank === null ? (
+        <span className="text-lg font-semibold text-muted-foreground">
+          {t.myPosts.summary.notRanked}
+        </span>
+      ) : (
+        <span className="flex items-baseline gap-1.5">
+          <span>
+            #<AnimatedNumber value={board.rank} format={formatNumber} />
+          </span>
+          <span className="text-sm font-medium text-muted-foreground">
+            {format(t.myPosts.summary.rankOf, {
+              total: formatNumber(board.totalParticipants),
+            })}
+          </span>
+        </span>
+      )}
+    </SummaryCard>
   );
 }
 
@@ -84,11 +106,11 @@ function SummaryCard({
       <dt className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <span
           aria-hidden="true"
-          className="inline-flex size-8 items-center justify-center rounded-full bg-brand/12 text-brand-text [&_svg]:size-4"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-brand/12 text-brand-text [&_svg]:size-4"
         >
           {icon}
         </span>
-        {label}
+        <span className="min-w-0 truncate">{label}</span>
       </dt>
       <dd className="mt-3 text-2xl font-extrabold tracking-tight tabular-nums sm:text-3xl">
         {children}

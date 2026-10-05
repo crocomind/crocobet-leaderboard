@@ -190,6 +190,51 @@ export function rankBoard<E extends RankableEmployee>(
   };
 }
 
+export interface PostHistory {
+  /** When the post was (last) approved. */
+  approvedAt: Date | null;
+  snapshots: readonly {
+    fetchedAt: Date;
+    views: number | null;
+    reactions: number | null;
+  }[];
+}
+
+/**
+ * The posts as they stood at `asOf` (24 hours ago, for previousRank): posts
+ * approved by then, each with its latest snapshot taken at or before then.
+ * A post disqualified since then no longer counts; the history of earlier
+ * statuses isn't replayed.
+ */
+export function postsAsOf<P extends RankablePost & PostHistory>(
+  posts: readonly P[],
+  asOf: Date,
+): P[] {
+  return posts.flatMap((post) => {
+    if (
+      post.status !== "approved" ||
+      !post.approvedAt ||
+      post.approvedAt > asOf
+    )
+      return [];
+    let latest: PostHistory["snapshots"][number] | undefined;
+    for (const snapshot of post.snapshots) {
+      if (
+        snapshot.fetchedAt <= asOf &&
+        (!latest || snapshot.fetchedAt > latest.fetchedAt)
+      )
+        latest = snapshot;
+    }
+    return [
+      {
+        ...post,
+        views: latest?.views ?? null,
+        reactions: latest?.reactions ?? 0,
+      },
+    ];
+  });
+}
+
 /** employeeId → rank, for previousRank. */
 export function rankMap(
   board: Pick<RankedBoard<RankableEmployee>, "entries">,

@@ -59,7 +59,8 @@ function SubmitPostFlow({ onClose }: { onClose: () => void }) {
                 PLATFORM_LIST.map((platform) => platform.name),
                 "or",
               ),
-            })}
+            })}{" "}
+            <span className="font-medium text-foreground">{t.submit.rule}</span>
           </ResponsiveDialogDescription>
         </div>
         <ResponsiveDialogClose label={t.common.close} className="-mt-1 -mr-2" />
@@ -79,9 +80,9 @@ function SubmitPostFlow({ onClose }: { onClose: () => void }) {
                   setRound((current) => current + 1);
                   setSubmitted(null);
                 }}
-                onViewLeaderboard={() => {
+                onViewMyPosts={() => {
                   onClose();
-                  setView("leaderboard");
+                  setView("my-posts");
                 }}
               />
             </motion.div>

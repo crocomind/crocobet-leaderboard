@@ -3,10 +3,9 @@
 import {
   CalendarDays,
   ChevronDown,
-  Eye,
-  Heart,
+  Clapperboard,
+  ImageIcon,
   Search,
-  Sparkles,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -28,77 +27,68 @@ import {
   type SegmentedOption,
 } from "@/components/ui/segmented-control";
 import {
+  type ContentCategory,
   LEADERBOARD_PERIODS,
-  type LeaderboardMetric,
   type LeaderboardPeriod,
   type PlatformFilter,
 } from "@/lib/api/types";
 import { DURATION, exitTween, tween } from "@/lib/motion";
-import { PLATFORM_LIST } from "@/lib/platforms";
+import { CATEGORY_PLATFORMS, PLATFORMS } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
 
 interface LeaderboardToolbarProps {
-  metric: LeaderboardMetric;
+  category: ContentCategory;
   platform: PlatformFilter;
   period: LeaderboardPeriod;
   search: string;
-  onMetricChange: (metric: LeaderboardMetric) => void;
+  onCategoryChange: (category: ContentCategory) => void;
   onPlatformChange: (platform: PlatformFilter) => void;
   onPeriodChange: (period: LeaderboardPeriod) => void;
   onSearchChange: (search: string) => void;
 }
 
 export function LeaderboardToolbar({
-  metric,
+  category,
   platform,
   period,
   search,
-  onMetricChange,
+  onCategoryChange,
   onPlatformChange,
   onPeriodChange,
   onSearchChange,
 }: LeaderboardToolbarProps) {
   const { t } = useI18n();
 
-  const metricOptions: SegmentedOption<LeaderboardMetric>[] = [
+  const categoryOptions: SegmentedOption<ContentCategory>[] = [
     {
-      value: "views",
-      label: t.metrics.views,
-      icon: <Eye className="hidden size-4 sm:block" aria-hidden="true" />,
+      value: "video",
+      label: t.categories.video,
+      icon: <Clapperboard className="size-4" aria-hidden="true" />,
     },
     {
-      value: "reactions",
-      label: t.metrics.reactions,
-      icon: <Heart className="hidden size-4 sm:block" aria-hidden="true" />,
-    },
-    {
-      value: "score",
-      label: (
-        <>
-          <span className="sm:hidden">{t.metrics.scoreShort}</span>
-          <span className="hidden sm:inline">{t.metrics.score}</span>
-        </>
-      ),
-      icon: <Sparkles className="hidden size-4 sm:block" aria-hidden="true" />,
+      value: "static",
+      label: t.categories.static,
+      icon: <ImageIcon className="size-4" aria-hidden="true" />,
     },
   ];
 
+  // Only the platforms that can appear on this board.
   const platformOptions: ChipOption<PlatformFilter>[] = [
     { value: "all", label: t.leaderboard.allPlatforms },
-    ...PLATFORM_LIST.map((definition) => ({
-      value: definition.id,
-      label: definition.name,
-      icon: <PlatformBadge platform={definition.id} size="xs" />,
+    ...CATEGORY_PLATFORMS[category].map((id) => ({
+      value: id,
+      label: PLATFORMS[id].name,
+      icon: <PlatformBadge platform={id} size="xs" />,
     })),
   ];
 
   return (
     <div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)] md:items-center">
       <SegmentedControl
-        label={t.leaderboard.metricLabel}
-        value={metric}
-        onValueChange={onMetricChange}
-        options={metricOptions}
+        label={t.leaderboard.categoryLabel}
+        value={category}
+        onValueChange={onCategoryChange}
+        options={categoryOptions}
         className="order-2 w-full md:order-1 md:w-auto [&>button]:px-3 sm:[&>button]:px-4"
       />
 
@@ -124,6 +114,7 @@ export function LeaderboardToolbar({
             className="md:hidden"
           />
           <ChipGroup
+            key={category}
             label={t.leaderboard.platformLabel}
             value={platform}
             onValueChange={onPlatformChange}

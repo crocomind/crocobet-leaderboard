@@ -1,18 +1,32 @@
 import { request } from "./http-client";
 import type {
+  AdminPostDetail,
+  AdminPostsResponse,
   ApiAdapter,
-  Employee,
+  BulkModerationResult,
   LeaderboardResponse,
+  Me,
   MyPostsResponse,
   Post,
+  SyncRun,
+  SyncStatusResponse,
 } from "./types";
+
+const postPath = (postId: string) => `/posts/${encodeURIComponent(postId)}`;
+const adminPostPath = (postId: string) =>
+  `/admin/posts/${encodeURIComponent(postId)}`;
+
+/** "all" means no filter, so it's left out of the query string. */
+const filter = (value: string) => (value === "all" ? undefined : value);
 
 /** Talks to the real backend at NEXT_PUBLIC_API_BASE_URL. See API_CONTRACT.md. */
 export const httpAdapter: ApiAdapter = {
+  getCurrentUser: ({ signal } = {}) => request<Me>("/me", { signal }),
+
   getLeaderboard: (query, { signal } = {}) =>
     request<LeaderboardResponse>("/leaderboard", {
       query: {
-        metric: query.metric,
+        category: query.category,
         platform: query.platform,
         period: query.period,
         search: query.search.trim(),
@@ -25,12 +39,82 @@ export const httpAdapter: ApiAdapter = {
 
   getEmployeePosts: (employeeId, query, { signal } = {}) =>
     request<Post[]>(`/employees/${encodeURIComponent(employeeId)}/posts`, {
-      query: { platform: query.platform, period: query.period },
+      query: {
+        category: query.category,
+        platform: query.platform,
+        period: query.period,
+      },
       signal,
     }),
 
   submitPost: (payload, { signal } = {}) =>
     request<Post>("/posts", { method: "POST", body: payload, signal }),
 
-  getCurrentUser: ({ signal } = {}) => request<Employee>("/me", { signal }),
+  withdrawPost: (postId, { signal } = {}) =>
+    request<void>(postPath(postId), { method: "DELETE", signal }),
+
+  recheckPost: (postId, { signal } = {}) =>
+    request<void>(`${postPath(postId)}/recheck`, { method: "POST", signal }),
+
+  getAdminPosts: (query, cursor, { signal } = {}) =>
+    request<AdminPostsResponse>("/admin/posts", {
+      query: {
+        status: query.status,
+        check: filter(query.check),
+        flag: filter(query.flag),
+        category: filter(query.category),
+        platform: filter(query.platform),
+        q: query.q.trim(),
+        cursor,
+      },
+      signal,
+    }),
+
+  getAdminPost: (postId, { signal } = {}) =>
+    request<AdminPostDetail>(adminPostPath(postId), { signal }),
+
+  updateAdminPost: (postId, patch, { signal } = {}) =>
+    request<AdminPostDetail>(adminPostPath(postId), {
+      method: "PATCH",
+      body: patch,
+      signal,
+    }),
+
+  moderatePost: (postId, action, payload, { signal } = {}) =>
+    request<AdminPostDetail>(`${adminPostPath(postId)}/${action}`, {
+      method: "POST",
+      body: payload,
+      signal,
+    }),
+
+  bulkModerate: (payload, { signal } = {}) =>
+    request<BulkModerationResult>("/admin/posts/bulk", {
+      method: "POST",
+      body: payload,
+      signal,
+    }),
+
+  refreshPost: (postId, { signal } = {}) =>
+    request<void>(`${adminPostPath(postId)}/refresh`, {
+      method: "POST",
+      signal,
+    }),
+
+  getSyncStatus: ({ signal } = {}) =>
+    request<SyncStatusResponse>("/admin/sync", { signal }),
+
+  startSync: ({ signal } = {}) =>
+    request<SyncRun>("/admin/sync", { method: "POST", signal }),
+
+  exportStandings: (query, { signal } = {}) =>
+    request<Blob>("/admin/export", {
+      query: {
+        category: query.category,
+        period: query.period,
+        periodStart: query.periodStart,
+        asOf: query.asOf,
+      },
+      responseType: "blob",
+      signal,
+    }),
 };

@@ -10,12 +10,14 @@ import {
 import { memo, type PointerEvent, type RefCallback, useRef } from "react";
 import { AnimatedNumber } from "@/components/common/animated-number";
 import { EmployeeAvatar } from "@/components/common/employee-avatar";
+import { PlatformLogos } from "@/components/common/platform-logos";
 import { RankChange } from "@/components/leaderboard/rank-change";
+import { ScoreBreakdown } from "@/components/leaderboard/score-breakdown";
+import { TopPostLink } from "@/components/leaderboard/top-post-link";
 import { useEntryLabel } from "@/components/leaderboard/use-entry-label";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { Badge } from "@/components/ui/badge";
-import type { LeaderboardEntry, LeaderboardMetric } from "@/lib/api/types";
-import { metricValue } from "@/lib/leaderboard";
+import type { LeaderboardEntry } from "@/lib/api/types";
 import {
   exitTween,
   hasFinePointer,
@@ -60,7 +62,6 @@ type PodiumRank = keyof typeof MEDALS;
 
 interface PodiumProps {
   entries: LeaderboardEntry[];
-  metric: LeaderboardMetric;
   currentUserId: string | undefined;
   onSelect: (entry: LeaderboardEntry) => void;
   /** Attached to the signed-in user's card, if they're on the podium. */
@@ -69,7 +70,6 @@ interface PodiumProps {
 
 export const Podium = memo(function Podium({
   entries,
-  metric,
   currentUserId,
   onSelect,
   myEntryRef,
@@ -108,7 +108,6 @@ export const Podium = memo(function Podium({
                     <PodiumCard
                       rank={rank}
                       entry={entry}
-                      metric={metric}
                       isMe={entry.employee.id === currentUserId}
                       onSelect={onSelect}
                       myEntryRef={myEntryRef}
@@ -166,14 +165,12 @@ function useTilt() {
 function PodiumCard({
   rank,
   entry,
-  metric,
   isMe,
   onSelect,
   myEntryRef,
 }: {
   rank: PodiumRank;
   entry: LeaderboardEntry;
-  metric: LeaderboardMetric;
   isMe: boolean;
   onSelect: (entry: LeaderboardEntry) => void;
   myEntryRef: RefCallback<HTMLElement>;
@@ -185,12 +182,9 @@ function PodiumCard({
   const tilt = useTilt();
 
   return (
-    <motion.button
-      type="button"
-      ref={isMe ? myEntryRef : undefined}
-      aria-label={entryLabel(entry, isMe)}
-      aria-haspopup="dialog"
-      onClick={() => onSelect(entry)}
+    // The card holds the main button (stretched over it) and the top-post
+    // link as siblings; the visible content is decoration for the button.
+    <motion.div
       {...tilt}
       whileTap={{ scale: SCALE.cardPress }}
       transition={springPress}
@@ -201,6 +195,15 @@ function PodiumCard({
         isMe && "ring-2 ring-brand/60",
       )}
     >
+      <button
+        type="button"
+        ref={isMe ? myEntryRef : undefined}
+        aria-label={entryLabel(entry, isMe)}
+        aria-haspopup="dialog"
+        onClick={() => onSelect(entry)}
+        className="absolute inset-0 z-[1] rounded-[inherit]"
+      />
+
       {/* #1 glow breathes slowly; only its opacity and scale animate. */}
       {first && (
         <span
@@ -216,62 +219,69 @@ function PodiumCard({
         )}
       />
 
-      {first && (
-        <Crown
-          className="mb-2 size-6 fill-gold/30 text-gold"
-          aria-hidden="true"
-        />
-      )}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none flex w-full min-w-0 flex-col items-center"
+      >
+        {first && <Crown className="mb-2 size-6 fill-gold/30 text-gold" />}
 
-      <span className="relative">
-        <EmployeeAvatar
-          employee={entry.employee}
-          size={first ? "xl" : "lg"}
-          className={cn("ring-4", medal.ring)}
-        />
-        <span
-          aria-hidden="true"
-          className={cn(
-            "absolute -bottom-2 left-1/2 inline-flex size-7 -translate-x-1/2 items-center justify-center rounded-full text-sm font-extrabold text-on-medal shadow-md ring-2 ring-surface",
-            medal.chip,
-          )}
-        >
-          {rank}
+        <span className="relative">
+          <EmployeeAvatar
+            employee={entry.employee}
+            size={first ? "xl" : "lg"}
+            className={cn("ring-4", medal.ring)}
+          />
+          <span
+            className={cn(
+              "absolute -bottom-2 left-1/2 inline-flex size-7 -translate-x-1/2 items-center justify-center rounded-full text-sm font-extrabold text-on-medal shadow-md ring-2 ring-surface",
+              medal.chip,
+            )}
+          >
+            {rank}
+          </span>
         </span>
-      </span>
 
-      <span className="mt-5 flex w-full min-w-0 items-center justify-center gap-1.5">
-        <span
-          className={cn(
-            "truncate font-semibold",
-            first ? "text-lg" : "text-base",
+        <span className="mt-5 flex w-full min-w-0 items-center justify-center gap-1.5">
+          <span
+            className={cn(
+              "truncate font-semibold",
+              first ? "text-lg" : "text-base",
+            )}
+          >
+            {entry.employee.name}
+          </span>
+          {isMe && (
+            <Badge variant="brand" className="px-1.5">
+              {t.common.you}
+            </Badge>
           )}
-        >
-          {entry.employee.name}
         </span>
-        {isMe && (
-          <Badge variant="brand" className="px-1.5">
-            {t.common.you}
-          </Badge>
-        )}
-      </span>
-      <span className="w-full truncate text-xs text-muted-foreground">
-        {entry.employee.department}
+        <span className="flex w-full min-w-0 items-center justify-center gap-1.5 text-xs text-muted-foreground">
+          <span className="truncate">{entry.employee.department}</span>
+          <PlatformLogos platforms={entry.platforms} />
+        </span>
+
+        <AnimatedNumber
+          value={entry.score}
+          format={formatNumber}
+          className={cn(
+            "mt-3 leading-none font-extrabold tracking-tight",
+            first ? "text-4xl" : "text-2xl sm:text-3xl",
+          )}
+        />
+        <span className="mt-1 text-xs font-medium text-muted-foreground">
+          {t.metrics.score}
+        </span>
+        <ScoreBreakdown
+          views={entry.totalViews}
+          reactions={entry.totalReactions}
+          className="mt-2"
+        />
+
+        <RankChange entry={entry} className="mt-3" />
       </span>
 
-      <AnimatedNumber
-        value={metricValue(entry, metric)}
-        format={formatNumber}
-        className={cn(
-          "mt-3 leading-none font-extrabold tracking-tight",
-          first ? "text-4xl" : "text-2xl sm:text-3xl",
-        )}
-      />
-      <span className="mt-1 text-xs font-medium text-muted-foreground">
-        {metric === "score" ? t.metrics.scoreShort : t.metrics[metric]}
-      </span>
-
-      <RankChange entry={entry} className="mt-3" />
-    </motion.button>
+      <TopPostLink entry={entry} className="absolute top-2 right-2 z-[2]" />
+    </motion.div>
   );
 }

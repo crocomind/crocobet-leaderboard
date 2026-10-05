@@ -7,7 +7,7 @@ import { Crossfade } from "@/components/common/crossfade";
 import { GlowBackdrop } from "@/components/common/glow-backdrop";
 import { ErrorState, StatePanel } from "@/components/common/state-panel";
 import { EmployeeSheet } from "@/components/leaderboard/employee-sheet";
-import { LastUpdated } from "@/components/leaderboard/last-updated";
+import { BoardDates, LastUpdated } from "@/components/leaderboard/last-updated";
 import { LeaderboardList } from "@/components/leaderboard/leaderboard-list";
 import {
   ListSkeleton,
@@ -28,6 +28,7 @@ import type { LeaderboardEntry, LeaderboardQuery } from "@/lib/api/types";
 import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useViewportPosition } from "@/lib/hooks/use-viewport-position";
+import { platformForCategory } from "@/lib/url-state";
 
 export function LeaderboardView() {
   const { t, format } = useI18n();
@@ -45,12 +46,12 @@ export function LeaderboardView() {
 
   const query = useMemo<LeaderboardQuery>(
     () => ({
-      metric: state.metric,
+      category: state.category,
       platform: state.platform,
       period: state.period,
       search,
     }),
-    [state.metric, state.platform, state.period, search],
+    [state.category, state.platform, state.period, search],
   );
   const leaderboard = useLeaderboardQuery(query);
   const { data } = leaderboard;
@@ -120,13 +121,11 @@ export function LeaderboardView() {
     myEntryElement?.focus({ preventScroll: true });
   };
 
-  const metricLabel =
-    shown.metric === "score" ? t.metrics.score : t.metrics[shown.metric];
   const announcement =
     data && !leaderboard.isPlaceholderData
       ? [
           format(t.leaderboard.announce, {
-            metric: metricLabel,
+            category: t.categories[shown.category],
             period: t.periods[shown.period],
             count: data.totalParticipants,
           }),
@@ -153,20 +152,27 @@ export function LeaderboardView() {
             {t.leaderboard.subtitle}
           </p>
         </div>
-        <LastUpdated
-          syncedAt={data?.lastSyncedAt}
-          updating={leaderboard.isFetching}
-          className="self-start sm:self-auto"
-        />
+        <div className="flex flex-wrap items-center gap-2 self-start sm:justify-end sm:self-auto">
+          <BoardDates period={data?.period} />
+          <LastUpdated
+            syncedAt={data?.lastSyncedAt}
+            updating={leaderboard.isFetching}
+          />
+        </div>
       </div>
 
       <div className="mt-6">
         <LeaderboardToolbar
-          metric={state.metric}
+          category={state.category}
           platform={state.platform}
           period={state.period}
           search={searchText}
-          onMetricChange={(metric) => update({ metric })}
+          onCategoryChange={(category) =>
+            update({
+              category,
+              platform: platformForCategory(state.platform, category),
+            })
+          }
           onPlatformChange={(platform) => update({ platform })}
           onPeriodChange={(period) => update({ period })}
           onSearchChange={setSearchText}
@@ -245,7 +251,6 @@ export function LeaderboardView() {
             {podiumEntries.length > 0 && (
               <Podium
                 entries={podiumEntries}
-                metric={shown.metric}
                 currentUserId={userId}
                 onSelect={openEntry}
                 myEntryRef={myEntryRef}
@@ -254,7 +259,7 @@ export function LeaderboardView() {
             {listEntries.length > 0 && (
               <LeaderboardList
                 entries={listEntries}
-                metric={shown.metric}
+                category={shown.category}
                 currentUserId={userId}
                 onSelect={openEntry}
                 myEntryRef={myEntryRef}
@@ -269,6 +274,7 @@ export function LeaderboardView() {
         entry={selected}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+        category={shown.category}
         platform={shown.platform}
         period={shown.period}
         isMe={selected?.employee.id === userId}
@@ -278,7 +284,6 @@ export function LeaderboardView() {
         visible={showStanding}
         user={currentUser.user}
         standing={standing}
-        metric={shown.metric}
         action={standingAction}
         onAction={handleStandingAction}
       />

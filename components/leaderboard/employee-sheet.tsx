@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowUpRight, Eye, Film, Heart, Sparkles } from "lucide-react";
+import { ScoreBreakdown } from "@/components/leaderboard/score-breakdown";
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { AnimatedNumber } from "@/components/common/animated-number";
@@ -21,6 +22,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEmployeePostsQuery } from "@/lib/api/queries";
 import type {
+  ContentCategory,
   LeaderboardEntry,
   LeaderboardPeriod,
   PlatformFilter,
@@ -28,11 +30,13 @@ import type {
 } from "@/lib/api/types";
 import { enterUp, STAGGER } from "@/lib/motion";
 import { PLATFORMS, safeExternalUrl } from "@/lib/platforms";
+import { cn } from "@/lib/utils";
 
 interface EmployeeSheetProps {
   entry: LeaderboardEntry | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  category: ContentCategory;
   platform: PlatformFilter;
   period: LeaderboardPeriod;
   isMe: boolean;
@@ -43,6 +47,7 @@ export function EmployeeSheet({
   entry,
   open,
   onOpenChange,
+  category,
   platform,
   period,
   isMe,
@@ -50,6 +55,7 @@ export function EmployeeSheet({
   const { t, format, formatNumber } = useI18n();
   // Keyed on the entry rather than `open`, so content stays during the close animation.
   const posts = useEmployeePostsQuery(entry?.employee.id ?? null, {
+    category,
     platform,
     period,
   });
@@ -88,21 +94,30 @@ export function EmployeeSheet({
           </div>
 
           <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-6 md:px-6">
+            {/* The board's stats: static boards never show views. */}
             <dl className="grid grid-cols-2 gap-2.5">
-              <Stat icon={<Eye />} label={t.metrics.views}>
-                <AnimatedNumber
-                  value={entry.totalViews}
-                  format={formatNumber}
-                />
+              <Stat
+                icon={<Sparkles />}
+                label={t.metrics.score}
+                hint={t.metrics.formula[category]}
+                highlight
+                className={entry.totalViews === null ? "col-span-2" : ""}
+              >
+                <AnimatedNumber value={entry.score} format={formatNumber} />
               </Stat>
+              {entry.totalViews !== null && (
+                <Stat icon={<Eye />} label={t.metrics.views}>
+                  <AnimatedNumber
+                    value={entry.totalViews}
+                    format={formatNumber}
+                  />
+                </Stat>
+              )}
               <Stat icon={<Heart />} label={t.metrics.reactions}>
                 <AnimatedNumber
                   value={entry.totalReactions}
                   format={formatNumber}
                 />
-              </Stat>
-              <Stat icon={<Sparkles />} label={t.metrics.score}>
-                <AnimatedNumber value={entry.score} format={formatNumber} />
               </Stat>
               <Stat icon={<Film />} label={t.leaderboard.columns.posts}>
                 <AnimatedNumber value={entry.postCount} format={formatNumber} />
@@ -113,6 +128,7 @@ export function EmployeeSheet({
               <h3 className="font-semibold">{t.employee.postsTitle}</h3>
               <p className="truncate text-xs text-muted-foreground">
                 {format(t.employee.counting, {
+                  category: t.categories[category],
                   platform: platformLabel,
                   period: t.periods[period],
                 })}
@@ -176,26 +192,44 @@ export function EmployeeSheet({
 function Stat({
   icon,
   label,
+  hint,
+  highlight,
+  className,
   children,
 }: {
   icon: ReactNode;
   label: string;
+  hint?: string;
+  highlight?: boolean;
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-control border border-border bg-surface/70 p-3.5">
+    <div
+      className={cn(
+        "rounded-control border p-3.5",
+        highlight
+          ? "border-brand/35 bg-brand/8"
+          : "border-border bg-surface/70",
+        className,
+      )}
+    >
       <dt className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground [&_svg]:size-3.5">
         {icon}
         {label}
       </dt>
       <dd className="mt-1 text-xl font-bold">{children}</dd>
+      {hint && (
+        <dd className="mt-0.5 text-[11px] text-muted-foreground">{hint}</dd>
+      )}
     </div>
   );
 }
 
 function PostRow({ post, index }: { post: Post; index: number }) {
-  const { t, formatCompact, formatDate, plural } = useI18n();
+  const { t, formatDate, plural } = useI18n();
   const href = safeExternalUrl(post.url);
+  const title = post.title ?? t.common.untitled;
 
   return (
     <motion.li
@@ -204,45 +238,36 @@ function PostRow({ post, index }: { post: Post; index: number }) {
     >
       <PostThumbnail
         platform={post.platform}
+        category={post.category}
         thumbnailUrl={post.thumbnailUrl}
         compact
         className="size-16 shrink-0 rounded-xl"
       />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">
-          {post.title ?? t.common.untitled}
-        </p>
-        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <p className="truncate text-sm font-medium">{title}</p>
+        <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
           <PlatformBadge platform={post.platform} size="xs" />
-          {PLATFORMS[post.platform].name}
-          {post.postedAt && <> · {formatDate(post.postedAt)}</>}
-        </p>
-        <p className="mt-1 flex items-center gap-3 text-xs tabular-nums">
-          <span
-            className="inline-flex items-center gap-1"
-            title={plural(t.metrics.units.views, post.views)}
-          >
-            <Eye
-              className="size-3.5 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="sr-only">
-              {plural(t.metrics.units.views, post.views)}
-            </span>
-            <span aria-hidden="true">{formatCompact(post.views)}</span>
+          <span className="truncate">
+            {t.contentTypes[post.contentType]}
+            {post.publishedAt && <> · {formatDate(post.publishedAt)}</>}
           </span>
-          <span
-            className="inline-flex items-center gap-1"
-            title={plural(t.metrics.units.reactions, post.reactions)}
-          >
-            <Heart
-              className="size-3.5 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="sr-only">
-              {plural(t.metrics.units.reactions, post.reactions)}
-            </span>
-            <span aria-hidden="true">{formatCompact(post.reactions)}</span>
+        </p>
+        <p className="mt-1 flex items-center gap-3">
+          <span className="text-xs font-bold tabular-nums">
+            {plural(t.metrics.units.score, post.score)}
+          </span>
+          <span className="sr-only">
+            {[
+              post.views !== null
+                ? plural(t.metrics.units.views, post.views)
+                : null,
+              plural(t.metrics.units.reactions, post.reactions),
+            ]
+              .filter(Boolean)
+              .join(", ")}
+          </span>
+          <span aria-hidden="true">
+            <ScoreBreakdown views={post.views} reactions={post.reactions} />
           </span>
         </p>
       </div>
@@ -256,8 +281,7 @@ function PostRow({ post, index }: { post: Post; index: number }) {
         >
           <ArrowUpRight aria-hidden="true" />
           <span className="sr-only">
-            {t.common.openPost}: {post.title ?? t.common.untitled} (
-            {t.common.opensInNewTab})
+            {t.common.openPost}: {title} ({t.common.opensInNewTab})
           </span>
         </MotionLinkButton>
       )}

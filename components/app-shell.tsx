@@ -1,15 +1,23 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import dynamic from "next/dynamic";
+import { AdminGate } from "@/components/admin/admin-gate";
 import { Header } from "@/components/layout/header";
 import { MobileSubmitFab } from "@/components/layout/mobile-submit-fab";
 import { ViewNav } from "@/components/layout/view-nav";
+import { ListSkeleton } from "@/components/leaderboard/leaderboard-skeleton";
 import { LeaderboardView } from "@/components/leaderboard/leaderboard-view";
 import { MyPostsView } from "@/components/my-posts/my-posts-view";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { SubmitPostDialog } from "@/components/submit/submit-post-dialog";
 import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
 import { DURATION, exitTween, REDUCED_FADE, tween } from "@/lib/motion";
+
+// Loaded on demand, and only for admins (see AdminGate).
+const AdminView = dynamic(() => import("@/components/admin/admin-view"), {
+  loading: () => <ListSkeleton />,
+});
 
 export function AppShell() {
   const { t } = useI18n();
@@ -53,6 +61,10 @@ export function AppShell() {
             >
               {state.view === "leaderboard" ? (
                 <LeaderboardView />
+              ) : state.view === "admin" ? (
+                <AdminGate>
+                  <AdminView />
+                </AdminGate>
               ) : (
                 <MyPostsView />
               )}

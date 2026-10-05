@@ -14,13 +14,15 @@ import {
   springPress,
   tween,
 } from "@/lib/motion";
-import { PLATFORMS, type Platform } from "@/lib/platforms";
+import { type ContentType, PLATFORMS, type Platform } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
 
 interface PostUrlFieldProps {
   id: string;
   registration: UseFormRegisterReturn<"url">;
   platform: Platform | null;
+  /** Set once the link is a valid post. */
+  contentType: ContentType | null;
   valid: boolean;
   invalid: boolean;
   describedBy: string;
@@ -54,6 +56,7 @@ export function PostUrlField({
   id,
   registration,
   platform,
+  contentType,
   valid,
   invalid,
   describedBy,
@@ -155,7 +158,9 @@ export function PostUrlField({
                   aria-hidden="true"
                 />
               )}
-              {PLATFORMS[platform].name}
+              {contentType
+                ? t.contentTypes[contentType]
+                : PLATFORMS[platform].name}
             </motion.span>
           )}
         </AnimatePresence>

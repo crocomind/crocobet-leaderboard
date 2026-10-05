@@ -1,19 +1,22 @@
-import { isPlatform } from "@/lib/platforms";
 import {
-  LEADERBOARD_METRICS,
+  CATEGORY_PLATFORMS,
+  CONTENT_CATEGORIES,
+  type ContentCategory,
+  isPlatform,
+} from "@/lib/platforms";
+import {
   LEADERBOARD_PERIODS,
-  type LeaderboardMetric,
   type LeaderboardPeriod,
   type PlatformFilter,
 } from "@/lib/api/types";
 
-export const VIEWS = ["leaderboard", "my-posts"] as const;
+export const VIEWS = ["leaderboard", "my-posts", "admin"] as const;
 export type AppView = (typeof VIEWS)[number];
 
-/** Everything shareable lives in the URL: ?view=&metric=&platform=&period=&q= */
+/** Everything shareable lives in the URL: ?view=&category=&platform=&period=&q= */
 export interface AppUrlState {
   view: AppView;
-  metric: LeaderboardMetric;
+  category: ContentCategory;
   platform: PlatformFilter;
   period: LeaderboardPeriod;
   q: string;
@@ -21,7 +24,7 @@ export interface AppUrlState {
 
 export const DEFAULT_URL_STATE: AppUrlState = {
   view: "leaderboard",
-  metric: "views",
+  category: "video",
   platform: "all",
   period: "month",
   q: "",
@@ -41,25 +44,42 @@ interface ReadableParams {
   get(name: string): string | null;
 }
 
-/** Unknown or missing values fall back to defaults, so any URL is safe to open. */
 /** Old view names that still open, so shared links keep working. */
 const VIEW_ALIASES: Record<string, AppView> = { "my-videos": "my-posts" };
 
+/** A platform that isn't on the board (e.g. LinkedIn on Video) falls back to all. */
+export function platformForCategory(
+  platform: PlatformFilter,
+  category: ContentCategory,
+): PlatformFilter {
+  return platform === "all" || CATEGORY_PLATFORMS[category].includes(platform)
+    ? platform
+    : "all";
+}
+
+/**
+ * Unknown or missing values fall back to defaults, so any URL is safe to
+ * open. The old `metric` parameter is ignored.
+ */
 export function parseUrlState(params: ReadableParams): AppUrlState {
-  const platform = params.get("platform");
   const view = params.get("view");
+  const platform = params.get("platform");
+  const category = oneOf(
+    CONTENT_CATEGORIES,
+    params.get("category"),
+    DEFAULT_URL_STATE.category,
+  );
   return {
     view: oneOf(
       VIEWS,
       view ? (VIEW_ALIASES[view] ?? view) : null,
       DEFAULT_URL_STATE.view,
     ),
-    metric: oneOf(
-      LEADERBOARD_METRICS,
-      params.get("metric"),
-      DEFAULT_URL_STATE.metric,
+    category,
+    platform: platformForCategory(
+      isPlatform(platform) ? platform : DEFAULT_URL_STATE.platform,
+      category,
     ),
-    platform: isPlatform(platform) ? platform : DEFAULT_URL_STATE.platform,
     period: oneOf(
       LEADERBOARD_PERIODS,
       params.get("period"),

@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trophy } from "lucide-react";
+import { Clapperboard, Plus } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { PlatformBadge } from "@/components/common/platform-badge";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -8,12 +8,11 @@ import { ConfettiBurst } from "@/components/submit/confetti-burst";
 import { MotionButton } from "@/components/ui/motion-button";
 import type { Post } from "@/lib/api/types";
 import { DURATION, EASE_OUT_SOFT, springGentle, tween } from "@/lib/motion";
-import { PLATFORMS } from "@/lib/platforms";
 
 interface SubmitSuccessProps {
   post: Post;
   onSubmitAnother: () => void;
-  onViewLeaderboard: () => void;
+  onViewMyPosts: () => void;
 }
 
 /**
@@ -23,9 +22,9 @@ interface SubmitSuccessProps {
 export function SubmitSuccess({
   post,
   onSubmitAnother,
-  onViewLeaderboard,
+  onViewMyPosts,
 }: SubmitSuccessProps) {
-  const { t } = useI18n();
+  const { t, format } = useI18n();
   const reduceMotion = useReducedMotion() ?? false;
   const animateIn = !reduceMotion;
 
@@ -93,7 +92,12 @@ export function SubmitSuccess({
         className="mt-2 max-w-sm text-sm text-pretty text-muted-foreground"
         {...fadeUp(0.42)}
       >
-        {t.submit.successDescription}
+        {format(t.submit.successDescription, {
+          board:
+            post.category === "video"
+              ? t.categories.videoBoard
+              : t.categories.staticBoard,
+        })}
       </motion.p>
 
       <motion.p
@@ -102,7 +106,7 @@ export function SubmitSuccess({
       >
         <PlatformBadge platform={post.platform} size="sm" />
         <span className="truncate font-medium">
-          {post.title ?? PLATFORMS[post.platform].name}
+          {post.title ?? t.contentTypes[post.contentType]}
         </span>
       </motion.p>
 
@@ -123,11 +127,11 @@ export function SubmitSuccess({
         <MotionButton
           size="lg"
           className="sm:flex-1"
-          onClick={onViewLeaderboard}
+          onClick={onViewMyPosts}
           autoFocus
         >
-          <Trophy aria-hidden="true" />
-          {t.submit.viewLeaderboard}
+          <Clapperboard aria-hidden="true" />
+          {t.submit.viewMyPosts}
         </MotionButton>
       </motion.div>
     </div>

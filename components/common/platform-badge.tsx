@@ -2,6 +2,7 @@ import { PLATFORMS, type Platform } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
 
 const sizes = {
+  "2xs": "size-4 rounded-[5px] [&_svg]:size-2.5",
   xs: "size-5 rounded-md [&_svg]:size-3",
   sm: "size-6 rounded-lg [&_svg]:size-3.5",
   md: "size-8 rounded-[10px] [&_svg]:size-[18px]",

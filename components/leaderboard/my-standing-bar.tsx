@@ -6,11 +6,7 @@ import { createPortal } from "react-dom";
 import { EmployeeAvatar } from "@/components/common/employee-avatar";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { MotionButton } from "@/components/ui/motion-button";
-import type {
-  Employee,
-  LeaderboardMetric,
-  LeaderboardStanding,
-} from "@/lib/api/types";
+import type { Employee, LeaderboardStanding } from "@/lib/api/types";
 import { useIsClient } from "@/lib/hooks/use-is-client";
 import {
   DURATION,
@@ -25,22 +21,20 @@ export type StandingAction =
 
 interface MyStandingBarProps {
   visible: boolean;
-  user: Employee | null;
+  user: Pick<Employee, "id" | "name" | "avatarUrl"> | null;
   standing: LeaderboardStanding | null;
-  metric: LeaderboardMetric;
   action: StandingAction;
   onAction: (action: StandingAction) => void;
 }
 
 /**
  * Pinned to the bottom while the signed-in user's own row is off screen:
- * "You're #14 · 2,300 views behind #13".
+ * "You're #14 · 2,300 points behind #13".
  */
 export function MyStandingBar({
   visible,
   user,
   standing,
-  metric,
   action,
   onAction,
 }: MyStandingBarProps) {
@@ -58,7 +52,7 @@ export function MyStandingBar({
       detail = format(t.leaderboard.standing.tied, { nextRank });
     else
       detail = format(t.leaderboard.standing.behind, {
-        gap: plural(t.metrics.units[metric], standing.gapToNext),
+        gap: plural(t.metrics.units.score, standing.gapToNext),
         nextRank,
       });
   }

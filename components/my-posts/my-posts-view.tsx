@@ -66,12 +66,7 @@ export function MyPostsView() {
           <EmptyPosts onSubmit={openSubmit} />
         ) : (
           <>
-            <SummaryCards
-              summary={myPosts.data.summary}
-              verifiedCount={
-                myPosts.data.posts.filter((v) => v.status === "verified").length
-              }
-            />
+            <SummaryCards summary={myPosts.data.summary} />
             <section aria-labelledby="my-posts-heading" className="mt-10">
               <h2 id="my-posts-heading" className="mb-4 text-lg font-bold">
                 {t.myPosts.listLabel}

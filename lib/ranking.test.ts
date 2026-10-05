@@ -4,6 +4,7 @@ import { CONTENT_TYPE_INFO } from "@/lib/platforms";
 import {
   type BoardFilter,
   countedPosts,
+  postsAsOf,
   rankBoard,
   rankMap,
   type RankablePost,
@@ -224,5 +225,67 @@ describe("countedPosts", () => {
     expect(
       countedPosts([a, b, pending, other], "ana", video).map((p) => p.id),
     ).toEqual([b.id, a.id]);
+  });
+});
+
+describe("postsAsOf", () => {
+  const asOf = new Date("2026-10-20T12:00:00Z");
+  const at = (iso: string) => new Date(iso);
+  const history = (
+    approvedAt: Date | null,
+    snapshots: [string, number | null, number][],
+  ) => ({
+    approvedAt,
+    snapshots: snapshots.map(([iso, views, reactions]) => ({
+      fetchedAt: at(iso),
+      views,
+      reactions,
+    })),
+  });
+
+  it("uses each post's latest snapshot at or before the time", () => {
+    const [asItWas] = postsAsOf(
+      [
+        {
+          ...post("ana", "tiktok_video", 9000, 900),
+          ...history(at("2026-10-12T00:00:00Z"), [
+            ["2026-10-19T04:00:00Z", 500, 50],
+            ["2026-10-20T04:00:00Z", 800, 80],
+            ["2026-10-20T16:00:00Z", 1200, 120],
+          ]),
+        },
+      ],
+      asOf,
+    );
+    expect(asItWas).toMatchObject({ views: 800, reactions: 80 });
+  });
+
+  it("leaves out posts approved later, or not approved now", () => {
+    const later = {
+      ...post("ana", "tiktok_video", 100, 10),
+      ...history(at("2026-10-20T13:00:00Z"), []),
+    };
+    const disqualified = {
+      ...post("nino", "tiktok_video", 100, 10, { status: "disqualified" }),
+      ...history(at("2026-10-01T00:00:00Z"), [["2026-10-02T00:00:00Z", 5, 1]]),
+    };
+    const pending = {
+      ...post("zura", "tiktok_video", 100, 10, { status: "pending" }),
+      ...history(null, []),
+    };
+    expect(postsAsOf([later, disqualified, pending], asOf)).toEqual([]);
+  });
+
+  it("counts a post approved before any snapshot as zero", () => {
+    const [asItWas] = postsAsOf(
+      [
+        {
+          ...post("ana", "linkedin_post", null, 70),
+          ...history(at("2026-10-15T00:00:00Z"), []),
+        },
+      ],
+      asOf,
+    );
+    expect(asItWas).toMatchObject({ views: null, reactions: 0 });
   });
 });

@@ -1,7 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CircleAlert, RefreshCw, Send, TriangleAlert } from "lucide-react";
+import {
+  CircleAlert,
+  Lock,
+  RefreshCw,
+  Send,
+  TriangleAlert,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useId, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -25,12 +31,13 @@ import {
   TITLE_MAX_LENGTH,
 } from "@/lib/validation/submit-post";
 
-const FIELD_ERROR_CODES = new Set([
-  "duplicate_post",
-  "invalid_url",
-  "unsupported_platform",
-  "validation_error",
-]);
+/** Server errors shown under the link field; the rest are form-level. */
+const FIELD_ERRORS: Partial<Record<string, SubmitPostErrorCode>> = {
+  duplicate_post: "duplicate",
+  invalid_url: "notAPost",
+  unsupported_platform: "unsupportedPlatform",
+  unsupported_content: "unsupportedContent",
+};
 
 /** Height opens smoothly, then the content fades in; the exit is quicker. */
 const reveal = {
@@ -115,11 +122,13 @@ export function SubmitPostForm({
       ? analysis.platform
       : null;
   const urlValid = analysis.status === "valid" && !errors.url;
+  const contentType = urlValid ? analysis.contentType : null;
 
   const mutation = useSubmitPostMutation();
+  const serverCode = isApiError(mutation.error) ? mutation.error.code : null;
+  const closed = serverCode === "challenge_closed";
   const serverFailed =
-    mutation.isError &&
-    !(isApiError(mutation.error) && FIELD_ERROR_CODES.has(mutation.error.code));
+    mutation.isError && !closed && !(serverCode && FIELD_ERRORS[serverCode]);
 
   const platformNames = PLATFORM_LIST.map((definition) => definition.name);
   const messageFor = (code: string | undefined): string | undefined => {
@@ -148,9 +157,9 @@ export function SubmitPostForm({
     const result = analyzePostUrl(values.url);
     if (result.status !== "valid") return;
 
+    // The server derives the platform and content type itself.
     const payload: SubmitPostPayload = {
       url: result.normalizedUrl,
-      platform: result.platform,
       ...(values.title ? { title: values.title } : {}),
       ...(values.postedAt ? { postedAt: values.postedAt } : {}),
     };
@@ -158,13 +167,8 @@ export function SubmitPostForm({
     mutation.mutate(payload, {
       onSuccess: onSubmitted,
       onError: (error) => {
-        if (!isApiError(error) || !FIELD_ERROR_CODES.has(error.code)) return;
-        const code: SubmitPostErrorCode =
-          error.code === "duplicate_post"
-            ? "duplicate"
-            : error.code === "unsupported_platform"
-              ? "unsupportedPlatform"
-              : "notAPost";
+        const code = isApiError(error) ? FIELD_ERRORS[error.code] : undefined;
+        if (!code) return;
         form.setError(
           "url",
           { type: "server", message: code },
@@ -193,6 +197,7 @@ export function SubmitPostForm({
           id={urlId}
           registration={form.register("url")}
           platform={platform}
+          contentType={contentType}
           valid={urlValid}
           invalid={Boolean(urlError)}
           describedBy={urlError ? urlErrorId : urlHintId}
@@ -248,6 +253,7 @@ export function SubmitPostForm({
             <div className="pt-1">
               <PostPreviewCard
                 platform={analysis.platform}
+                contentType={analysis.contentType}
                 url={analysis.normalizedUrl}
                 title={title.trim()}
                 postedAt={postedAt}
@@ -315,9 +321,19 @@ export function SubmitPostForm({
             type="date"
             max={toIsoDate(new Date())}
             aria-invalid={Boolean(postedAtError) || undefined}
-            aria-describedby={postedAtError ? `${ids}-posted-error` : undefined}
+            aria-describedby={
+              postedAtError ? `${ids}-posted-error` : `${ids}-posted-hint`
+            }
             {...form.register("postedAt")}
           />
+          {!postedAtError && (
+            <p
+              id={`${ids}-posted-hint`}
+              className="mt-1.5 text-xs text-muted-foreground"
+            >
+              {t.submit.postedAtHint}
+            </p>
+          )}
           <AnimatePresence initial={false}>
             {postedAtError && (
               <motion.p
@@ -335,6 +351,25 @@ export function SubmitPostForm({
       </div>
 
       <AnimatePresence initial={false}>
+        {closed && (
+          <motion.div key="closed" className="overflow-hidden" {...reveal}>
+            <div
+              role="alert"
+              className="flex items-start gap-3 rounded-control border border-warning/30 bg-warning/10 p-3.5"
+            >
+              <Lock
+                className="mt-0.5 size-5 shrink-0 text-warning-text"
+                aria-hidden="true"
+              />
+              <div>
+                <p className="text-sm font-semibold">{t.submit.closedTitle}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t.submit.closedDescription}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
         {serverFailed && (
           <motion.div
             key="server-error"
@@ -376,6 +411,7 @@ export function SubmitPostForm({
         type="submit"
         size="lg"
         className="w-full"
+        disabled={closed}
         loading={mutation.isPending}
         loadingLabel={t.submit.submitting}
       >
