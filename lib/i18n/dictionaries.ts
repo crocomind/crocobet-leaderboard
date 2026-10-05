@@ -189,6 +189,8 @@ const en = {
     unsupportedPlatform: "Only {platforms} links are supported for now.",
     notAPost:
       "This {platform} link doesn't point to a post. Open the post and copy its link.",
+    unsupportedContent:
+      "Stories, profiles, feeds and TikTok photo posts don't count. Paste the link to a single post or video.",
     duplicate: "This post has already been submitted.",
     titleTooLong: "Keep the title under {max} characters.",
     dateInvalid: "Enter a valid date.",
@@ -409,6 +411,8 @@ const ka: Dictionary = {
       "ამჟამად მხარდაჭერილია მხოლოდ ეს პლატფორმები: {platforms}.",
     notAPost:
       "ეს {platform}-ის ბმული პოსტს არ უთითებს. გახსენით პოსტი და დააკოპირეთ მისი ბმული.",
+    unsupportedContent:
+      "სთორები, პროფილები, ფიდები და TikTok-ის ფოტო-პოსტები არ ითვლება. ჩასვით კონკრეტული პოსტის ან ვიდეოს ბმული.",
     duplicate: "ეს პოსტი უკვე დამატებულია.",
     titleTooLong: "სათაური არ უნდა აღემატებოდეს {max} სიმბოლოს.",
     dateInvalid: "შეიყვანეთ სწორი თარიღი.",

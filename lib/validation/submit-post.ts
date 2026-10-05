@@ -14,6 +14,7 @@ export const SUBMIT_POST_ERROR_CODES = [
   "invalidUrl",
   "unsupportedPlatform",
   "notAPost",
+  "unsupportedContent",
   "duplicate",
   "titleTooLong",
   "dateInvalid",
@@ -68,6 +69,8 @@ export function createSubmitPostSchema({
             return fail("unsupportedPlatform");
           case "not-a-post":
             return fail("notAPost");
+          case "unsupported-content":
+            return fail("unsupportedContent");
           case "valid":
             if (isDuplicate(result.normalizedUrl)) fail("duplicate");
         }

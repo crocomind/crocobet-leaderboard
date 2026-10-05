@@ -109,7 +109,9 @@ export function SubmitPostForm({
 
   const analysis = useMemo(() => analyzePostUrl(url), [url]);
   const platform =
-    analysis.status === "valid" || analysis.status === "not-a-post"
+    analysis.status === "valid" ||
+    analysis.status === "not-a-post" ||
+    analysis.status === "unsupported-content"
       ? analysis.platform
       : null;
   const urlValid = analysis.status === "valid" && !errors.url;

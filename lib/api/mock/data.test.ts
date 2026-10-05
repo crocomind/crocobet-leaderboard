@@ -12,10 +12,11 @@ describe("mock data", () => {
 
   it("only contains valid, already-normalized post links", () => {
     for (const post of MOCK_POSTS) {
-      expect(analyzePostUrl(post.url)).toEqual({
+      expect(analyzePostUrl(post.url)).toMatchObject({
         status: "valid",
         platform: post.platform,
         normalizedUrl: post.url,
+        needsResolution: false,
       });
     }
   });
