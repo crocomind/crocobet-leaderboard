@@ -62,6 +62,21 @@ const CHECK_POLL_MS = 3_000;
 const checkRunning = (check: Pick<PostCheck, "status">) =>
   check.status === "queued" || check.status === "running";
 
+/** Checks usually finish in seconds; a stuck one waits for the next sync instead. */
+const CHECK_POLL_LIMIT_MS = 2 * 60_000;
+const pollingSince = new Map<string, number>();
+
+/** Polls every few seconds while a check runs, for at most two minutes at a stretch. */
+function pollWhileChecking(key: string, running: boolean): number | false {
+  if (!running) {
+    pollingSince.delete(key);
+    return false;
+  }
+  const since = pollingSince.get(key) ?? Date.now();
+  pollingSince.set(key, since);
+  return Date.now() - since < CHECK_POLL_LIMIT_MS ? CHECK_POLL_MS : false;
+}
+
 /** Moderation and submissions change every board, My Posts and the admin lists. */
 function invalidateAfterChange(queryClient: QueryClient) {
   return Promise.all([
@@ -99,9 +114,11 @@ export function useMyPostsQuery() {
     queryFn: ({ signal }) => getMyPosts({ signal }),
     staleTime: STATS_STALE_MS,
     refetchInterval: (query) =>
-      query.state.data?.posts.some((post) => checkRunning(post.check))
-        ? CHECK_POLL_MS
-        : false,
+      pollWhileChecking(
+        "my-posts",
+        query.state.data?.posts.some((post) => checkRunning(post.check)) ??
+          false,
+      ),
   });
 }
 
@@ -122,7 +139,11 @@ export function useSubmitPostMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: SubmitPostPayload) => submitPost(payload),
-    onSuccess: () => invalidateAfterChange(queryClient),
+    onSuccess: () => {
+      // A new check starts: poll for its result again.
+      pollingSince.clear();
+      return invalidateAfterChange(queryClient);
+    },
   });
 }
 
@@ -138,11 +159,13 @@ export function useRecheckPostMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (postId: string) => recheckPost(postId),
-    onSuccess: () =>
-      Promise.all([
+    onSuccess: () => {
+      pollingSince.clear();
+      return Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.myPosts }),
         queryClient.invalidateQueries({ queryKey: queryKeys.adminAll }),
-      ]),
+      ]);
+    },
   });
 }
 
@@ -176,9 +199,10 @@ export function useAdminPostQuery(postId: string | null) {
     queryFn: ({ signal }) => getAdminPost(postId ?? "", { signal }),
     enabled: postId !== null,
     refetchInterval: (query) =>
-      query.state.data && checkRunning(query.state.data.check)
-        ? CHECK_POLL_MS
-        : false,
+      pollWhileChecking(
+        `admin-post:${postId}`,
+        query.state.data ? checkRunning(query.state.data.check) : false,
+      ),
   });
 }
 

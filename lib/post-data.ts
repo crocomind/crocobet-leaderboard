@@ -11,6 +11,8 @@ export interface PostRef {
   contentType: ContentType;
   url: string;
   externalId: string | null;
+  /** When it was submitted. Real providers ignore it; the fixture uses it for stable dates. */
+  submittedAt?: Date;
 }
 
 export type MediaKind = "video" | "image" | "carousel" | "text";

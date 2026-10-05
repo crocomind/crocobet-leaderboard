@@ -90,11 +90,15 @@ function buildUrl(path: string, query: HttpRequestOptions["query"]): URL {
       status: 0,
       code: "config_error",
       message:
-        "NEXT_PUBLIC_API_BASE_URL is not set. Set it, or set NEXT_PUBLIC_USE_MOCKS=true.",
+        "NEXT_PUBLIC_API_BASE_URL is not set. Set it (/api/v1 for the in-repo backend), or set NEXT_PUBLIC_USE_MOCKS=true.",
     });
   }
 
-  const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  // A relative base (/api/v1, the in-repo backend) resolves against this origin.
+  const absolute = baseUrl.startsWith("/")
+    ? new URL(baseUrl, window.location.origin).href
+    : baseUrl;
+  const base = absolute.endsWith("/") ? absolute : `${absolute}/`;
   const url = new URL(path.replace(/^\/+/, ""), base);
   for (const [key, value] of Object.entries(query ?? {})) {
     if (value !== undefined && value !== null && value !== "") {

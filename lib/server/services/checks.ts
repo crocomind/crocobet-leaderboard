@@ -1,0 +1,212 @@
+import "server-only";
+import { and, desc, eq } from "drizzle-orm";
+import { categoryOf } from "@/lib/platforms";
+import { evaluateFetch } from "@/lib/post-check";
+import type { FetchOutcome } from "@/lib/post-data";
+import type { ServerConfig } from "@/lib/server/config";
+import type { Db } from "@/lib/server/db/client";
+import {
+  type CheckDetails,
+  moderationEvents,
+  postMetricSnapshots,
+  posts,
+  type PostRow,
+  socialAccounts,
+} from "@/lib/server/db/schema";
+import { type PostDataProvider, providerFor } from "@/lib/server/providers";
+
+/** Provider payloads kept for audits are trimmed to this size. */
+const RAW_MAX_CHARS = 8_000;
+
+function trimRaw(raw: unknown): unknown {
+  try {
+    const text = JSON.stringify(raw ?? null);
+    return text.length <= RAW_MAX_CHARS
+      ? JSON.parse(text)
+      : { truncated: true };
+  } catch {
+    return null;
+  }
+}
+
+const CHECK_EVENTS = {
+  passed: "check_passed",
+  failed: "check_failed",
+  error: "check_error",
+} as const;
+
+/**
+ * Applies one provider fetch to a post with the shared rules
+ * (lib/post-check.ts): the check, flags, reclassification, publish date,
+ * metrics and a snapshot, plus system events. One transaction.
+ */
+export async function applyFetch(
+  db: Db,
+  config: ServerConfig,
+  row: PostRow,
+  outcome: FetchOutcome,
+  { now, logCheck = false }: { now: Date; logCheck?: boolean },
+): Promise<{ ok: boolean }> {
+  const linkedHandles = await db
+    .select({
+      handle: socialAccounts.handle,
+      employeeId: socialAccounts.employeeId,
+    })
+    .from(socialAccounts)
+    .where(eq(socialAccounts.platform, row.platform));
+  const [lastSnapshot] = await db
+    .select({
+      views: postMetricSnapshots.views,
+      reactions: postMetricSnapshots.reactions,
+    })
+    .from(postMetricSnapshots)
+    .where(
+      and(
+        eq(postMetricSnapshots.postId, row.id),
+        eq(postMetricSnapshots.source, "provider"),
+      ),
+    )
+    .orderBy(desc(postMetricSnapshots.fetchedAt))
+    .limit(1);
+
+  const evaluation = evaluateFetch(
+    {
+      platform: row.platform,
+      contentType: row.contentType,
+      externalId: row.externalId,
+      status: row.status,
+      title: row.title,
+      publishedAt: row.publishedAt,
+      publishedAtSource: row.publishedAtSource,
+      submittedPostedAt: row.submittedPostedAt,
+      views: row.views,
+      reactions: row.reactions,
+      metricsLocked: row.metricsLocked,
+      flags: row.flags,
+      consecutiveFetchFailures: row.consecutiveFetchFailures,
+      lastSnapshot: lastSnapshot ?? null,
+    },
+    outcome,
+    {
+      now,
+      campaign: config.campaign,
+      tags: config.tags,
+      employeeId: row.employeeId,
+      linkedHandles,
+      growthFlag: config.growthFlag,
+    },
+  );
+  const check = evaluation.check;
+  const checkStatus = check.status;
+  const checkDetails: CheckDetails = {
+    tagFound: check.tagFound,
+    matched: check.matched,
+    authorHandle: check.authorHandle,
+    ownerMatch: check.ownerMatch,
+    publishedInWindow: check.publishedInWindow,
+    error: check.error,
+  };
+  const newFlags = evaluation.flags.filter((flag) => !row.flags.includes(flag));
+  const fetched = evaluation.snapshot !== null;
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(posts)
+      .set({
+        checkStatus,
+        checkDetails,
+        checkedAt: now,
+        checkAttempts: row.checkAttempts + 1,
+        contentType: evaluation.contentType,
+        category: categoryOf(evaluation.contentType),
+        title: evaluation.title,
+        ...(evaluation.caption !== null ? { caption: evaluation.caption } : {}),
+        ...(evaluation.authorHandle !== null
+          ? { authorHandle: evaluation.authorHandle }
+          : {}),
+        ...(evaluation.authorName !== null
+          ? { authorName: evaluation.authorName }
+          : {}),
+        ...(evaluation.thumbnailUrl !== null
+          ? { thumbnailUrl: evaluation.thumbnailUrl }
+          : {}),
+        publishedAt: evaluation.publishedAt,
+        publishedAtSource: evaluation.publishedAtSource,
+        views: evaluation.views,
+        reactions: evaluation.reactions,
+        flags: evaluation.flags,
+        consecutiveFetchFailures: evaluation.consecutiveFetchFailures,
+        ...(fetched && !row.metricsLocked
+          ? { metricsFetchedAt: now, metricsSource: "provider" as const }
+          : {}),
+      })
+      .where(eq(posts.id, row.id));
+
+    if (evaluation.snapshot)
+      await tx.insert(postMetricSnapshots).values({
+        postId: row.id,
+        fetchedAt: now,
+        views: evaluation.snapshot.views,
+        reactions: evaluation.snapshot.reactions,
+        source: "provider",
+        raw: outcome.ok ? trimRaw(outcome.post.raw) : null,
+      });
+
+    const events: (typeof moderationEvents.$inferInsert)[] = [];
+    if (evaluation.reclassified && row.contentType !== evaluation.contentType)
+      events.push({
+        postId: row.id,
+        action: "reclassified",
+        before: { contentType: row.contentType },
+        after: { contentType: evaluation.contentType },
+        createdAt: now,
+      });
+    for (const flag of newFlags)
+      events.push({ postId: row.id, action: `flag:${flag}`, createdAt: now });
+    if (logCheck && checkStatus in CHECK_EVENTS)
+      events.push({
+        postId: row.id,
+        action: CHECK_EVENTS[checkStatus as keyof typeof CHECK_EVENTS],
+        createdAt: now,
+      });
+    if (events.length > 0) await tx.insert(moderationEvents).values(events);
+  });
+  return { ok: fetched };
+}
+
+/** Fetches one post from its platform's provider and applies the result. */
+export async function runCheck(
+  db: Db,
+  config: ServerConfig,
+  postId: string,
+  {
+    now = new Date(),
+    logCheck = true,
+    provider,
+  }: { now?: Date; logCheck?: boolean; provider?: PostDataProvider } = {},
+): Promise<void> {
+  const row = await db.query.posts.findFirst({ where: eq(posts.id, postId) });
+  if (!row) return;
+  const ref = {
+    platform: row.platform,
+    contentType: row.contentType,
+    url: row.urlCanonical,
+    externalId: row.externalId,
+    submittedAt: row.submittedAt,
+  };
+  let outcome: FetchOutcome;
+  try {
+    const outcomes = await (
+      provider ?? providerFor(row.platform, config)
+    ).fetchMany([ref], { signal: AbortSignal.timeout(30_000), now });
+    outcome = outcomes.get(ref.url) ?? {
+      ok: false,
+      error: "provider_error",
+      retryable: true,
+    };
+  } catch (error) {
+    console.warn("[checks] provider failed", error);
+    outcome = { ok: false, error: "provider_error", retryable: true };
+  }
+  await applyFetch(db, config, row, outcome, { now, logCheck });
+}

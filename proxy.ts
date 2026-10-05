@@ -7,6 +7,7 @@ import { getAuth } from "@/lib/auth/server";
  * Every page and API route requires a signed-in Crocobet employee. Signed-out
  * visitors go to /sign-in (and come back to where they were); API calls get
  * a 401. The sign-in page, the auth endpoints and static files are public.
+ * /api/cron routes check their own secret instead.
  */
 export async function proxy(request: NextRequest) {
   const session = isAuthConfigured()
@@ -32,6 +33,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api/auth|sign-in|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
+    "/((?!api/auth|api/cron|sign-in|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
   ],
 };
