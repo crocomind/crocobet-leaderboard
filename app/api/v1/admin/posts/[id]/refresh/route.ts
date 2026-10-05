@@ -3,6 +3,9 @@ import { employeeRoute } from "@/lib/server/route";
 import { uuidSchema } from "@/lib/server/schemas";
 import { refreshAdminPost } from "@/lib/server/services/admin";
 
+/** The post check runs a scraper, which can take minutes (after() shares this limit). */
+export const maxDuration = 300;
+
 export const POST = employeeRoute<{ id: string }>(
   async ({ params, db, config, auth, now }) => {
     const id = uuidSchema.safeParse(params.id);

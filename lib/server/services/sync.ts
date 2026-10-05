@@ -189,49 +189,64 @@ export async function executeRun(
     }
 
     for (const { provider, rows } of groups.values()) {
+      const size = provider.batchSize ?? BATCH_SIZE;
       const batches: PostRow[][] = [];
-      for (let i = 0; i < rows.length; i += BATCH_SIZE)
-        batches.push(rows.slice(i, i + BATCH_SIZE));
-      await pool(batches, CONCURRENCY, async (batch) => {
-        if (options.deadline !== undefined && Date.now() > options.deadline) {
-          stoppedEarly = true;
-          return;
-        }
-        let outcomes: Map<string, FetchOutcome>;
-        try {
-          outcomes = await provider.fetchMany(
-            batch.map((row) => ({
-              platform: row.platform,
-              contentType: row.contentType,
-              url: row.urlCanonical,
-              externalId: row.externalId,
-              submittedAt: row.submittedAt,
-            })),
-            { signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS), now: clock() },
-          );
-        } catch (cause) {
-          console.warn(`[sync] provider ${provider.id} failed`, cause);
-          outcomes = new Map();
-        }
-        for (const selected of batch) {
-          // Re-read: an admin may have changed the post since it was selected.
-          const row = await db.query.posts.findFirst({
-            where: eq(posts.id, selected.id),
-          });
-          if (!row || (row.status !== "pending" && row.status !== "approved"))
-            continue;
-          const outcome = outcomes.get(row.urlCanonical) ?? {
-            ok: false as const,
-            error: "provider_error" as const,
-            retryable: true,
-          };
-          const result = await applyFetch(db, config, row, outcome, {
-            now: clock(),
-          });
-          if (result.ok) ok += 1;
-          else failed += 1;
-        }
-      });
+      for (let i = 0; i < rows.length; i += size)
+        batches.push(rows.slice(i, i + size));
+      await pool(
+        batches,
+        provider.concurrency ?? CONCURRENCY,
+        async (batch) => {
+          // Only start a batch that has the time it needs before the deadline.
+          if (
+            options.deadline !== undefined &&
+            Date.now() + (provider.minBatchMs ?? 0) > options.deadline
+          ) {
+            stoppedEarly = true;
+            return;
+          }
+          let outcomes: Map<string, FetchOutcome>;
+          try {
+            outcomes = await provider.fetchMany(
+              batch.map((row) => ({
+                platform: row.platform,
+                contentType: row.contentType,
+                url: row.urlCanonical,
+                externalId: row.externalId,
+                submittedAt: row.submittedAt,
+              })),
+              {
+                signal: AbortSignal.timeout(
+                  provider.timeoutMs ?? PROVIDER_TIMEOUT_MS,
+                ),
+                now: clock(),
+                deadline: options.deadline,
+              },
+            );
+          } catch (cause) {
+            console.warn(`[sync] provider ${provider.id} failed`, cause);
+            outcomes = new Map();
+          }
+          for (const selected of batch) {
+            // Re-read: an admin may have changed the post since it was selected.
+            const row = await db.query.posts.findFirst({
+              where: eq(posts.id, selected.id),
+            });
+            if (!row || (row.status !== "pending" && row.status !== "approved"))
+              continue;
+            const outcome = outcomes.get(row.urlCanonical) ?? {
+              ok: false as const,
+              error: "provider_error" as const,
+              retryable: true,
+            };
+            const result = await applyFetch(db, config, row, outcome, {
+              now: clock(),
+            });
+            if (result.ok) ok += 1;
+            else failed += 1;
+          }
+        },
+      );
     }
   } catch (cause) {
     console.error("[sync] run failed", cause);

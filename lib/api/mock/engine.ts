@@ -5,7 +5,7 @@ import {
   type ModerationError,
 } from "@/lib/moderation";
 import { type CampaignWindow, isWithin } from "@/lib/periods";
-import { evaluateFetch } from "@/lib/post-check";
+import { evaluateFetch, isProviderFailure } from "@/lib/post-check";
 import type { FetchOutcome } from "@/lib/post-data";
 import type {
   ModerationPayload,
@@ -160,6 +160,13 @@ export function fetchPost(
   now: Date,
   { logCheck = false }: { logCheck?: boolean } = {},
 ): boolean {
+  const outcome = truthFetch(post.truth, now);
+  if (
+    isProviderFailure(outcome) &&
+    post.check.status !== "queued" &&
+    post.check.status !== "running"
+  )
+    return false;
   const lastProvider = post.snapshots.findLast(
     (snapshot) => snapshot.source === "provider",
   );
@@ -182,7 +189,7 @@ export function fetchPost(
         ? { views: lastProvider.views, reactions: lastProvider.reactions }
         : null,
     },
-    truthFetch(post.truth, now),
+    outcome,
     {
       now,
       campaign: campaignOf(state),

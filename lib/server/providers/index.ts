@@ -1,6 +1,7 @@
 import "server-only";
 import type { Platform } from "@/lib/platforms";
 import type { ServerConfig } from "@/lib/server/config";
+import { createApifyProvider } from "./apify";
 import { createFixtureProvider } from "./fixture";
 import { manualProvider } from "./manual";
 import type { PostDataProvider } from "./types";
@@ -21,6 +22,16 @@ export function providerFor(
       `#${config.tags.hashtags[0] ?? "CrocoBySquad"}`,
     );
   if (id === "manual") return manualProvider;
+  if (id === "apify") {
+    if (config.apify.token)
+      return createApifyProvider({
+        token: config.apify.token,
+        maxChargeUsd: config.apify.maxChargeUsd,
+        actors: config.apify.actors,
+      });
+    console.warn("[providers] APIFY_API_TOKEN is not set; using manual entry");
+    return manualProvider;
+  }
   console.warn(`[providers] unknown provider "${id}"; using manual entry`);
   return manualProvider;
 }

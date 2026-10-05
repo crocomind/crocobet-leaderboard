@@ -258,6 +258,61 @@ describe("runSync", () => {
     expect(run?.finishedAt).not.toBeNull();
   });
 
+  it("follows the provider's batch size, and starts a batch only with the time it needs", async () => {
+    const ana = await makeEmployee(db);
+    for (let i = 0; i < 5; i++) await makePost(db, ana.id, "tiktok_video");
+    const deadline = Date.now() + 60_000;
+    const seen: (number | undefined)[] = [];
+    const answer = provider(() => fetched());
+    const batched: PostDataProvider = {
+      ...answer,
+      batchSize: 2,
+      concurrency: 1,
+      fetchMany: (refs, context) => {
+        seen.push(context.deadline);
+        return answer.fetchMany(refs, context);
+      },
+    };
+    await runSync(db, testConfig, options(batched, { deadline }));
+    expect(answer.calls.map((refs) => refs.length)).toEqual([2, 2, 1]);
+    expect(seen).toEqual([deadline, deadline, deadline]);
+
+    await resetDb(db);
+    await makePost(db, (await makeEmployee(db)).id, "tiktok_video");
+    const slow = provider(() => fetched());
+    const result = await runSync(
+      db,
+      testConfig,
+      options({ ...slow, minBatchMs: 120_000 }, { deadline }),
+    );
+    expect(result).toMatchObject({ stoppedEarly: true });
+    expect(slow.calls).toEqual([]);
+  });
+
+  it("doesn't hold a provider outage against the posts", async () => {
+    const ana = await makeEmployee(db);
+    const post = await makePost(db, ana.id, "tiktok_video", {
+      checkStatus: "passed",
+      consecutiveFetchFailures: 2,
+      views: 900,
+    });
+    const down = provider(() => ({
+      ok: false,
+      error: "provider_error",
+      retryable: true,
+    }));
+    await runSync(db, testConfig, options(down));
+    const row = await db.query.posts.findFirst({
+      where: eq(posts.id, post.id),
+    });
+    expect(row).toMatchObject({
+      checkStatus: "passed",
+      consecutiveFetchFailures: 2,
+      views: 900,
+    });
+    expect(row?.flags).not.toContain("unavailable");
+  });
+
   it("adopts the real link of an unresolved short link, and rejects a duplicate", async () => {
     const ana = await makeEmployee(db);
     const original = await makePost(db, ana.id, "tiktok_video", {

@@ -23,6 +23,18 @@ import type { FetchOutcome } from "@/lib/post-data";
  */
 
 export const FAILURES_BEFORE_UNAVAILABLE = 3;
+
+/**
+ * The provider itself failed (outage, rate limit, credits, bad token), not
+ * the post. Such failures don't count toward "unavailable", and a post whose
+ * check already finished is left as it was.
+ */
+export function isProviderFailure(outcome: FetchOutcome): boolean {
+  return (
+    !outcome.ok &&
+    (outcome.error === "provider_error" || outcome.error === "rate_limited")
+  );
+}
 export const TITLE_FROM_CAPTION_MAX = 120;
 
 export interface EvaluatedPost {
@@ -122,7 +134,9 @@ export function evaluateFetch(
   const checkedAt = now.toISOString();
 
   if (!outcome.ok) {
-    const failures = post.consecutiveFetchFailures + 1;
+    const failures = isProviderFailure(outcome)
+      ? post.consecutiveFetchFailures
+      : post.consecutiveFetchFailures + 1;
     setFlag(flags, "unavailable", failures >= FAILURES_BEFORE_UNAVAILABLE);
     const published = resolvePublishedAt(post, null, now, campaign.timeZone);
     setFlag(

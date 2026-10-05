@@ -5,6 +5,7 @@ import {
   type EvaluatedPost,
   type EvaluationContext,
   evaluateFetch,
+  isProviderFailure,
 } from "@/lib/post-check";
 
 const now = new Date("2026-10-20T08:00:00+04:00");
@@ -245,6 +246,25 @@ describe("evaluateFetch", () => {
     );
     expect(recovered.flags).not.toContain("unavailable");
     expect(recovered.consecutiveFetchFailures).toBe(0);
+  });
+
+  it("doesn't count the provider's own failures against the post", () => {
+    const post = {
+      ...basePost,
+      views: 800,
+      reactions: 40,
+      consecutiveFetchFailures: 2,
+    };
+    for (const error of ["provider_error", "rate_limited"] as const) {
+      const outcome = { ok: false as const, error, retryable: true };
+      expect(isProviderFailure(outcome)).toBe(true);
+      const result = evaluateFetch(post, outcome, context);
+      expect(result.consecutiveFetchFailures).toBe(2);
+      expect(result.flags).not.toContain("unavailable");
+    }
+    expect(
+      isProviderFailure({ ok: false, error: "not_found", retryable: false }),
+    ).toBe(false);
   });
 
   it("keeps locked metrics as entered but still reports the snapshot", () => {

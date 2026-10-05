@@ -36,6 +36,13 @@ export interface ServerConfig {
   submissionGraceDays: number;
   metricsGraceDays: number;
   growthFlag: { factor: number; min: number };
+  apify: {
+    token: string | null;
+    /** Cost cap per scraper run, in US dollars. */
+    maxChargeUsd: number;
+    /** Scraper overrides per platform ("username~actor-name"). */
+    actors: Partial<Record<Platform, string>>;
+  };
 }
 
 const ISO_WITH_OFFSET =
@@ -85,6 +92,11 @@ const providerId = optional.refine(
   { message: "must be a provider id such as fixture, manual or apify" },
 );
 
+const actorId = optional.refine(
+  (value) => value === undefined || /^[\w.-]+~[\w.-]+$/.test(value),
+  { message: "must be an actor id such as clockworks~tiktok-video-scraper" },
+);
+
 const schema = z.object({
   DATABASE_URL: optional.refine(
     (value) => value === undefined || /^postgres(ql)?:\/\//.test(value),
@@ -113,6 +125,12 @@ const schema = z.object({
   GROWTH_FLAG_FACTOR: positive(5),
   GROWTH_FLAG_MIN: count(1000),
   VERCEL_ENV: optional,
+  APIFY_API_TOKEN: optional,
+  APIFY_MAX_CHARGE_USD: positive(1),
+  APIFY_ACTOR_INSTAGRAM: actorId,
+  APIFY_ACTOR_FACEBOOK: actorId,
+  APIFY_ACTOR_TIKTOK: actorId,
+  APIFY_ACTOR_LINKEDIN: actorId,
 });
 
 export class ConfigError extends Error {
@@ -177,6 +195,20 @@ export function parseServerConfig(
     growthFlag: {
       factor: value.GROWTH_FLAG_FACTOR,
       min: value.GROWTH_FLAG_MIN,
+    },
+    apify: {
+      token: value.APIFY_API_TOKEN ?? null,
+      maxChargeUsd: value.APIFY_MAX_CHARGE_USD,
+      actors: Object.fromEntries(
+        (
+          [
+            ["instagram", value.APIFY_ACTOR_INSTAGRAM],
+            ["facebook", value.APIFY_ACTOR_FACEBOOK],
+            ["tiktok", value.APIFY_ACTOR_TIKTOK],
+            ["linkedin", value.APIFY_ACTOR_LINKEDIN],
+          ] as const
+        ).filter(([, actor]) => actor !== undefined),
+      ),
     },
   };
 }

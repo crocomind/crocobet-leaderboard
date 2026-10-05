@@ -1,7 +1,7 @@
 import "server-only";
 import { and, desc, eq, ne, or } from "drizzle-orm";
 import { analyzePostUrl, categoryOf } from "@/lib/platforms";
-import { evaluateFetch } from "@/lib/post-check";
+import { evaluateFetch, isProviderFailure } from "@/lib/post-check";
 import type { FetchOutcome } from "@/lib/post-data";
 import type { ServerConfig } from "@/lib/server/config";
 import type { Db } from "@/lib/server/db/client";
@@ -98,6 +98,13 @@ export async function applyFetch(
   outcome: FetchOutcome,
   { now, logCheck = false }: { now: Date; logCheck?: boolean },
 ): Promise<{ ok: boolean }> {
+  // A provider outage says nothing about the post: keep a finished check as it is.
+  if (
+    isProviderFailure(outcome) &&
+    row.checkStatus !== "queued" &&
+    row.checkStatus !== "running"
+  )
+    return { ok: false };
   const linkedHandles = await db
     .select({
       handle: socialAccounts.handle,
@@ -280,9 +287,11 @@ export async function runCheck(
   };
   let outcome: FetchOutcome;
   try {
-    const outcomes = await (
-      provider ?? providerFor(row.platform, config)
-    ).fetchMany([ref], { signal: AbortSignal.timeout(30_000), now });
+    const source = provider ?? providerFor(row.platform, config);
+    const outcomes = await source.fetchMany([ref], {
+      signal: AbortSignal.timeout(source.timeoutMs ?? 30_000),
+      now,
+    });
     outcome = outcomes.get(ref.url) ?? {
       ok: false,
       error: "provider_error",

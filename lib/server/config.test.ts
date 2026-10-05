@@ -80,6 +80,25 @@ describe("parseServerConfig", () => {
     );
   });
 
+  it("reads the Apify settings, with a cost cap by default", () => {
+    expect(parseServerConfig({}).apify).toEqual({
+      token: null,
+      maxChargeUsd: 1,
+      actors: {},
+    });
+    expect(
+      parseServerConfig({
+        APIFY_API_TOKEN: " apify_api_secret ",
+        APIFY_MAX_CHARGE_USD: "0.5",
+        APIFY_ACTOR_LINKEDIN: "apimaestro~linkedin-post-detail",
+      }).apify,
+    ).toEqual({
+      token: "apify_api_secret",
+      maxChargeUsd: 0.5,
+      actors: { linkedin: "apimaestro~linkedin-post-detail" },
+    });
+  });
+
   it("rejects invalid values with a clear message", () => {
     const issues = (env: Record<string, string>) => {
       try {
@@ -99,6 +118,12 @@ describe("parseServerConfig", () => {
     expect(issues({ CRON_SECRET: "short" })).toContain("CRON_SECRET");
     expect(issues({ DATABASE_URL: "mysql://x" })).toContain("DATABASE_URL");
     expect(issues({ GROWTH_FLAG_MIN: "-1" })).toContain("GROWTH_FLAG_MIN");
+    expect(issues({ APIFY_MAX_CHARGE_USD: "0" })).toContain(
+      "APIFY_MAX_CHARGE_USD",
+    );
+    expect(issues({ APIFY_ACTOR_TIKTOK: "https://apify.com/x" })).toContain(
+      "APIFY_ACTOR_TIKTOK must be an actor id",
+    );
     expect(
       issues({
         CHALLENGE_STARTS_AT: "2027-01-01T00:00:00Z",
