@@ -6,12 +6,12 @@ import { PlatformBadge } from "@/components/common/platform-badge";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { ConfettiBurst } from "@/components/submit/confetti-burst";
 import { MotionButton } from "@/components/ui/motion-button";
-import type { Video } from "@/lib/api/types";
+import type { Post } from "@/lib/api/types";
 import { DURATION, EASE_OUT_SOFT, springGentle, tween } from "@/lib/motion";
 import { PLATFORMS } from "@/lib/platforms";
 
 interface SubmitSuccessProps {
-  video: Video;
+  post: Post;
   onSubmitAnother: () => void;
   onViewLeaderboard: () => void;
 }
@@ -21,7 +21,7 @@ interface SubmitSuccessProps {
  * itself and a little confetti bursts in brand colors. Static under reduced motion.
  */
 export function SubmitSuccess({
-  video,
+  post,
   onSubmitAnother,
   onViewLeaderboard,
 }: SubmitSuccessProps) {
@@ -100,9 +100,9 @@ export function SubmitSuccess({
         className="mt-4 inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-surface/80 py-1.5 pr-3.5 pl-1.5 text-sm"
         {...fadeUp(0.48)}
       >
-        <PlatformBadge platform={video.platform} size="sm" />
+        <PlatformBadge platform={post.platform} size="sm" />
         <span className="truncate font-medium">
-          {video.title ?? PLATFORMS[video.platform].name}
+          {post.title ?? PLATFORMS[post.platform].name}
         </span>
       </motion.p>
 

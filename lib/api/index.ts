@@ -1,10 +1,10 @@
 import { httpAdapter } from "./http-adapter";
 import type {
   ApiAdapter,
-  EmployeeVideosQuery,
+  EmployeePostsQuery,
   LeaderboardQuery,
   RequestOptions,
-  SubmitVideoPayload,
+  SubmitPostPayload,
 } from "./types";
 
 export const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "true";
@@ -27,23 +27,23 @@ export async function getLeaderboard(
   return (await getAdapter()).getLeaderboard(query, options);
 }
 
-export async function getMyVideos(options?: RequestOptions) {
-  return (await getAdapter()).getMyVideos(options);
+export async function getMyPosts(options?: RequestOptions) {
+  return (await getAdapter()).getMyPosts(options);
 }
 
-export async function getEmployeeVideos(
+export async function getEmployeePosts(
   employeeId: string,
-  query: EmployeeVideosQuery,
+  query: EmployeePostsQuery,
   options?: RequestOptions,
 ) {
-  return (await getAdapter()).getEmployeeVideos(employeeId, query, options);
+  return (await getAdapter()).getEmployeePosts(employeeId, query, options);
 }
 
-export async function submitVideo(
-  payload: SubmitVideoPayload,
+export async function submitPost(
+  payload: SubmitPostPayload,
   options?: RequestOptions,
 ) {
-  return (await getAdapter()).submitVideo(payload, options);
+  return (await getAdapter()).submitPost(payload, options);
 }
 
 export async function getCurrentUser(options?: RequestOptions) {

@@ -65,7 +65,7 @@ export function MyStandingBar({
 
   const actionLabel =
     action === "submit"
-      ? t.header.submitVideo
+      ? t.header.submitPost
       : action === "clear-search"
         ? t.leaderboard.clearSearch
         : t.leaderboard.standing.show;

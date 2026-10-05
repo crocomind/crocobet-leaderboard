@@ -3,7 +3,7 @@ import { PlatformBadge } from "@/components/common/platform-badge";
 import { PLATFORMS, type Platform } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
 
-interface VideoThumbnailProps {
+interface PostThumbnailProps {
   platform: Platform;
   thumbnailUrl?: string | null;
   className?: string;
@@ -12,12 +12,12 @@ interface VideoThumbnailProps {
 }
 
 /** The real thumbnail if the backend has one, otherwise a platform-tinted placeholder. */
-export function VideoThumbnail({
+export function PostThumbnail({
   platform,
   thumbnailUrl,
   className,
   compact,
-}: VideoThumbnailProps) {
+}: PostThumbnailProps) {
   const { color } = PLATFORMS[platform];
 
   return (

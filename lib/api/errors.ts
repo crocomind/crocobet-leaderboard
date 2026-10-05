@@ -1,6 +1,6 @@
 /** Error codes the backend returns in `{ "error": { "code": ... } }`. */
 export type ApiErrorCode =
-  | "duplicate_video"
+  | "duplicate_post"
   | "invalid_url"
   | "unsupported_platform"
   | "validation_error"

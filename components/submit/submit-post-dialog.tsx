@@ -4,23 +4,23 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { SubmitSuccess } from "@/components/submit/submit-success";
-import { SubmitVideoForm } from "@/components/submit/submit-video-form";
-import { useSubmitVideo } from "@/components/submit/submit-video-provider";
+import { SubmitPostForm } from "@/components/submit/submit-post-form";
+import { useSubmitPost } from "@/components/submit/submit-post-provider";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
   ResponsiveDialogDescription,
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog";
-import type { Video } from "@/lib/api/types";
+import type { Post } from "@/lib/api/types";
 import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
 import { useIsDesktop } from "@/lib/hooks/use-media-query";
 import { DURATION, exitTween, tween } from "@/lib/motion";
 import { PLATFORM_LIST } from "@/lib/platforms";
 
-/** Centered modal on desktop, bottom sheet on mobile. Opened via useSubmitVideo(). */
-export function SubmitVideoDialog() {
-  const { open, setOpen } = useSubmitVideo();
+/** Centered modal on desktop, bottom sheet on mobile. Opened via useSubmitPost(). */
+export function SubmitPostDialog() {
+  const { open, setOpen } = useSubmitPost();
 
   return (
     <ResponsiveDialog
@@ -35,17 +35,17 @@ export function SubmitVideoDialog() {
           event.currentTarget.focus();
       }}
     >
-      <SubmitVideoFlow onClose={() => setOpen(false)} />
+      <SubmitPostFlow onClose={() => setOpen(false)} />
     </ResponsiveDialog>
   );
 }
 
 /** Mounted only while the dialog is open, so every open starts fresh. */
-function SubmitVideoFlow({ onClose }: { onClose: () => void }) {
+function SubmitPostFlow({ onClose }: { onClose: () => void }) {
   const { t, format, formatList } = useI18n();
   const isDesktop = useIsDesktop();
   const { setView } = useAppUrlState();
-  const [submitted, setSubmitted] = useState<Video | null>(null);
+  const [submitted, setSubmitted] = useState<Post | null>(null);
   const [round, setRound] = useState(0);
 
   return (
@@ -74,7 +74,7 @@ function SubmitVideoFlow({ onClose }: { onClose: () => void }) {
               animate={{ opacity: 1, transition: tween(DURATION.fast) }}
             >
               <SubmitSuccess
-                video={submitted}
+                post={submitted}
                 onSubmitAnother={() => {
                   setRound((current) => current + 1);
                   setSubmitted(null);
@@ -96,7 +96,7 @@ function SubmitVideoFlow({ onClose }: { onClose: () => void }) {
                 transition: exitTween(DURATION.base),
               }}
             >
-              <SubmitVideoForm
+              <SubmitPostForm
                 onSubmitted={setSubmitted}
                 autoFocus={isDesktop || round > 0}
               />

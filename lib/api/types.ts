@@ -15,21 +15,21 @@ export interface Employee {
   avatarUrl: string | null;
 }
 
-export type VideoStatus = "pending" | "verified" | "rejected";
+export type PostStatus = "pending" | "verified" | "rejected";
 
-export interface Video {
+export interface Post {
   id: string;
   employeeId: string;
-  /** Normalized link (see analyzeVideoUrl in lib/platforms.ts). */
+  /** Normalized link (see analyzePostUrl in lib/platforms.ts). */
   url: string;
   platform: Platform;
   title: string | null;
   postedAt: IsoDate | null;
   submittedAt: IsoDateTime;
-  status: VideoStatus;
+  status: PostStatus;
   /** Set only when status is "rejected". */
   rejectionReason: string | null;
-  /** 0 until the video is verified and its stats are synced. */
+  /** 0 until the post is verified and its stats are synced. */
   views: number;
   reactions: number;
   thumbnailUrl: string | null;
@@ -57,7 +57,7 @@ export interface LeaderboardEntry {
   /** Rank in the previous period. null if the employee wasn't ranked then. */
   previousRank: number | null;
   employee: Employee;
-  videoCount: number;
+  postCount: number;
   totalViews: number;
   totalReactions: number;
   /** Combined score. The backend owns the formula. */
@@ -85,27 +85,27 @@ export interface LeaderboardResponse {
   lastSyncedAt: IsoDateTime;
 }
 
-export interface MyVideosSummary {
+export interface MyPostsSummary {
   totalViews: number;
   totalReactions: number;
-  videoCount: number;
+  postCount: number;
   /** All-time rank by combined score. null if not ranked yet. */
   rank: number | null;
   totalParticipants: number;
 }
 
-export interface MyVideosResponse {
+export interface MyPostsResponse {
   /** Newest submission first. */
-  videos: Video[];
-  summary: MyVideosSummary;
+  posts: Post[];
+  summary: MyPostsSummary;
 }
 
-export interface EmployeeVideosQuery {
+export interface EmployeePostsQuery {
   platform: PlatformFilter;
   period: LeaderboardPeriod;
 }
 
-export interface SubmitVideoPayload {
+export interface SubmitPostPayload {
   url: string;
   platform: Platform;
   title?: string;
@@ -122,15 +122,15 @@ export interface ApiAdapter {
     query: LeaderboardQuery,
     options?: RequestOptions,
   ): Promise<LeaderboardResponse>;
-  getMyVideos(options?: RequestOptions): Promise<MyVideosResponse>;
-  getEmployeeVideos(
+  getMyPosts(options?: RequestOptions): Promise<MyPostsResponse>;
+  getEmployeePosts(
     employeeId: string,
-    query: EmployeeVideosQuery,
+    query: EmployeePostsQuery,
     options?: RequestOptions,
-  ): Promise<Video[]>;
-  submitVideo(
-    payload: SubmitVideoPayload,
+  ): Promise<Post[]>;
+  submitPost(
+    payload: SubmitPostPayload,
     options?: RequestOptions,
-  ): Promise<Video>;
+  ): Promise<Post>;
   getCurrentUser(options?: RequestOptions): Promise<Employee>;
 }

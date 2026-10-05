@@ -3,8 +3,8 @@ import type {
   ApiAdapter,
   Employee,
   LeaderboardResponse,
-  MyVideosResponse,
-  Video,
+  MyPostsResponse,
+  Post,
 } from "./types";
 
 /** Talks to the real backend at NEXT_PUBLIC_API_BASE_URL. See API_CONTRACT.md. */
@@ -20,17 +20,17 @@ export const httpAdapter: ApiAdapter = {
       signal,
     }),
 
-  getMyVideos: ({ signal } = {}) =>
-    request<MyVideosResponse>("/me/videos", { signal }),
+  getMyPosts: ({ signal } = {}) =>
+    request<MyPostsResponse>("/me/posts", { signal }),
 
-  getEmployeeVideos: (employeeId, query, { signal } = {}) =>
-    request<Video[]>(`/employees/${encodeURIComponent(employeeId)}/videos`, {
+  getEmployeePosts: (employeeId, query, { signal } = {}) =>
+    request<Post[]>(`/employees/${encodeURIComponent(employeeId)}/posts`, {
       query: { platform: query.platform, period: query.period },
       signal,
     }),
 
-  submitVideo: (payload, { signal } = {}) =>
-    request<Video>("/videos", { method: "POST", body: payload, signal }),
+  submitPost: (payload, { signal } = {}) =>
+    request<Post>("/posts", { method: "POST", body: payload, signal }),
 
   getCurrentUser: ({ signal } = {}) => request<Employee>("/me", { signal }),
 };

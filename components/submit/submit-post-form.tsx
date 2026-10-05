@@ -6,27 +6,27 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useId, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { VideoPreviewCard } from "@/components/submit/video-preview-card";
-import { VideoUrlField } from "@/components/submit/video-url-field";
+import { PostPreviewCard } from "@/components/submit/post-preview-card";
+import { PostUrlField } from "@/components/submit/post-url-field";
 import { MotionButton } from "@/components/ui/motion-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isApiError } from "@/lib/api/errors";
-import { useMyVideosQuery, useSubmitVideoMutation } from "@/lib/api/queries";
-import type { SubmitVideoPayload, Video } from "@/lib/api/types";
-import { analyzeVideoUrl, PLATFORM_LIST, PLATFORMS } from "@/lib/platforms";
+import { useMyPostsQuery, useSubmitPostMutation } from "@/lib/api/queries";
+import type { SubmitPostPayload, Post } from "@/lib/api/types";
+import { analyzePostUrl, PLATFORM_LIST, PLATFORMS } from "@/lib/platforms";
 import { DURATION, exitTween, tween } from "@/lib/motion";
 import { cn, toIsoDate } from "@/lib/utils";
 import {
-  createSubmitVideoSchema,
-  isSubmitVideoErrorCode,
-  type SubmitVideoErrorCode,
-  type SubmitVideoFormValues,
+  createSubmitPostSchema,
+  isSubmitPostErrorCode,
+  type SubmitPostErrorCode,
+  type SubmitPostFormValues,
   TITLE_MAX_LENGTH,
-} from "@/lib/validation/submit-video";
+} from "@/lib/validation/submit-post";
 
 const FIELD_ERROR_CODES = new Set([
-  "duplicate_video",
+  "duplicate_post",
   "invalid_url",
   "unsupported_platform",
   "validation_error",
@@ -64,16 +64,16 @@ const message = {
 const floatingLabel =
   "transition-[translate,color] duration-(--dur-base) ease-(--ease-out-soft) group-focus-within/field:text-brand-text motion-safe:group-focus-within/field:-translate-y-0.5";
 
-interface SubmitVideoFormProps {
-  onSubmitted: (video: Video) => void;
+interface SubmitPostFormProps {
+  onSubmitted: (post: Post) => void;
   /** Focus the link field on mount (desktop, or after "Submit another"). */
   autoFocus: boolean;
 }
 
-export function SubmitVideoForm({
+export function SubmitPostForm({
   onSubmitted,
   autoFocus,
-}: SubmitVideoFormProps) {
+}: SubmitPostFormProps) {
   const { t, format, formatList } = useI18n();
   const ids = useId();
   const urlId = `${ids}-url`;
@@ -81,18 +81,18 @@ export function SubmitVideoForm({
   const urlErrorId = `${ids}-url-error`;
 
   // Already-submitted links power the instant duplicate check; the server re-checks.
-  const myVideos = useMyVideosQuery();
+  const myPosts = useMyPostsQuery();
   const submittedUrls = useMemo(
-    () => new Set(myVideos.data?.videos.map((video) => video.url)),
-    [myVideos.data],
+    () => new Set(myPosts.data?.posts.map((post) => post.url)),
+    [myPosts.data],
   );
   const schema = useMemo(
     () =>
-      createSubmitVideoSchema({ isDuplicate: (url) => submittedUrls.has(url) }),
+      createSubmitPostSchema({ isDuplicate: (url) => submittedUrls.has(url) }),
     [submittedUrls],
   );
 
-  const form = useForm<SubmitVideoFormValues>({
+  const form = useForm<SubmitPostFormValues>({
     resolver: zodResolver(schema),
     mode: "onTouched",
     defaultValues: { url: "", title: "", postedAt: "" },
@@ -107,14 +107,14 @@ export function SubmitVideoForm({
     if (autoFocus) form.setFocus("url");
   }, [autoFocus, form]);
 
-  const analysis = useMemo(() => analyzeVideoUrl(url), [url]);
+  const analysis = useMemo(() => analyzePostUrl(url), [url]);
   const platform =
-    analysis.status === "valid" || analysis.status === "not-a-video"
+    analysis.status === "valid" || analysis.status === "not-a-post"
       ? analysis.platform
       : null;
   const urlValid = analysis.status === "valid" && !errors.url;
 
-  const mutation = useSubmitVideoMutation();
+  const mutation = useSubmitPostMutation();
   const serverFailed =
     mutation.isError &&
     !(isApiError(mutation.error) && FIELD_ERROR_CODES.has(mutation.error.code));
@@ -122,13 +122,13 @@ export function SubmitVideoForm({
   const platformNames = PLATFORM_LIST.map((definition) => definition.name);
   const messageFor = (code: string | undefined): string | undefined => {
     if (!code) return undefined;
-    if (!isSubmitVideoErrorCode(code)) return code;
-    const messages: Record<SubmitVideoErrorCode, string> = {
+    if (!isSubmitPostErrorCode(code)) return code;
+    const messages: Record<SubmitPostErrorCode, string> = {
       ...t.validation,
       unsupportedPlatform: format(t.validation.unsupportedPlatform, {
         platforms: formatList(platformNames, "and"),
       }),
-      notAVideo: format(t.validation.notAVideo, {
+      notAPost: format(t.validation.notAPost, {
         platform: platform ? PLATFORMS[platform].name : "",
       }),
       titleTooLong: format(t.validation.titleTooLong, {
@@ -143,10 +143,10 @@ export function SubmitVideoForm({
 
   const onSubmit = form.handleSubmit((values) => {
     if (mutation.isPending) return;
-    const result = analyzeVideoUrl(values.url);
+    const result = analyzePostUrl(values.url);
     if (result.status !== "valid") return;
 
-    const payload: SubmitVideoPayload = {
+    const payload: SubmitPostPayload = {
       url: result.normalizedUrl,
       platform: result.platform,
       ...(values.title ? { title: values.title } : {}),
@@ -157,12 +157,12 @@ export function SubmitVideoForm({
       onSuccess: onSubmitted,
       onError: (error) => {
         if (!isApiError(error) || !FIELD_ERROR_CODES.has(error.code)) return;
-        const code: SubmitVideoErrorCode =
-          error.code === "duplicate_video"
+        const code: SubmitPostErrorCode =
+          error.code === "duplicate_post"
             ? "duplicate"
             : error.code === "unsupported_platform"
               ? "unsupportedPlatform"
-              : "notAVideo";
+              : "notAPost";
         form.setError(
           "url",
           { type: "server", message: code },
@@ -187,7 +187,7 @@ export function SubmitVideoForm({
         <Label htmlFor={urlId} className={cn("mb-2 block", floatingLabel)}>
           {t.submit.urlLabel}
         </Label>
-        <VideoUrlField
+        <PostUrlField
           id={urlId}
           registration={form.register("url")}
           platform={platform}
@@ -244,7 +244,7 @@ export function SubmitVideoForm({
             {...reveal}
           >
             <div className="pt-1">
-              <VideoPreviewCard
+              <PostPreviewCard
                 platform={analysis.platform}
                 url={analysis.normalizedUrl}
                 title={title.trim()}

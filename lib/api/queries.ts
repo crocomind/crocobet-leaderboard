@@ -8,24 +8,24 @@ import {
 } from "@tanstack/react-query";
 import {
   getCurrentUser,
-  getEmployeeVideos,
+  getEmployeePosts,
   getLeaderboard,
-  getMyVideos,
-  submitVideo,
+  getMyPosts,
+  submitPost,
 } from "@/lib/api";
 import type {
-  EmployeeVideosQuery,
+  EmployeePostsQuery,
   LeaderboardQuery,
-  SubmitVideoPayload,
+  SubmitPostPayload,
 } from "@/lib/api/types";
 
 export const queryKeys = {
   currentUser: ["me"] as const,
-  myVideos: ["me", "videos"] as const,
+  myPosts: ["me", "posts"] as const,
   leaderboardAll: ["leaderboard"] as const,
   leaderboard: (query: LeaderboardQuery) => ["leaderboard", query] as const,
-  employeeVideos: (employeeId: string, query: EmployeeVideosQuery) =>
-    ["employees", employeeId, "videos", query] as const,
+  employeePosts: (employeeId: string, query: EmployeePostsQuery) =>
+    ["employees", employeeId, "posts", query] as const,
 };
 
 /** Stats sync periodically on the backend; no need to refetch more often. */
@@ -52,46 +52,46 @@ export function useLeaderboardQuery(query: LeaderboardQuery) {
   });
 }
 
-export function useMyVideosQuery() {
+export function useMyPostsQuery() {
   return useQuery({
-    queryKey: queryKeys.myVideos,
-    queryFn: ({ signal }) => getMyVideos({ signal }),
+    queryKey: queryKeys.myPosts,
+    queryFn: ({ signal }) => getMyPosts({ signal }),
     staleTime: STATS_STALE_MS,
   });
 }
 
-export function useEmployeeVideosQuery(
+export function useEmployeePostsQuery(
   employeeId: string | null,
-  query: EmployeeVideosQuery,
+  query: EmployeePostsQuery,
 ) {
   return useQuery({
-    queryKey: queryKeys.employeeVideos(employeeId ?? "", query),
+    queryKey: queryKeys.employeePosts(employeeId ?? "", query),
     queryFn: ({ signal }) =>
-      getEmployeeVideos(employeeId ?? "", query, { signal }),
+      getEmployeePosts(employeeId ?? "", query, { signal }),
     enabled: employeeId !== null,
     staleTime: STATS_STALE_MS,
   });
 }
 
-export function useSubmitVideoMutation() {
+export function useSubmitPostMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: SubmitVideoPayload) => submitVideo(payload),
+    mutationFn: (payload: SubmitPostPayload) => submitPost(payload),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.myVideos }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.myPosts }),
         queryClient.invalidateQueries({ queryKey: queryKeys.leaderboardAll }),
       ]);
     },
   });
 }
 
-export function usePrefetchMyVideos() {
+export function usePrefetchMyPosts() {
   const queryClient = useQueryClient();
   return () =>
     queryClient.prefetchQuery({
-      queryKey: queryKeys.myVideos,
-      queryFn: ({ signal }) => getMyVideos({ signal }),
+      queryKey: queryKeys.myPosts,
+      queryFn: ({ signal }) => getMyPosts({ signal }),
       staleTime: STATS_STALE_MS,
     });
 }

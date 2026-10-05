@@ -3,14 +3,14 @@
 import { Plus } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { useSubmitVideo } from "@/components/submit/submit-video-provider";
+import { useSubmitPost } from "@/components/submit/submit-post-provider";
 import { MotionButton } from "@/components/ui/motion-button";
 import { REDUCED_FADE, springGentle } from "@/lib/motion";
 
-/** Floating "Submit video" button for small screens (the header has one on desktop). */
+/** Floating "Submit post" button for small screens (the header has one on desktop). */
 export function MobileSubmitFab() {
   const { t } = useI18n();
-  const { openSubmit } = useSubmitVideo();
+  const { openSubmit } = useSubmitPost();
   const reduceMotion = useReducedMotion() ?? false;
 
   return (
@@ -22,7 +22,7 @@ export function MobileSubmitFab() {
     >
       <MotionButton
         size="icon"
-        aria-label={t.header.submitVideo}
+        aria-label={t.header.submitPost}
         onClick={openSubmit}
         className="size-14 rounded-full [&_svg]:size-6"
       >

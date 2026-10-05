@@ -7,7 +7,7 @@ import {
   type PlatformFilter,
 } from "@/lib/api/types";
 
-export const VIEWS = ["leaderboard", "my-videos"] as const;
+export const VIEWS = ["leaderboard", "my-posts"] as const;
 export type AppView = (typeof VIEWS)[number];
 
 /** Everything shareable lives in the URL: ?view=&metric=&platform=&period=&q= */
@@ -42,10 +42,18 @@ interface ReadableParams {
 }
 
 /** Unknown or missing values fall back to defaults, so any URL is safe to open. */
+/** Old view names that still open, so shared links keep working. */
+const VIEW_ALIASES: Record<string, AppView> = { "my-videos": "my-posts" };
+
 export function parseUrlState(params: ReadableParams): AppUrlState {
   const platform = params.get("platform");
+  const view = params.get("view");
   return {
-    view: oneOf(VIEWS, params.get("view"), DEFAULT_URL_STATE.view),
+    view: oneOf(
+      VIEWS,
+      view ? (VIEW_ALIASES[view] ?? view) : null,
+      DEFAULT_URL_STATE.view,
+    ),
     metric: oneOf(
       LEADERBOARD_METRICS,
       params.get("metric"),

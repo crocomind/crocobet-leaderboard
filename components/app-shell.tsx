@@ -5,9 +5,9 @@ import { Header } from "@/components/layout/header";
 import { MobileSubmitFab } from "@/components/layout/mobile-submit-fab";
 import { ViewNav } from "@/components/layout/view-nav";
 import { LeaderboardView } from "@/components/leaderboard/leaderboard-view";
-import { MyVideosView } from "@/components/my-videos/my-videos-view";
+import { MyPostsView } from "@/components/my-posts/my-posts-view";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { SubmitVideoDialog } from "@/components/submit/submit-video-dialog";
+import { SubmitPostDialog } from "@/components/submit/submit-post-dialog";
 import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
 import { DURATION, exitTween, REDUCED_FADE, tween } from "@/lib/motion";
 
@@ -54,7 +54,7 @@ export function AppShell() {
               {state.view === "leaderboard" ? (
                 <LeaderboardView />
               ) : (
-                <MyVideosView />
+                <MyPostsView />
               )}
             </motion.div>
           </AnimatePresence>
@@ -62,7 +62,7 @@ export function AppShell() {
       </main>
 
       <MobileSubmitFab />
-      <SubmitVideoDialog />
+      <SubmitPostDialog />
     </div>
   );
 }

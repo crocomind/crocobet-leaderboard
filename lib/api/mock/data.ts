@@ -1,6 +1,6 @@
-import { analyzeVideoUrl, type Platform } from "@/lib/platforms";
+import { analyzePostUrl, type Platform } from "@/lib/platforms";
 import { toIsoDate } from "@/lib/utils";
-import type { Employee, Video, VideoStatus } from "../types";
+import type { Employee, Post, PostStatus } from "../types";
 
 /** The employee the mock backend treats as signed in. */
 export const MOCK_CURRENT_USER_ID = "emp-tamar-lomidze";
@@ -176,7 +176,7 @@ const URL_BUILDERS: Record<Platform, (employee: Employee) => string> = {
 };
 
 function normalize(rawUrl: string): string {
-  const result = analyzeVideoUrl(rawUrl);
+  const result = analyzePostUrl(rawUrl);
   if (result.status !== "valid")
     throw new Error(`Mock URL is not valid: ${rawUrl}`);
   return result.normalizedUrl;
@@ -188,19 +188,19 @@ const startOfToday = (() => {
   return date.getTime();
 })();
 
-function buildVideo(
+function buildPost(
   employee: Employee,
   index: number,
   spec: {
     platform: Platform;
     daysAgo: number;
-    status: VideoStatus;
+    status: PostStatus;
     views: number;
     reactions: number;
     title: string | null;
     rejectionReason?: string;
   },
-): Video {
+): Post {
   const posted = startOfToday - spec.daysAgo * DAY_MS;
   const submitted = Math.min(
     posted + Math.floor(rand() * 1.5 * DAY_MS) + 9 * 3_600_000,
@@ -228,7 +228,7 @@ function buildVideo(
 }
 
 /** Hand-written so the signed-in user's view shows every status. */
-const CURRENT_USER_VIDEOS = [
+const CURRENT_USER_POSTS = [
   {
     platform: "tiktok",
     daysAgo: 2,
@@ -278,12 +278,12 @@ const CURRENT_USER_VIDEOS = [
     reactions: 538,
     title: "Desk setup tour 2026",
   },
-] as const satisfies ReadonlyArray<Parameters<typeof buildVideo>[2]>;
+] as const satisfies ReadonlyArray<Parameters<typeof buildPost>[2]>;
 
-function generateVideos(employee: Employee, person: Person): Video[] {
+function generatePosts(employee: Employee, person: Person): Post[] {
   if (employee.id === MOCK_CURRENT_USER_ID) {
-    return CURRENT_USER_VIDEOS.map((spec, index) =>
-      buildVideo(employee, index, spec),
+    return CURRENT_USER_POSTS.map((spec, index) =>
+      buildPost(employee, index, spec),
     );
   }
 
@@ -293,7 +293,7 @@ function generateVideos(employee: Employee, person: Person): Video[] {
     const daysAgo = Math.floor(rand() ** 1.8 * 110);
     const fresh = daysAgo <= 2;
     const roll = rand();
-    const status: VideoStatus =
+    const status: PostStatus =
       fresh && roll < 0.45 ? "pending" : roll > 0.96 ? "rejected" : "verified";
 
     const recency = fresh ? 0.35 + rand() * 0.3 : 1;
@@ -307,7 +307,7 @@ function generateVideos(employee: Employee, person: Person): Video[] {
       views * REACTION_RATE[platform] * (0.7 + rand() * 0.6),
     );
 
-    return buildVideo(employee, index, {
+    return buildPost(employee, index, {
       platform,
       daysAgo,
       status,
@@ -319,6 +319,6 @@ function generateVideos(employee: Employee, person: Person): Video[] {
   });
 }
 
-export const MOCK_VIDEOS: Video[] = MOCK_EMPLOYEES.flatMap((employee, i) =>
-  generateVideos(employee, PEOPLE[i]!),
+export const MOCK_POSTS: Post[] = MOCK_EMPLOYEES.flatMap((employee, i) =>
+  generatePosts(employee, PEOPLE[i]!),
 );

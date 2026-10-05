@@ -8,7 +8,7 @@ import { Crossfade } from "@/components/common/crossfade";
 import { EmployeeAvatar } from "@/components/common/employee-avatar";
 import { PlatformBadge } from "@/components/common/platform-badge";
 import { ErrorState } from "@/components/common/state-panel";
-import { VideoThumbnail } from "@/components/common/video-thumbnail";
+import { PostThumbnail } from "@/components/common/post-thumbnail";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { Badge } from "@/components/ui/badge";
 import { MotionLinkButton } from "@/components/ui/motion-button";
@@ -19,12 +19,12 @@ import {
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEmployeeVideosQuery } from "@/lib/api/queries";
+import { useEmployeePostsQuery } from "@/lib/api/queries";
 import type {
   LeaderboardEntry,
   LeaderboardPeriod,
   PlatformFilter,
-  Video,
+  Post,
 } from "@/lib/api/types";
 import { enterUp, STAGGER } from "@/lib/motion";
 import { PLATFORMS, safeExternalUrl } from "@/lib/platforms";
@@ -38,7 +38,7 @@ interface EmployeeSheetProps {
   isMe: boolean;
 }
 
-/** Side sheet (bottom sheet on mobile) with one employee's stats and videos. */
+/** Side sheet (bottom sheet on mobile) with one employee's stats and posts. */
 export function EmployeeSheet({
   entry,
   open,
@@ -49,7 +49,7 @@ export function EmployeeSheet({
 }: EmployeeSheetProps) {
   const { t, format, formatNumber } = useI18n();
   // Keyed on the entry rather than `open`, so content stays during the close animation.
-  const videos = useEmployeeVideosQuery(entry?.employee.id ?? null, {
+  const posts = useEmployeePostsQuery(entry?.employee.id ?? null, {
     platform,
     period,
   });
@@ -104,16 +104,13 @@ export function EmployeeSheet({
               <Stat icon={<Sparkles />} label={t.metrics.score}>
                 <AnimatedNumber value={entry.score} format={formatNumber} />
               </Stat>
-              <Stat icon={<Film />} label={t.leaderboard.columns.videos}>
-                <AnimatedNumber
-                  value={entry.videoCount}
-                  format={formatNumber}
-                />
+              <Stat icon={<Film />} label={t.leaderboard.columns.posts}>
+                <AnimatedNumber value={entry.postCount} format={formatNumber} />
               </Stat>
             </dl>
 
             <div className="mt-6 mb-3 flex items-baseline justify-between gap-3">
-              <h3 className="font-semibold">{t.employee.videosTitle}</h3>
+              <h3 className="font-semibold">{t.employee.postsTitle}</h3>
               <p className="truncate text-xs text-muted-foreground">
                 {format(t.employee.counting, {
                   platform: platformLabel,
@@ -124,16 +121,16 @@ export function EmployeeSheet({
 
             <Crossfade
               stateKey={
-                videos.isPending
+                posts.isPending
                   ? "loading"
-                  : videos.isError
+                  : posts.isError
                     ? "error"
-                    : videos.data.length === 0
+                    : posts.data.length === 0
                       ? "empty"
                       : "list"
               }
             >
-              {videos.isPending ? (
+              {posts.isPending ? (
                 <ul aria-busy="true" className="flex flex-col gap-2">
                   {Array.from({ length: 3 }, (_, i) => (
                     <li
@@ -148,23 +145,23 @@ export function EmployeeSheet({
                     </li>
                   ))}
                 </ul>
-              ) : videos.isError ? (
+              ) : posts.isError ? (
                 <ErrorState
                   title={t.employee.error}
                   description={t.leaderboard.error.description}
                   retryLabel={t.common.retry}
-                  onRetry={() => void videos.refetch()}
-                  retrying={videos.isFetching}
+                  onRetry={() => void posts.refetch()}
+                  retrying={posts.isFetching}
                   className="py-8"
                 />
-              ) : videos.data.length === 0 ? (
+              ) : posts.data.length === 0 ? (
                 <p className="rounded-control border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
                   {t.employee.empty}
                 </p>
               ) : (
                 <ul className="flex flex-col gap-2">
-                  {videos.data.map((video, index) => (
-                    <VideoRow key={video.id} video={video} index={index} />
+                  {posts.data.map((post, index) => (
+                    <PostRow key={post.id} post={post} index={index} />
                   ))}
                 </ul>
               )}
@@ -196,56 +193,56 @@ function Stat({
   );
 }
 
-function VideoRow({ video, index }: { video: Video; index: number }) {
+function PostRow({ post, index }: { post: Post; index: number }) {
   const { t, formatCompact, formatDate, plural } = useI18n();
-  const href = safeExternalUrl(video.url);
+  const href = safeExternalUrl(post.url);
 
   return (
     <motion.li
       {...enterUp(index, STAGGER.list)}
       className="flex items-center gap-3 rounded-control border border-border bg-surface/60 p-2.5 motion-colors hover:border-brand/25 hover:bg-surface"
     >
-      <VideoThumbnail
-        platform={video.platform}
-        thumbnailUrl={video.thumbnailUrl}
+      <PostThumbnail
+        platform={post.platform}
+        thumbnailUrl={post.thumbnailUrl}
         compact
         className="size-16 shrink-0 rounded-xl"
       />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">
-          {video.title ?? t.common.untitled}
+          {post.title ?? t.common.untitled}
         </p>
         <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <PlatformBadge platform={video.platform} size="xs" />
-          {PLATFORMS[video.platform].name}
-          {video.postedAt && <> · {formatDate(video.postedAt)}</>}
+          <PlatformBadge platform={post.platform} size="xs" />
+          {PLATFORMS[post.platform].name}
+          {post.postedAt && <> · {formatDate(post.postedAt)}</>}
         </p>
         <p className="mt-1 flex items-center gap-3 text-xs tabular-nums">
           <span
             className="inline-flex items-center gap-1"
-            title={plural(t.metrics.units.views, video.views)}
+            title={plural(t.metrics.units.views, post.views)}
           >
             <Eye
               className="size-3.5 text-muted-foreground"
               aria-hidden="true"
             />
             <span className="sr-only">
-              {plural(t.metrics.units.views, video.views)}
+              {plural(t.metrics.units.views, post.views)}
             </span>
-            <span aria-hidden="true">{formatCompact(video.views)}</span>
+            <span aria-hidden="true">{formatCompact(post.views)}</span>
           </span>
           <span
             className="inline-flex items-center gap-1"
-            title={plural(t.metrics.units.reactions, video.reactions)}
+            title={plural(t.metrics.units.reactions, post.reactions)}
           >
             <Heart
               className="size-3.5 text-muted-foreground"
               aria-hidden="true"
             />
             <span className="sr-only">
-              {plural(t.metrics.units.reactions, video.reactions)}
+              {plural(t.metrics.units.reactions, post.reactions)}
             </span>
-            <span aria-hidden="true">{formatCompact(video.reactions)}</span>
+            <span aria-hidden="true">{formatCompact(post.reactions)}</span>
           </span>
         </p>
       </div>
@@ -259,7 +256,7 @@ function VideoRow({ video, index }: { video: Video; index: number }) {
         >
           <ArrowUpRight aria-hidden="true" />
           <span className="sr-only">
-            {t.common.openVideo}: {video.title ?? t.common.untitled} (
+            {t.common.openPost}: {post.title ?? t.common.untitled} (
             {t.common.opensInNewTab})
           </span>
         </MotionLinkButton>

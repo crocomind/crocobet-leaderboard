@@ -106,11 +106,11 @@ export function isPlatform(value: unknown): value is Platform {
   );
 }
 
-export type VideoUrlAnalysis =
+export type PostUrlAnalysis =
   | { status: "empty" }
   | { status: "invalid-url" }
   | { status: "unsupported-platform" }
-  | { status: "not-a-video"; platform: Platform }
+  | { status: "not-a-post"; platform: Platform }
   | { status: "valid"; platform: Platform; normalizedUrl: string };
 
 interface CleanedUrl {
@@ -186,7 +186,7 @@ export function detectPlatform(input: string): Platform | null {
  * params. Two links to the same video normalize to the same string, which is
  * what duplicate detection compares.
  */
-export function analyzeVideoUrl(input: string): VideoUrlAnalysis {
+export function analyzePostUrl(input: string): PostUrlAnalysis {
   if (!input.trim()) return { status: "empty" };
 
   const cleaned = cleanUrl(input);
@@ -198,7 +198,7 @@ export function analyzeVideoUrl(input: string): VideoUrlAnalysis {
   const matches = PLATFORMS[platform].patterns.some((pattern) =>
     pattern.test(candidate),
   );
-  if (!matches) return { status: "not-a-video", platform };
+  if (!matches) return { status: "not-a-post", platform };
 
   return {
     status: "valid",

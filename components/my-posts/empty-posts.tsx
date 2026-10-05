@@ -17,7 +17,7 @@ const TILE_POSITIONS = [
 ];
 
 /** Friendly empty state: floating platform tiles around a glowing play card. */
-export function EmptyVideos({ onSubmit }: { onSubmit: () => void }) {
+export function EmptyPosts({ onSubmit }: { onSubmit: () => void }) {
   const { t } = useI18n();
   const reduceMotion = useReducedMotion() ?? false;
 
@@ -69,14 +69,14 @@ export function EmptyVideos({ onSubmit }: { onSubmit: () => void }) {
       </div>
 
       <h2 className="mt-6 text-xl font-bold text-balance">
-        {t.myVideos.empty.title}
+        {t.myPosts.empty.title}
       </h2>
       <p className="mt-2 max-w-sm text-sm text-pretty text-muted-foreground">
-        {t.myVideos.empty.description}
+        {t.myPosts.empty.description}
       </p>
       <MotionButton size="lg" className="mt-7" onClick={onSubmit}>
         <Plus strokeWidth={2.5} aria-hidden="true" />
-        {t.myVideos.empty.cta}
+        {t.myPosts.empty.cta}
       </MotionButton>
     </div>
   );

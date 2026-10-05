@@ -17,7 +17,7 @@ import {
 import { PLATFORMS, type Platform } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
 
-interface VideoUrlFieldProps {
+interface PostUrlFieldProps {
   id: string;
   registration: UseFormRegisterReturn<"url">;
   platform: Platform | null;
@@ -50,7 +50,7 @@ function iconMotion(reduceMotion: boolean, rotate: number) {
 }
 
 /** The hero URL input: live platform detection, valid/invalid states and a paste button. */
-export function VideoUrlField({
+export function PostUrlField({
   id,
   registration,
   platform,
@@ -59,7 +59,7 @@ export function VideoUrlField({
   describedBy,
   onPasteText,
   onNativePaste,
-}: VideoUrlFieldProps) {
+}: PostUrlFieldProps) {
   const { t, format } = useI18n();
   const reduceMotion = useReducedMotion() ?? false;
   const [pasteFailed, setPasteFailed] = useState(false);

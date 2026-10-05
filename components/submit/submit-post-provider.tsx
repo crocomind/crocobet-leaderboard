@@ -8,31 +8,31 @@ import {
   useState,
 } from "react";
 
-interface SubmitVideoContextValue {
+interface SubmitPostContextValue {
   open: boolean;
   setOpen: (open: boolean) => void;
   openSubmit: () => void;
 }
 
-const SubmitVideoContext = createContext<SubmitVideoContextValue | null>(null);
+const SubmitPostContext = createContext<SubmitPostContextValue | null>(null);
 
-/** Lets any component open the Submit Video dialog. */
-export function SubmitVideoProvider({ children }: { children: ReactNode }) {
+/** Lets any component open the Submit Post dialog. */
+export function SubmitPostProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const value = useMemo(
     () => ({ open, setOpen, openSubmit: () => setOpen(true) }),
     [open],
   );
   return (
-    <SubmitVideoContext.Provider value={value}>
+    <SubmitPostContext.Provider value={value}>
       {children}
-    </SubmitVideoContext.Provider>
+    </SubmitPostContext.Provider>
   );
 }
 
-export function useSubmitVideo(): SubmitVideoContextValue {
-  const context = useContext(SubmitVideoContext);
+export function useSubmitPost(): SubmitPostContextValue {
+  const context = useContext(SubmitPostContext);
   if (!context)
-    throw new Error("useSubmitVideo must be used inside <SubmitVideoProvider>");
+    throw new Error("useSubmitPost must be used inside <SubmitPostProvider>");
   return context;
 }

@@ -75,7 +75,7 @@ Videos you submit in mock mode are saved in your browser's `localStorage`
 ## How the app works
 
 - **One route, client-side views.** Everything is on `/`. The view and filters live in the URL
-  (`?view=my-videos`, `?metric=reactions&platform=tiktok&period=week&q=nino`), so links are
+  (`?view=my-posts`, `?metric=reactions&platform=tiktok&period=week&q=nino`), so links are
   shareable and survive a refresh. Switching views uses `history.pushState`, so Back works,
   while filters use `replaceState`. There's no server round trip. See
   [`lib/url-state.ts`](lib/url-state.ts).
@@ -230,7 +230,7 @@ components/
   app-shell.tsx           header + current view + submit dialog
   layout/                 header, logo slot, view nav, user menu, theme toggle, mobile FAB
   leaderboard/            toolbar, podium, ranked list, side sheet, pinned "my position" bar
-  my-videos/              summary cards, video cards, empty state
+  my-posts/              summary cards, video cards, empty state
   submit/                 submit dialog, form, URL field, preview, success + confetti
   common/                 avatars, platform badges, animated numbers, state panels, thumbnails
   providers/              app providers, i18n, current user

@@ -11,7 +11,7 @@ export function useEntryLabel() {
 
   return (entry: LeaderboardEntry, isMe: boolean) => {
     const stats = [
-      plural(t.common.videos, entry.videoCount),
+      plural(t.common.posts, entry.postCount),
       plural(t.metrics.units.views, entry.totalViews),
       plural(t.metrics.units.reactions, entry.totalReactions),
       plural(t.metrics.units.score, entry.score),

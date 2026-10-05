@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-  createSubmitVideoSchema,
-  type SubmitVideoFormValues,
+  createSubmitPostSchema,
+  type SubmitPostFormValues,
   TITLE_MAX_LENGTH,
-} from "@/lib/validation/submit-video";
+} from "@/lib/validation/submit-post";
 
 const TODAY = "2026-10-01";
-const schema = createSubmitVideoSchema({ today: () => TODAY });
+const schema = createSubmitPostSchema({ today: () => TODAY });
 
-const base: SubmitVideoFormValues = {
+const base: SubmitPostFormValues = {
   url: "https://www.tiktok.com/@nino.beridze/video/7412345678901234567",
   title: "",
   postedAt: "",
@@ -16,8 +16,8 @@ const base: SubmitVideoFormValues = {
 
 /** The error code for one field, or undefined if it passes. */
 function errorFor(
-  values: Partial<SubmitVideoFormValues>,
-  field: keyof SubmitVideoFormValues,
+  values: Partial<SubmitPostFormValues>,
+  field: keyof SubmitPostFormValues,
   testSchema = schema,
 ) {
   const result = testSchema.safeParse({ ...base, ...values });
@@ -25,13 +25,13 @@ function errorFor(
   return result.error.issues.find((issue) => issue.path[0] === field)?.message;
 }
 
-describe("submit video schema: url", () => {
+describe("submit post schema: url", () => {
   it.each([
     "https://www.instagram.com/reel/C8xYz12AbCd/",
     "https://www.facebook.com/watch/?v=1234567890123456",
     "https://vm.tiktok.com/ZMabc123/",
     "https://www.linkedin.com/feed/update/urn:li:ugcPost:7212345678901234567",
-  ])("accepts a supported video link: %s", (url) => {
+  ])("accepts a supported post link: %s", (url) => {
     expect(errorFor({ url }, "url")).toBeUndefined();
   });
 
@@ -41,7 +41,7 @@ describe("submit video schema: url", () => {
   });
 
   it("rejects text that isn't a link", () => {
-    expect(errorFor({ url: "my latest video" }, "url")).toBe("invalidUrl");
+    expect(errorFor({ url: "my latest post" }, "url")).toBe("invalidUrl");
   });
 
   it.each([
@@ -57,14 +57,14 @@ describe("submit video schema: url", () => {
     "https://www.tiktok.com/@nino.beridze",
     "https://www.linkedin.com/in/nino-beridze/",
   ])("rejects profile and feed links on supported platforms: %s", (url) => {
-    expect(errorFor({ url }, "url")).toBe("notAVideo");
+    expect(errorFor({ url }, "url")).toBe("notAPost");
   });
 
   it("rejects duplicates by normalized URL, whatever the variant", () => {
     const submitted = new Set([
       "https://tiktok.com/@nino.beridze/video/7412345678901234567",
     ]);
-    const withHistory = createSubmitVideoSchema({
+    const withHistory = createSubmitPostSchema({
       today: () => TODAY,
       isDuplicate: (url) => submitted.has(url),
     });
@@ -92,7 +92,7 @@ describe("submit video schema: url", () => {
   });
 });
 
-describe("submit video schema: optional fields", () => {
+describe("submit post schema: optional fields", () => {
   it("accepts empty optional fields", () => {
     expect(schema.safeParse(base).success).toBe(true);
   });

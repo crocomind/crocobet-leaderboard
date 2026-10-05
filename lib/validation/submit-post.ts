@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { analyzeVideoUrl } from "@/lib/platforms";
+import { analyzePostUrl } from "@/lib/platforms";
 import { toIsoDate } from "@/lib/utils";
 
 export const TITLE_MAX_LENGTH = 120;
@@ -9,25 +9,25 @@ export const TITLE_MAX_LENGTH = 120;
  * (see `validation` in lib/i18n/dictionaries.ts), so a language switch
  * re-translates errors already on screen.
  */
-export const SUBMIT_VIDEO_ERROR_CODES = [
+export const SUBMIT_POST_ERROR_CODES = [
   "required",
   "invalidUrl",
   "unsupportedPlatform",
-  "notAVideo",
+  "notAPost",
   "duplicate",
   "titleTooLong",
   "dateInvalid",
   "dateInFuture",
 ] as const;
 
-export type SubmitVideoErrorCode = (typeof SUBMIT_VIDEO_ERROR_CODES)[number];
+export type SubmitPostErrorCode = (typeof SUBMIT_POST_ERROR_CODES)[number];
 
-export function isSubmitVideoErrorCode(
+export function isSubmitPostErrorCode(
   value: unknown,
-): value is SubmitVideoErrorCode {
+): value is SubmitPostErrorCode {
   return (
     typeof value === "string" &&
-    (SUBMIT_VIDEO_ERROR_CODES as readonly string[]).includes(value)
+    (SUBMIT_POST_ERROR_CODES as readonly string[]).includes(value)
   );
 }
 
@@ -39,26 +39,26 @@ function isRealIsoDate(value: string): boolean {
   return !Number.isNaN(date.getTime()) && toIsoDate(date) === value;
 }
 
-export interface SubmitVideoSchemaOptions {
+export interface SubmitPostSchemaOptions {
   /** Receives the normalized URL. Return true if it was already submitted. */
   isDuplicate?: (normalizedUrl: string) => boolean;
   /** Today's date as YYYY-MM-DD. Injectable for tests. */
   today?: () => string;
 }
 
-export function createSubmitVideoSchema({
+export function createSubmitPostSchema({
   isDuplicate = () => false,
   today = () => toIsoDate(new Date()),
-}: SubmitVideoSchemaOptions = {}) {
+}: SubmitPostSchemaOptions = {}) {
   return z.object({
     url: z
       .string()
       .trim()
       .superRefine((value, ctx) => {
-        const fail = (message: SubmitVideoErrorCode) =>
+        const fail = (message: SubmitPostErrorCode) =>
           ctx.addIssue({ code: "custom", message });
 
-        const result = analyzeVideoUrl(value);
+        const result = analyzePostUrl(value);
         switch (result.status) {
           case "empty":
             return fail("required");
@@ -66,8 +66,8 @@ export function createSubmitVideoSchema({
             return fail("invalidUrl");
           case "unsupported-platform":
             return fail("unsupportedPlatform");
-          case "not-a-video":
-            return fail("notAVideo");
+          case "not-a-post":
+            return fail("notAPost");
           case "valid":
             if (isDuplicate(result.normalizedUrl)) fail("duplicate");
         }
@@ -81,6 +81,6 @@ export function createSubmitVideoSchema({
   });
 }
 
-export type SubmitVideoFormValues = z.input<
-  ReturnType<typeof createSubmitVideoSchema>
+export type SubmitPostFormValues = z.input<
+  ReturnType<typeof createSubmitPostSchema>
 >;

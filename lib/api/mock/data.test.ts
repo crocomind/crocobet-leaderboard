@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { analyzeVideoUrl } from "@/lib/platforms";
-import { MOCK_CURRENT_USER_ID, MOCK_EMPLOYEES, MOCK_VIDEOS } from "./data";
+import { analyzePostUrl } from "@/lib/platforms";
+import { MOCK_CURRENT_USER_ID, MOCK_EMPLOYEES, MOCK_POSTS } from "./data";
 
 describe("mock data", () => {
   it("has about 25 employees, including the signed-in user", () => {
@@ -10,26 +10,26 @@ describe("mock data", () => {
     ).toBe(true);
   });
 
-  it("only contains valid, already-normalized video links", () => {
-    for (const video of MOCK_VIDEOS) {
-      expect(analyzeVideoUrl(video.url)).toEqual({
+  it("only contains valid, already-normalized post links", () => {
+    for (const post of MOCK_POSTS) {
+      expect(analyzePostUrl(post.url)).toEqual({
         status: "valid",
-        platform: video.platform,
-        normalizedUrl: video.url,
+        platform: post.platform,
+        normalizedUrl: post.url,
       });
     }
   });
 
   it("has no duplicate links", () => {
-    expect(new Set(MOCK_VIDEOS.map((video) => video.url)).size).toBe(
-      MOCK_VIDEOS.length,
+    expect(new Set(MOCK_POSTS.map((post) => post.url)).size).toBe(
+      MOCK_POSTS.length,
     );
   });
 
-  it("only counts stats for verified videos", () => {
-    for (const video of MOCK_VIDEOS.filter((v) => v.status !== "verified")) {
-      expect(video.views).toBe(0);
-      expect(video.reactions).toBe(0);
+  it("only counts stats for verified posts", () => {
+    for (const post of MOCK_POSTS.filter((v) => v.status !== "verified")) {
+      expect(post.views).toBe(0);
+      expect(post.reactions).toBe(0);
     }
   });
 });

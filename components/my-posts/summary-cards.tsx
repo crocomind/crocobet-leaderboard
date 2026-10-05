@@ -5,34 +5,34 @@ import type { ReactNode } from "react";
 import { AnimatedNumber } from "@/components/common/animated-number";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { MyVideosSummary } from "@/lib/api/types";
+import type { MyPostsSummary } from "@/lib/api/types";
 
 export function SummaryCards({
   summary,
   verifiedCount,
 }: {
-  summary: MyVideosSummary;
+  summary: MyPostsSummary;
   verifiedCount: number;
 }) {
   const { t, format, formatNumber } = useI18n();
 
   return (
     <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-      <SummaryCard icon={<Eye />} label={t.myVideos.summary.views}>
+      <SummaryCard icon={<Eye />} label={t.myPosts.summary.views}>
         <AnimatedNumber value={summary.totalViews} format={formatNumber} />
       </SummaryCard>
-      <SummaryCard icon={<Heart />} label={t.myVideos.summary.reactions}>
+      <SummaryCard icon={<Heart />} label={t.myPosts.summary.reactions}>
         <AnimatedNumber value={summary.totalReactions} format={formatNumber} />
       </SummaryCard>
       <SummaryCard
         icon={<Trophy />}
-        label={t.myVideos.summary.rank}
-        hint={t.myVideos.summary.rankHint}
+        label={t.myPosts.summary.rank}
+        hint={t.myPosts.summary.rankHint}
         highlight
       >
         {summary.rank === null ? (
           <span className="text-lg font-semibold text-muted-foreground">
-            {t.myVideos.summary.notRanked}
+            {t.myPosts.summary.notRanked}
           </span>
         ) : (
           <span className="flex items-baseline gap-1.5">
@@ -40,7 +40,7 @@ export function SummaryCards({
               #<AnimatedNumber value={summary.rank} format={formatNumber} />
             </span>
             <span className="text-sm font-medium text-muted-foreground">
-              {format(t.myVideos.summary.rankOf, {
+              {format(t.myPosts.summary.rankOf, {
                 total: formatNumber(summary.totalParticipants),
               })}
             </span>
@@ -49,12 +49,12 @@ export function SummaryCards({
       </SummaryCard>
       <SummaryCard
         icon={<Film />}
-        label={t.myVideos.summary.videos}
-        hint={format(t.myVideos.summary.videosHint, {
+        label={t.myPosts.summary.posts}
+        hint={format(t.myPosts.summary.postsHint, {
           count: formatNumber(verifiedCount),
         })}
       >
-        <AnimatedNumber value={summary.videoCount} format={formatNumber} />
+        <AnimatedNumber value={summary.postCount} format={formatNumber} />
       </SummaryCard>
     </dl>
   );

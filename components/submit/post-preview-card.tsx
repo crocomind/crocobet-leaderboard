@@ -2,11 +2,11 @@
 
 import { CalendarDays } from "lucide-react";
 import { PlatformBadge } from "@/components/common/platform-badge";
-import { VideoThumbnail } from "@/components/common/video-thumbnail";
+import { PostThumbnail } from "@/components/common/post-thumbnail";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { PLATFORMS, type Platform } from "@/lib/platforms";
 
-interface VideoPreviewCardProps {
+interface PostPreviewCardProps {
   platform: Platform;
   url: string;
   title: string;
@@ -14,12 +14,12 @@ interface VideoPreviewCardProps {
 }
 
 /** What will be submitted: shown once the link is valid. */
-export function VideoPreviewCard({
+export function PostPreviewCard({
   platform,
   url,
   title,
   postedAt,
-}: VideoPreviewCardProps) {
+}: PostPreviewCardProps) {
   const { t, format, formatDate } = useI18n();
 
   return (
@@ -28,7 +28,7 @@ export function VideoPreviewCard({
         {t.submit.previewLabel}
       </figcaption>
       <div className="flex gap-3.5 rounded-card border border-border bg-surface/80 p-3 shadow-soft">
-        <VideoThumbnail
+        <PostThumbnail
           platform={platform}
           compact
           className="h-24 w-[4.5rem] shrink-0 rounded-2xl"
@@ -56,7 +56,7 @@ export function VideoPreviewCard({
           {postedAt && (
             <p className="mt-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
               <CalendarDays className="size-3.5" aria-hidden="true" />
-              {format(t.myVideos.posted, { date: formatDate(postedAt) })}
+              {format(t.myPosts.posted, { date: formatDate(postedAt) })}
             </p>
           )}
         </div>

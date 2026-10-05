@@ -6,13 +6,13 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { ViewNav } from "@/components/layout/view-nav";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { useSubmitVideo } from "@/components/submit/submit-video-provider";
+import { useSubmitPost } from "@/components/submit/submit-post-provider";
 import { MotionButton } from "@/components/ui/motion-button";
 import { useAppUrlState, useViewHref } from "@/lib/hooks/use-app-url-state";
 
 export function Header() {
   const { t } = useI18n();
-  const { openSubmit } = useSubmitVideo();
+  const { openSubmit } = useSubmitPost();
   const { setView } = useAppUrlState();
   const viewHref = useViewHref();
 
@@ -42,7 +42,7 @@ export function Header() {
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <MotionButton className="hidden md:inline-flex" onClick={openSubmit}>
             <Plus strokeWidth={2.5} aria-hidden="true" />
-            {t.header.submitVideo}
+            {t.header.submitPost}
           </MotionButton>
           <ThemeToggle className="hidden sm:inline-flex" />
           <UserMenu />

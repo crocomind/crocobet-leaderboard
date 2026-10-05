@@ -14,7 +14,7 @@ import { enterUp, springLayout, STAGGER } from "@/lib/motion";
 import { trackSpotlight } from "@/lib/spotlight";
 import { cn } from "@/lib/utils";
 
-// rank | employee | videos | views | reactions | score | change
+// rank | employee | posts | views | reactions | score | change
 const DESKTOP_COLUMNS =
   "md:grid-cols-[3rem_minmax(0,1fr)_4.5rem_6.5rem_6.5rem_6.5rem_4.5rem] md:gap-4";
 const MOBILE_COLUMNS = "grid-cols-[2.25rem_minmax(0,1fr)_auto] gap-3";
@@ -50,7 +50,7 @@ export const LeaderboardList = memo(function LeaderboardList({
     label: string;
     metric?: LeaderboardMetric;
   }> = [
-    { key: "videos", label: t.leaderboard.columns.videos },
+    { key: "posts", label: t.leaderboard.columns.posts },
     { key: "views", label: t.leaderboard.columns.views, metric: "views" },
     {
       key: "reactions",
@@ -205,14 +205,14 @@ function LeaderboardRow({
               {entry.employee.department}
               <span className="md:hidden">
                 {" "}
-                · {plural(t.common.videos, entry.videoCount)}
+                · {plural(t.common.posts, entry.postCount)}
               </span>
             </span>
           </span>
         </span>
 
         <span className="hidden text-right text-sm text-muted-foreground tabular-nums md:block">
-          {entry.videoCount}
+          {entry.postCount}
         </span>
         {stat(entry.totalViews, metric === "views")}
         {stat(entry.totalReactions, metric === "reactions")}

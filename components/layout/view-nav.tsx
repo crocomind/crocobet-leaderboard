@@ -4,7 +4,7 @@ import { Clapperboard, type LucideIcon, Trophy } from "lucide-react";
 import { LayoutGroup, motion } from "motion/react";
 import type { MouseEvent } from "react";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { usePrefetchMyVideos } from "@/lib/api/queries";
+import { usePrefetchMyPosts } from "@/lib/api/queries";
 import { useAppUrlState, useViewHref } from "@/lib/hooks/use-app-url-state";
 import type { AppView } from "@/lib/url-state";
 import { springLayout } from "@/lib/motion";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 const ITEMS: ReadonlyArray<{ view: AppView; icon: LucideIcon }> = [
   { view: "leaderboard", icon: Trophy },
-  { view: "my-videos", icon: Clapperboard },
+  { view: "my-posts", icon: Clapperboard },
 ];
 
 function isPlainLeftClick(event: MouseEvent) {
@@ -33,10 +33,10 @@ export function ViewNav({ id, className }: { id: string; className?: string }) {
   const { t } = useI18n();
   const { state, setView } = useAppUrlState();
   const viewHref = useViewHref();
-  const prefetchMyVideos = usePrefetchMyVideos();
+  const prefetchMyPosts = usePrefetchMyPosts();
   const labels: Record<AppView, string> = {
     leaderboard: t.nav.leaderboard,
-    "my-videos": t.nav.myVideos,
+    "my-posts": t.nav.myPosts,
   };
 
   return (
@@ -56,13 +56,13 @@ export function ViewNav({ id, className }: { id: string; className?: string }) {
                     if (!active) setView(view);
                   }}
                   onPointerEnter={
-                    view === "my-videos"
-                      ? () => void prefetchMyVideos()
+                    view === "my-posts"
+                      ? () => void prefetchMyPosts()
                       : undefined
                   }
                   onFocus={
-                    view === "my-videos"
-                      ? () => void prefetchMyVideos()
+                    view === "my-posts"
+                      ? () => void prefetchMyPosts()
                       : undefined
                   }
                   className={cn(

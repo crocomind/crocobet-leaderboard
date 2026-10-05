@@ -4,7 +4,7 @@ import type {
   LeaderboardMetric,
   LeaderboardPeriod,
   PlatformFilter,
-  Video,
+  Post,
 } from "../types";
 import { metricValue } from "@/lib/leaderboard";
 import { DAY_MS } from "./data";
@@ -46,27 +46,27 @@ export function previousWindow(
   return { start: now - 2 * length, end: now - length };
 }
 
-export function videoTimestamp(video: Video): number {
-  return video.postedAt
-    ? new Date(`${video.postedAt}T12:00:00`).getTime()
-    : Date.parse(video.submittedAt);
+export function postTimestamp(post: Post): number {
+  return post.postedAt
+    ? new Date(`${post.postedAt}T12:00:00`).getTime()
+    : Date.parse(post.submittedAt);
 }
 
 export function countsTowardsRanking(
-  video: Video,
+  post: Post,
   platform: PlatformFilter,
   window: TimeWindow,
 ): boolean {
-  if (video.status !== "verified") return false;
-  if (platform !== "all" && video.platform !== platform) return false;
-  const time = videoTimestamp(video);
+  if (post.status !== "verified") return false;
+  if (platform !== "all" && post.platform !== platform) return false;
+  const time = postTimestamp(post);
   return time > window.start && time <= window.end;
 }
 
-/** Ranks everyone with at least one counted video. previousRank is left null. */
+/** Ranks everyone with at least one counted post. previousRank is left null. */
 export function rankEmployees(
   employees: readonly Employee[],
-  videos: readonly Video[],
+  posts: readonly Post[],
   options: {
     metric: LeaderboardMetric;
     platform: PlatformFilter;
@@ -75,20 +75,19 @@ export function rankEmployees(
 ): LeaderboardEntry[] {
   const totals = new Map<
     string,
-    { videoCount: number; views: number; reactions: number }
+    { postCount: number; views: number; reactions: number }
   >();
-  for (const video of videos) {
-    if (!countsTowardsRanking(video, options.platform, options.window))
-      continue;
-    const current = totals.get(video.employeeId) ?? {
-      videoCount: 0,
+  for (const post of posts) {
+    if (!countsTowardsRanking(post, options.platform, options.window)) continue;
+    const current = totals.get(post.employeeId) ?? {
+      postCount: 0,
       views: 0,
       reactions: 0,
     };
-    current.videoCount += 1;
-    current.views += video.views;
-    current.reactions += video.reactions;
-    totals.set(video.employeeId, current);
+    current.postCount += 1;
+    current.views += post.views;
+    current.reactions += post.reactions;
+    totals.set(post.employeeId, current);
   }
 
   const unranked = employees.flatMap((employee) => {
@@ -97,7 +96,7 @@ export function rankEmployees(
     return [
       {
         employee,
-        videoCount: total.videoCount,
+        postCount: total.postCount,
         totalViews: total.views,
         totalReactions: total.reactions,
         score: combinedScore(total.views, total.reactions),

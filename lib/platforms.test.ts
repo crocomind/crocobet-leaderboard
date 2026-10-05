@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  analyzeVideoUrl,
+  analyzePostUrl,
   detectPlatform,
   type Platform,
   safeExternalUrl,
@@ -77,12 +77,12 @@ const NOT_A_VIDEO: Record<Platform, string[]> = {
   ],
 };
 
-describe("analyzeVideoUrl", () => {
+describe("analyzePostUrl", () => {
   describe.each(Object.entries(VALID) as [Platform, string[]][])(
     "%s: valid links",
     (platform, urls) => {
       it.each(urls)("accepts %s", (url) => {
-        const result = analyzeVideoUrl(url);
+        const result = analyzePostUrl(url);
         expect(result).toMatchObject({ status: "valid", platform });
       });
     },
@@ -92,8 +92,8 @@ describe("analyzeVideoUrl", () => {
     "%s: links that aren't a video or post",
     (platform, urls) => {
       it.each(urls)("rejects %s", (url) => {
-        expect(analyzeVideoUrl(url)).toEqual({
-          status: "not-a-video",
+        expect(analyzePostUrl(url)).toEqual({
+          status: "not-a-post",
           platform,
         });
       });
@@ -107,7 +107,7 @@ describe("analyzeVideoUrl", () => {
     "https://vimeo.com/123456",
     "https://example.com/reel/abc",
   ])("flags other platforms as unsupported: %s", (url) => {
-    expect(analyzeVideoUrl(url)).toEqual({ status: "unsupported-platform" });
+    expect(analyzePostUrl(url)).toEqual({ status: "unsupported-platform" });
   });
 
   it.each([
@@ -117,7 +117,7 @@ describe("analyzeVideoUrl", () => {
     "https://tiktok.com.attacker.io/@user/video/7412345678901234567",
     "https://api.linkedin.com/posts/nino-beridze_team-day-activity-1",
   ])("does not trust lookalike hosts: %s", (url) => {
-    expect(analyzeVideoUrl(url)).toEqual({ status: "unsupported-platform" });
+    expect(analyzePostUrl(url)).toEqual({ status: "unsupported-platform" });
   });
 
   it.each([
@@ -128,17 +128,17 @@ describe("analyzeVideoUrl", () => {
     "javascript:alert(1)",
     "localhost/reel/abc",
   ])("rejects things that aren't web links: %s", (input) => {
-    expect(analyzeVideoUrl(input)).toEqual({ status: "invalid-url" });
+    expect(analyzePostUrl(input)).toEqual({ status: "invalid-url" });
   });
 
   it.each(["", "   ", "\n"])("treats blank input as empty: %j", (input) => {
-    expect(analyzeVideoUrl(input)).toEqual({ status: "empty" });
+    expect(analyzePostUrl(input)).toEqual({ status: "empty" });
   });
 });
 
 describe("URL normalization", () => {
   const normalized = (url: string) => {
-    const result = analyzeVideoUrl(url);
+    const result = analyzePostUrl(url);
     if (result.status !== "valid")
       throw new Error(`Expected a valid link: ${url}`);
     return result.normalizedUrl;

@@ -57,7 +57,7 @@ export interface HttpRequestOptions {
 }
 
 const KNOWN_CODES = new Set<string>([
-  "duplicate_video",
+  "duplicate_post",
   "invalid_url",
   "unsupported_platform",
   "validation_error",
@@ -72,7 +72,7 @@ function codeFromStatus(status: number): ApiErrorCode {
   if (status === 401) return "unauthorized";
   if (status === 403) return "forbidden";
   if (status === 404) return "not_found";
-  if (status === 409) return "duplicate_video";
+  if (status === 409) return "duplicate_post";
   if (status === 422 || status === 400) return "validation_error";
   if (status === 429) return "rate_limited";
   if (status >= 500) return "service_unavailable";

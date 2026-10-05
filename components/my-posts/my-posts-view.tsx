@@ -4,93 +4,89 @@ import { AnimatePresence, motion } from "motion/react";
 import { Crossfade } from "@/components/common/crossfade";
 import { GlowBackdrop } from "@/components/common/glow-backdrop";
 import { ErrorState } from "@/components/common/state-panel";
-import { EmptyVideos } from "@/components/my-videos/empty-videos";
+import { EmptyPosts } from "@/components/my-posts/empty-posts";
 import {
   SummaryCards,
   SummaryCardsSkeleton,
-} from "@/components/my-videos/summary-cards";
-import {
-  VideoCard,
-  VideoCardSkeleton,
-} from "@/components/my-videos/video-card";
+} from "@/components/my-posts/summary-cards";
+import { PostCard, PostCardSkeleton } from "@/components/my-posts/post-card";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { useSubmitVideo } from "@/components/submit/submit-video-provider";
-import { useMyVideosQuery } from "@/lib/api/queries";
+import { useSubmitPost } from "@/components/submit/submit-post-provider";
+import { useMyPostsQuery } from "@/lib/api/queries";
 import { enterUp, springLayout } from "@/lib/motion";
 
-export function MyVideosView() {
+export function MyPostsView() {
   const { t } = useI18n();
-  const { openSubmit } = useSubmitVideo();
-  const myVideos = useMyVideosQuery();
+  const { openSubmit } = useSubmitPost();
+  const myPosts = useMyPostsQuery();
 
   return (
     <div className="relative isolate">
       <GlowBackdrop className="-top-28 opacity-70 md:-top-36" />
 
       <h1 className="text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
-        {t.myVideos.title}
+        {t.myPosts.title}
       </h1>
       <p className="mt-1.5 max-w-xl text-pretty text-muted-foreground">
-        {t.myVideos.subtitle}
+        {t.myPosts.subtitle}
       </p>
 
       <Crossfade
         className="mt-8"
         stateKey={
-          myVideos.isPending
+          myPosts.isPending
             ? "loading"
-            : myVideos.isError
+            : myPosts.isError
               ? "error"
-              : myVideos.data.videos.length === 0
+              : myPosts.data.posts.length === 0
                 ? "empty"
                 : "content"
         }
       >
-        {myVideos.isPending ? (
+        {myPosts.isPending ? (
           <div role="status" aria-busy="true">
             <span className="sr-only">{t.leaderboard.updating}</span>
             <SummaryCardsSkeleton />
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }, (_, i) => (
-                <VideoCardSkeleton key={i} />
+                <PostCardSkeleton key={i} />
               ))}
             </div>
           </div>
-        ) : myVideos.isError ? (
+        ) : myPosts.isError ? (
           <ErrorState
-            title={t.myVideos.error.title}
-            description={t.myVideos.error.description}
+            title={t.myPosts.error.title}
+            description={t.myPosts.error.description}
             retryLabel={t.common.retry}
-            onRetry={() => void myVideos.refetch()}
-            retrying={myVideos.isFetching}
+            onRetry={() => void myPosts.refetch()}
+            retrying={myPosts.isFetching}
             retryingLabel={t.leaderboard.updating}
           />
-        ) : myVideos.data.videos.length === 0 ? (
-          <EmptyVideos onSubmit={openSubmit} />
+        ) : myPosts.data.posts.length === 0 ? (
+          <EmptyPosts onSubmit={openSubmit} />
         ) : (
           <>
             <SummaryCards
-              summary={myVideos.data.summary}
+              summary={myPosts.data.summary}
               verifiedCount={
-                myVideos.data.videos.filter((v) => v.status === "verified")
-                  .length
+                myPosts.data.posts.filter((v) => v.status === "verified").length
               }
             />
-            <section aria-labelledby="my-videos-heading" className="mt-10">
-              <h2 id="my-videos-heading" className="mb-4 text-lg font-bold">
-                {t.myVideos.listLabel}
+            <section aria-labelledby="my-posts-heading" className="mt-10">
+              <h2 id="my-posts-heading" className="mb-4 text-lg font-bold">
+                {t.myPosts.listLabel}
               </h2>
               <ul className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {/* New submissions fade in at the top; the rest glide over. */}
                 <AnimatePresence mode="popLayout">
-                  {myVideos.data.videos.map((video, index) => (
+                  {myPosts.data.posts.map((post, index) => (
                     <motion.li
-                      key={video.id}
+                      key={post.id}
                       layout="position"
                       {...enterUp(index)}
                       transition={{ layout: springLayout }}
                     >
-                      <VideoCard video={video} />
+                      <PostCard post={post} />
                     </motion.li>
                   ))}
                 </AnimatePresence>

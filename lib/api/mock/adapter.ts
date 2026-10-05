@@ -1,15 +1,15 @@
-import { analyzeVideoUrl } from "@/lib/platforms";
+import { analyzePostUrl } from "@/lib/platforms";
 import { normalizeForSearch } from "@/lib/utils";
 import { ApiError } from "../errors";
 import type {
   ApiAdapter,
   Employee,
   LeaderboardResponse,
-  MyVideosResponse,
+  MyPostsResponse,
   RequestOptions,
-  Video,
+  Post,
 } from "../types";
-import { MOCK_CURRENT_USER_ID, MOCK_EMPLOYEES, MOCK_VIDEOS } from "./data";
+import { MOCK_CURRENT_USER_ID, MOCK_EMPLOYEES, MOCK_POSTS } from "./data";
 import { metricValue } from "@/lib/leaderboard";
 import {
   countsTowardsRanking,
@@ -28,32 +28,32 @@ const ERROR_RATE = (() => {
 })();
 
 // Submissions made in the browser, kept in localStorage so they survive reloads.
-let submissions: Video[] | undefined;
+let submissions: Post[] | undefined;
 
-function loadSubmissions(): Video[] {
+function loadSubmissions(): Post[] {
   if (submissions) return submissions;
   submissions = [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const parsed: unknown = raw ? JSON.parse(raw) : [];
-    if (Array.isArray(parsed)) submissions = parsed as Video[];
+    if (Array.isArray(parsed)) submissions = parsed as Post[];
   } catch {
     // No storage (private mode, tests); keep submissions in memory only.
   }
   return submissions;
 }
 
-function saveSubmissions(videos: Video[]) {
-  submissions = videos;
+function saveSubmissions(posts: Post[]) {
+  submissions = posts;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(videos));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
   } catch {
     // Ignore; the in-memory copy still works for this session.
   }
 }
 
-function allVideos(): Video[] {
-  return [...MOCK_VIDEOS, ...loadSubmissions()];
+function allPosts(): Post[] {
+  return [...MOCK_POSTS, ...loadSubmissions()];
 }
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
@@ -101,13 +101,13 @@ export const mockAdapter: ApiAdapter = {
   getLeaderboard: (query, options) =>
     respond((): LeaderboardResponse => {
       const now = Date.now();
-      const videos = allVideos();
-      const ranked = rankEmployees(MOCK_EMPLOYEES, videos, {
+      const posts = allPosts();
+      const ranked = rankEmployees(MOCK_EMPLOYEES, posts, {
         metric: query.metric,
         platform: query.platform,
         window: periodWindow(query.period, now),
       });
-      const previous = rankEmployees(MOCK_EMPLOYEES, videos, {
+      const previous = rankEmployees(MOCK_EMPLOYEES, posts, {
         metric: query.metric,
         platform: query.platform,
         window: previousWindow(query.period, now),
@@ -151,28 +151,28 @@ export const mockAdapter: ApiAdapter = {
       };
     }, options),
 
-  getMyVideos: (options) =>
-    respond((): MyVideosResponse => {
-      const videos = allVideos();
-      const mine = videos
-        .filter((video) => video.employeeId === MOCK_CURRENT_USER_ID)
+  getMyPosts: (options) =>
+    respond((): MyPostsResponse => {
+      const posts = allPosts();
+      const mine = posts
+        .filter((post) => post.employeeId === MOCK_CURRENT_USER_ID)
         .sort((a, b) => Date.parse(b.submittedAt) - Date.parse(a.submittedAt));
-      const verified = mine.filter((video) => video.status === "verified");
-      const allTime = rankEmployees(MOCK_EMPLOYEES, videos, {
+      const verified = mine.filter((post) => post.status === "verified");
+      const allTime = rankEmployees(MOCK_EMPLOYEES, posts, {
         metric: "score",
         platform: "all",
         window: periodWindow("all", Date.now()),
       });
 
       return {
-        videos: mine,
+        posts: mine,
         summary: {
-          totalViews: verified.reduce((sum, video) => sum + video.views, 0),
+          totalViews: verified.reduce((sum, post) => sum + post.views, 0),
           totalReactions: verified.reduce(
-            (sum, video) => sum + video.reactions,
+            (sum, post) => sum + post.reactions,
             0,
           ),
-          videoCount: mine.length,
+          postCount: mine.length,
           rank:
             allTime.find((entry) => entry.employee.id === MOCK_CURRENT_USER_ID)
               ?.rank ?? null,
@@ -181,21 +181,21 @@ export const mockAdapter: ApiAdapter = {
       };
     }, options),
 
-  getEmployeeVideos: (employeeId, query, options) =>
-    respond((): Video[] => {
+  getEmployeePosts: (employeeId, query, options) =>
+    respond((): Post[] => {
       const window = periodWindow(query.period, Date.now());
-      return allVideos()
+      return allPosts()
         .filter(
-          (video) =>
-            video.employeeId === employeeId &&
-            countsTowardsRanking(video, query.platform, window),
+          (post) =>
+            post.employeeId === employeeId &&
+            countsTowardsRanking(post, query.platform, window),
         )
         .sort((a, b) => b.views - a.views);
     }, options),
 
-  submitVideo: async (payload, options) => {
-    const result = analyzeVideoUrl(payload.url);
-    const videos = allVideos();
+  submitPost: async (payload, options) => {
+    const result = analyzePostUrl(payload.url);
+    const posts = allPosts();
 
     // Checked before the simulated failure so these behave like real 4xx responses.
     if (result.status !== "valid" || result.platform !== payload.platform) {
@@ -203,20 +203,20 @@ export const mockAdapter: ApiAdapter = {
       throw new ApiError({
         status: 422,
         code: "validation_error",
-        message: "Invalid video link",
+        message: "Invalid post link",
       });
     }
-    if (videos.some((video) => video.url === result.normalizedUrl)) {
+    if (posts.some((post) => post.url === result.normalizedUrl)) {
       await sleep(400, options?.signal);
       throw new ApiError({
         status: 409,
-        code: "duplicate_video",
-        message: "This video has already been submitted",
+        code: "duplicate_post",
+        message: "This post has already been submitted",
       });
     }
 
-    return respond((): Video => {
-      const video: Video = {
+    return respond((): Post => {
+      const post: Post = {
         id: `vid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
         employeeId: MOCK_CURRENT_USER_ID,
         url: result.normalizedUrl,
@@ -230,8 +230,8 @@ export const mockAdapter: ApiAdapter = {
         reactions: 0,
         thumbnailUrl: null,
       };
-      saveSubmissions([...loadSubmissions(), video]);
-      return video;
+      saveSubmissions([...loadSubmissions(), post]);
+      return post;
     }, options);
   },
 

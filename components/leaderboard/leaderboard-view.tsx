@@ -21,7 +21,7 @@ import {
 import { Podium } from "@/components/leaderboard/podium";
 import { useCurrentUser } from "@/components/providers/current-user-provider";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { useSubmitVideo } from "@/components/submit/submit-video-provider";
+import { useSubmitPost } from "@/components/submit/submit-post-provider";
 import { MotionButton } from "@/components/ui/motion-button";
 import { useLeaderboardQuery } from "@/lib/api/queries";
 import type { LeaderboardEntry, LeaderboardQuery } from "@/lib/api/types";
@@ -33,7 +33,7 @@ export function LeaderboardView() {
   const { t, format } = useI18n();
   const { state, update } = useAppUrlState();
   const currentUser = useCurrentUser();
-  const { openSubmit } = useSubmitVideo();
+  const { openSubmit } = useSubmitPost();
   const reduceMotion = useReducedMotion();
 
   // The input updates instantly; the query and URL follow after a short pause.
@@ -235,7 +235,7 @@ export function LeaderboardView() {
               action={
                 <MotionButton onClick={openSubmit}>
                   <Plus aria-hidden="true" />
-                  {t.header.submitVideo}
+                  {t.header.submitPost}
                 </MotionButton>
               }
             />
