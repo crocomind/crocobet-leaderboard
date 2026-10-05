@@ -31,11 +31,12 @@ export const queryKeys = {
 /** Stats sync periodically on the backend; no need to refetch more often. */
 const STATS_STALE_MS = 60_000;
 
-export function useCurrentUserQuery() {
+export function useCurrentUserQuery(enabled = true) {
   return useQuery({
     queryKey: queryKeys.currentUser,
     queryFn: ({ signal }) => getCurrentUser({ signal }),
     staleTime: Number.POSITIVE_INFINITY,
+    enabled,
   });
 }
 

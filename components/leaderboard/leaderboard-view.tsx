@@ -104,7 +104,7 @@ export function LeaderboardView() {
   }
   const showStanding =
     data !== undefined &&
-    currentUser.status === "success" &&
+    currentUser.status === "signed-in" &&
     (standing === null ||
       !rowRendered ||
       position === "above" ||

@@ -9,6 +9,7 @@ import { I18nProvider } from "@/components/providers/i18n-provider";
 import { SubmitVideoProvider } from "@/components/submit/submit-video-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isApiError } from "@/lib/api/errors";
+import type { SessionUser } from "@/lib/auth/types";
 import type { Locale } from "@/lib/i18n/config";
 
 function createQueryClient() {
@@ -27,9 +28,11 @@ function createQueryClient() {
 
 export function AppProviders({
   locale,
+  sessionUser,
   children,
 }: {
   locale: Locale;
+  sessionUser: SessionUser | null;
   children: ReactNode;
 }) {
   const [queryClient] = useState(createQueryClient);
@@ -47,7 +50,7 @@ export function AppProviders({
           {/* Skips transform/layout animations for users who prefer reduced motion. */}
           <MotionConfig reducedMotion="user">
             <TooltipProvider delayDuration={250}>
-              <CurrentUserProvider>
+              <CurrentUserProvider sessionUser={sessionUser}>
                 <SubmitVideoProvider>{children}</SubmitVideoProvider>
               </CurrentUserProvider>
             </TooltipProvider>

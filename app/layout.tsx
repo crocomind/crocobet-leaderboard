@@ -3,6 +3,7 @@ import { Inter, Noto_Sans_Georgian } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import type { ReactNode } from "react";
 import { AppProviders } from "@/components/providers/app-providers";
+import { getSessionUser } from "@/lib/auth/session";
 import { LOCALE_COOKIE, resolveLocale } from "@/lib/i18n/config";
 import "./globals.css";
 
@@ -35,7 +36,11 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   // Rendering in the saved language avoids a flash of English for Georgian users.
-  const [cookieStore, headerList] = await Promise.all([cookies(), headers()]);
+  const [cookieStore, headerList, sessionUser] = await Promise.all([
+    cookies(),
+    headers(),
+    getSessionUser(),
+  ]);
   const locale = resolveLocale(
     cookieStore.get(LOCALE_COOKIE)?.value,
     headerList.get("accept-language"),
@@ -48,7 +53,9 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body>
-        <AppProviders locale={locale}>{children}</AppProviders>
+        <AppProviders locale={locale} sessionUser={sessionUser}>
+          {children}
+        </AppProviders>
       </body>
     </html>
   );

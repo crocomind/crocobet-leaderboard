@@ -1,14 +1,50 @@
+import { authClient } from "@/lib/auth/client";
 import { ApiError, type ApiErrorCode, isAbortError } from "./errors";
 
+/** Backend API scope (Entra "Expose an API"). Unset: requests carry no token. */
+const API_SCOPE = process.env.NEXT_PUBLIC_API_SCOPE;
+
+let cachedToken: { value: string; expiresAt: number } | undefined;
+
 /**
- * Request interceptor: every API request gets these headers.
- *
- * Authentication goes here. With Entra ID this becomes something like:
- *   const token = await acquireTokenSilently();
- *   return { Authorization: `Bearer ${token}` };
+ * Request interceptor: every API request gets these headers. With
+ * NEXT_PUBLIC_API_SCOPE set, that's the signed-in user's Microsoft access
+ * token for the backend. Better Auth refreshes it with the stored refresh
+ * token when it expires. The token is cached in memory until a minute before
+ * it expires.
  */
 export async function getAuthHeaders(): Promise<Record<string, string>> {
-  return {};
+  if (!API_SCOPE) return {};
+
+  if (!cachedToken || cachedToken.expiresAt - 60_000 < Date.now()) {
+    // Without a database, the Microsoft account (and its tokens) lives in the account cookie.
+    const { data, error } = await authClient.getAccessToken({
+      useAccountCookie: true,
+    });
+    if (error || !data?.accessToken) {
+      throw new ApiError({
+        status: 401,
+        code: "unauthorized",
+        message: "No access token",
+      });
+    }
+    cachedToken = {
+      value: data.accessToken,
+      expiresAt: data.accessTokenExpiresAt
+        ? new Date(data.accessTokenExpiresAt).getTime()
+        : Date.now() + 5 * 60_000,
+    };
+  }
+  return { Authorization: `Bearer ${cachedToken.value}` };
+}
+
+/** The session ended (or the token was rejected): sign in again and come back here. */
+function redirectToSignIn() {
+  if (typeof window === "undefined") return;
+  const returnTo = `${window.location.pathname}${window.location.search}`;
+  // A full load on purpose: the server re-reads the session and cached data is dropped.
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+  window.location.assign(`/sign-in?returnTo=${encodeURIComponent(returnTo)}`);
 }
 
 type QueryValue = string | number | boolean | null | undefined;
@@ -115,6 +151,11 @@ export async function request<T>(
       code: "network_error",
       message: "Network request failed",
     });
+  }
+
+  if (response.status === 401) {
+    cachedToken = undefined;
+    redirectToSignIn();
   }
 
   if (!response.ok) {

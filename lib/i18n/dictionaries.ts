@@ -28,7 +28,7 @@ const en = {
     themeLight: "Light",
     language: "Language",
     signOut: "Sign out",
-    comingSoon: "Coming soon",
+    signingOut: "Signing out…",
     profileError: "Couldn't load your profile.",
     profileLoading: "Loading your profile…",
   },
@@ -194,6 +194,28 @@ const en = {
     dateInvalid: "Enter a valid date.",
     dateInFuture: "The posted date can't be in the future.",
   },
+  auth: {
+    pageTitle: "Sign in",
+    title: "Welcome to Croco Creators",
+    subtitle:
+      "Sign in with your Crocobet work account to see the leaderboard and submit your videos.",
+    signInWithMicrosoft: "Sign in with Microsoft",
+    redirecting: "Redirecting to Microsoft…",
+    onlyEmployees:
+      "Only Crocobet employees with a {domains} account can sign in.",
+    signedOut: "You've been signed out.",
+    errors: {
+      domainNotAllowed:
+        "That isn't a Crocobet work account. Sign in with your {domains} address.",
+      wrongTenant:
+        "That account belongs to another organization. Sign in with your Crocobet work account.",
+      cancelled: "Sign-in was cancelled.",
+      expired: "Sign-in took too long or was interrupted. Please try again.",
+      notConfigured: "Sign-in isn't set up yet. Ask the app's administrators.",
+      generic: "We couldn't sign you in. Please try again.",
+    },
+    missingConfig: "Missing environment variables: {names}",
+  },
   errors: {
     pageTitle: "Something went wrong",
     pageDescription:
@@ -225,7 +247,7 @@ const ka: Dictionary = {
     themeLight: "ღია",
     language: "ენა",
     signOut: "გასვლა",
-    comingSoon: "მალე",
+    signingOut: "გასვლა…",
     profileError: "პროფილის ჩატვირთვა ვერ მოხერხდა.",
     profileLoading: "პროფილი იტვირთება…",
   },
@@ -391,6 +413,29 @@ const ka: Dictionary = {
     titleTooLong: "სათაური არ უნდა აღემატებოდეს {max} სიმბოლოს.",
     dateInvalid: "შეიყვანეთ სწორი თარიღი.",
     dateInFuture: "გამოქვეყნების თარიღი მომავალში ვერ იქნება.",
+  },
+  auth: {
+    pageTitle: "შესვლა",
+    title: "კეთილი იყოს თქვენი მობრძანება Croco Creators-ში",
+    subtitle:
+      "შედით Crocobet-ის სამსახურებრივი ანგარიშით, რომ ნახოთ რეიტინგი და დაამატოთ თქვენი ვიდეოები.",
+    signInWithMicrosoft: "შესვლა Microsoft-ით",
+    redirecting: "გადამისამართება Microsoft-ზე…",
+    onlyEmployees:
+      "შესვლა შეუძლიათ მხოლოდ Crocobet-ის თანამშრომლებს ({domains} ანგარიშით).",
+    signedOut: "თქვენ გამოხვედით სისტემიდან.",
+    errors: {
+      domainNotAllowed:
+        "ეს არ არის Crocobet-ის სამსახურებრივი ანგარიში. შედით {domains} მისამართით.",
+      wrongTenant:
+        "ეს ანგარიში სხვა ორგანიზაციას ეკუთვნის. შედით Crocobet-ის სამსახურებრივი ანგარიშით.",
+      cancelled: "შესვლა გაუქმდა.",
+      expired: "შესვლას ძალიან დიდი დრო დასჭირდა ან შეწყდა. სცადეთ თავიდან.",
+      notConfigured:
+        "შესვლა ჯერ არ არის გამართული. მიმართეთ აპლიკაციის ადმინისტრატორებს.",
+      generic: "შესვლა ვერ მოხერხდა. სცადეთ თავიდან.",
+    },
+    missingConfig: "აკლია გარემოს ცვლადები: {names}",
   },
   errors: {
     pageTitle: "რაღაც შეფერხდა",

@@ -11,13 +11,40 @@ implementation.
   All paths below are relative to it.
 - **Format:** JSON in and out. Requests send `Accept: application/json`, and requests with a
   body also send `Content-Type: application/json`.
-- **Authentication:** every request will carry `Authorization: Bearer <Entra ID access token>`
-  once sign-in is added. The API should identify the signed-in employee from that token. The
+- **Authentication:** every request carries `Authorization: Bearer <Entra ID access token>`
+  (see [Authentication](#authentication)). The API identifies the employee from that token. The
   frontend never sends an employee id for "me".
 - **CORS:** if the API runs on a different origin, allow the frontend origin, the `GET` and
   `POST` methods, and the `Authorization` and `Content-Type` headers.
 - **Timestamps:** `IsoDateTime` is ISO 8601 in UTC (`"2026-10-01T09:30:00.000Z"`).
   `IsoDate` is a calendar date (`"2026-09-28"`).
+
+## Authentication
+
+Users sign in to the frontend with Microsoft Entra ID (Crocobet tenant, `@crocobet.com` accounts
+only). For the backend to receive tokens:
+
+1. In the Entra app registration for the API (it can be the same app as the frontend), go to
+   **Expose an API**, set the Application ID URI (e.g. `api://<client-id>`), and add a scope
+   such as `access_as_user`.
+2. Set `NEXT_PUBLIC_API_SCOPE=api://<client-id>/access_as_user` in the frontend.
+
+The frontend then sends an access token for that scope with every request and refreshes it
+automatically. The backend must validate it as a JWT:
+
+| Check       | Expected value                                                                       |
+| ----------- | ------------------------------------------------------------------------------------ |
+| Signature   | RS256, keys from `https://login.microsoftonline.com/<tenant-id>/discovery/v2.0/keys` |
+| `iss`       | `https://login.microsoftonline.com/<tenant-id>/v2.0`                                 |
+| `aud`       | The API's Application ID URI or client ID                                            |
+| `tid`       | The Crocobet tenant ID                                                               |
+| `scp`       | Contains `access_as_user`                                                            |
+| `exp`/`nbf` | Current                                                                              |
+
+Identify the employee by the token's `oid` (Entra object ID, stable and unique), and use it as
+`Employee.id`. Re-check the email domain (`preferred_username` or `email`) if you want the same
+`@crocobet.com` rule on the API. Answer `401 unauthorized` when the token is missing or invalid;
+the frontend then sends the user to sign in again.
 
 ## Errors
 
@@ -57,7 +84,7 @@ type LeaderboardPeriod = "week" | "month" | "all";
 type PlatformFilter = Platform | "all";
 
 interface Employee {
-  id: string;
+  id: string; // the Entra object ID (oid) is a good choice
   name: string;
   email: string;
   department: string;

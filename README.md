@@ -11,8 +11,8 @@ provide.
 ## Stack
 
 Next.js 16 (App Router) · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui-style components on
-Radix · Motion (Framer Motion) · TanStack Query · React Hook Form + Zod · lucide-react · Vitest ·
-ESLint + Prettier
+Radix · Motion (Framer Motion) · TanStack Query · React Hook Form + Zod · lucide-react ·
+Better Auth (Microsoft Entra ID) · Vitest · ESLint + Prettier
 
 ## Getting started
 
@@ -24,16 +24,25 @@ cp .env.example .env   # skip if you already have a .env
 npm run dev            # http://localhost:3000
 ```
 
-With `NEXT_PUBLIC_USE_MOCKS=true` (the default in `.env.example`) nothing else is needed.
+Sign-in with Microsoft is required, so fill in the auth variables first (see
+[Authentication](#authentication)). Until they're set, the app shows "Sign-in isn't set up yet".
+With `NEXT_PUBLIC_USE_MOCKS=true` (the default in `.env.example`) no backend is needed.
 
 ## Environment variables
 
-| Variable                      | Used by  | Description                                                                                                                    |
-| ----------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `NEXT_PUBLIC_USE_MOCKS`       | Frontend | `true` uses the built-in mock API. Anything else calls the real API.                                                           |
-| `NEXT_PUBLIC_API_BASE_URL`    | Frontend | Backend base URL, e.g. `https://api.example.com`. Required when mocks are off.                                                 |
-| `NEXT_PUBLIC_MOCK_ERROR_RATE` | Frontend | Mocks only: the share of requests that fail on purpose (0 to 1, default 0.05). Use 0 for demos and 1 to see every error state. |
-| `SUPABASE_*`                  | Backend  | Reserved for the backend. The frontend doesn't read them. Never prefix them with `NEXT_PUBLIC_`.                               |
+| Variable                       | Used by  | Description                                                                                                                    |
+| ------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_USE_MOCKS`        | Frontend | `true` uses the built-in mock API. Anything else calls the real API.                                                           |
+| `NEXT_PUBLIC_API_BASE_URL`     | Frontend | Backend base URL, e.g. `https://api.example.com`. Required when mocks are off.                                                 |
+| `NEXT_PUBLIC_MOCK_ERROR_RATE`  | Frontend | Mocks only: the share of requests that fail on purpose (0 to 1, default 0.05). Use 0 for demos and 1 to see every error state. |
+| `BETTER_AUTH_SECRET`           | Server   | **Secret.** Encrypts the session cookies. Generate with `openssl rand -base64 32`.                                             |
+| `BETTER_AUTH_URL`              | Server   | Public URL of the app, e.g. `https://leaderboard.crocomind.com` (locally `http://localhost:3000`).                             |
+| `AUTH_MICROSOFT_TENANT_ID`     | Server   | Crocobet's Directory (tenant) ID, a GUID.                                                                                      |
+| `AUTH_MICROSOFT_CLIENT_ID`     | Server   | The app registration's Application (client) ID.                                                                                |
+| `AUTH_MICROSOFT_CLIENT_SECRET` | Server   | **Secret.** The app registration's client secret value.                                                                        |
+| `AUTH_ALLOWED_EMAIL_DOMAINS`   | Server   | Who may sign in, comma-separated. Default `crocobet.com`.                                                                      |
+| `NEXT_PUBLIC_API_SCOPE`        | Both     | Optional backend API scope, e.g. `api://<api-client-id>/access_as_user`. When set, API calls carry the user's access token.    |
+| `SUPABASE_*`                   | Backend  | Reserved for the backend. The frontend doesn't read them. Never prefix them with `NEXT_PUBLIC_`.                               |
 
 `NEXT_PUBLIC_*` values are compiled into the browser bundle when you build. Change them, then
 rebuild (or restart `npm run dev`). On Vercel, set them under **Project → Settings →
@@ -56,8 +65,8 @@ Environment Variables** and redeploy.
 
 The mock backend ([`lib/api/mock/`](lib/api/mock/)) generates 25 employees with about 120 videos
 spread across the four platforms. The data is seeded, so it's the same on every load. Requests
-take 350 to 900 ms, and about 5% fail so you can see error states. The signed-in mock user is
-Tamar Lomidze, who is #14 in the default view. That shows the pinned "You're #14 · … behind #13"
+take 350 to 900 ms, and about 5% fail so you can see error states. You still sign in with
+Microsoft; the mock `/me` then treats you as Tamar Lomidze, who is #14 in the default view. That shows the pinned "You're #14 · … behind #13"
 bar.
 
 Videos you submit in mock mode are saved in your browser's `localStorage`
@@ -129,31 +138,89 @@ anyone picks one, the browser's language decides. Georgian numbers, dates and re
 formatted in [`lib/i18n/format.ts`](lib/i18n/format.ts) rather than with `Intl`, because Chrome
 ships without Georgian `Intl` data.
 
-## Adding authentication later
+## Authentication
 
-Authentication (Microsoft Entra ID) is intentionally not set up. The app is ready for it.
-Components only get the user through `useCurrentUser()` and only call the API through one HTTP
-client, so these are the only places to change:
+Only Crocobet employees can use the app. Every page needs a Microsoft sign-in with an
+`@crocobet.com` account. It's built on [Better Auth](https://better-auth.com) with its Microsoft
+Entra ID provider (OpenID Connect, authorization code flow with PKCE and a client secret).
 
-1. **[`components/providers/current-user-provider.tsx`](components/providers/current-user-provider.tsx):**
-   source the user from your auth session instead of (or in addition to) `GET /me`. Keep the
-   `useCurrentUser()` return shape (`status`, `user`, `error`, `refetch`) and nothing else
-   changes. This is also where to redirect to sign-in when there's no session.
-2. **[`lib/api/http-client.ts`](lib/api/http-client.ts):** make `getAuthHeaders()` return
-   ``{ Authorization: `Bearer ${token}` }``, using a silently acquired access token. Every API
-   request already goes through it. To handle expired sessions, react to `ApiError` with
-   `status === 401` in the same file.
-3. **[`components/providers/app-providers.tsx`](components/providers/app-providers.tsx):** wrap
-   the tree in your auth library's provider (for example, MSAL's `MsalProvider`), outside
-   `CurrentUserProvider`.
-4. **[`components/layout/user-menu.tsx`](components/layout/user-menu.tsx):** enable the
-   **Sign out** item (remove `disabled` and the "Coming soon" tooltip and badge) and call your
-   sign-out function in `onSelect`.
+### How access is restricted
 
-If you protect routes with Next.js middleware (`proxy.ts` in Next 16), add it at the project
-root. Nothing else in the app needs to change.
+1. **Single-tenant app registration.** Only accounts in the Crocobet directory can authenticate
+   with Microsoft at all.
+2. **Token checks on every sign-in** ([`lib/auth/policy.ts`](lib/auth/policy.ts)): the ID token
+   must come from the Crocobet tenant (`tid`, `iss`) and be for this app (`aud`). The account's
+   email (or sign-in name if there's no email claim) must be at an allowed domain. B2B guests are
+   rejected even though they're in the directory.
+3. **Checks on every request:** [`proxy.ts`](proxy.ts) redirects signed-out visitors to
+   `/sign-in` (keeping their link) and answers API calls with 401. The page also re-checks the
+   session on the server.
 
-Then set `NEXT_PUBLIC_USE_MOCKS=false` and `NEXT_PUBLIC_API_BASE_URL` once the backend is live.
+Rejected sign-ins return to `/sign-in` with a clear message ("That isn't a Crocobet work
+account…", "That account belongs to another organization…").
+
+### Azure setup (one time)
+
+In the [Microsoft Entra admin center](https://entra.microsoft.com):
+
+1. **Identity → Applications → App registrations → New registration**
+   - Name: `Croco Creators`
+   - Supported account types: **Accounts in this organizational directory only (single tenant)**
+   - Redirect URI: platform **Web**, `http://localhost:3000/api/auth/callback/microsoft`
+2. **Authentication → Add URI:** `https://leaderboard.crocomind.com/api/auth/callback/microsoft`.
+   Leave the "ID tokens" and "Access tokens" (implicit grant) boxes **unchecked**.
+3. **Certificates & secrets → New client secret.** Copy the **Value** (shown once) into
+   `AUTH_MICROSOFT_CLIENT_SECRET`. Note the expiry date; sign-in stops working when it expires.
+4. **Overview:** copy **Application (client) ID** into `AUTH_MICROSOFT_CLIENT_ID` and **Directory
+   (tenant) ID** into `AUTH_MICROSOFT_TENANT_ID`.
+5. **Token configuration → Add optional claim → ID → `email`** (recommended).
+6. **API permissions:** keep Microsoft Graph `openid`, `profile`, `email`, `offline_access`, then
+   **Grant admin consent for Crocobet** so employees don't see a consent prompt.
+7. _Optional:_ to allow only some employees, open **Enterprise applications → Croco Creators →
+   Properties**, set **Assignment required** to Yes, and assign users or groups.
+8. _Optional, when the backend exists:_ **Expose an API → add a scope** (e.g. `access_as_user`)
+   and put its full name (`api://<client-id>/access_as_user`) in `NEXT_PUBLIC_API_SCOPE`.
+
+Then fill the variables in `.env` (local) and in **Vercel → Settings → Environment
+Variables** (set `BETTER_AUTH_URL=https://leaderboard.crocomind.com`), and redeploy.
+
+Things to know:
+
+- **Preview deployments can't sign in.** Entra doesn't allow wildcard redirect URIs; add a
+  preview's exact URL if you need one. Also redirect the `*.vercel.app` domain to
+  `leaderboard.crocomind.com` (Vercel → Domains), because a sign-in started on one domain
+  can't finish on another.
+- **Sessions** last 12 hours, then the user signs in again (usually one click, thanks to
+  Microsoft SSO). Signing out ends the app session; Microsoft then shows its account picker.
+- **No database is used.** The session and the Microsoft tokens are stored in encrypted (JWE),
+  `httpOnly`, `SameSite=Lax` cookies, about 9 KB split across several cookies. The trade-off: a
+  session can't be revoked server-side, so an employee whose account is disabled keeps access
+  until their session expires (at most 12 hours). For instant revocation, give Better Auth a
+  database (e.g. Supabase Postgres) once the backend exists.
+- **Rotate the secrets** in Azure and Vercel together. Changing `BETTER_AUTH_SECRET` signs
+  everyone out.
+
+### Calling the backend
+
+With `NEXT_PUBLIC_API_SCOPE` set, `getAuthHeaders()` in
+[`lib/api/http-client.ts`](lib/api/http-client.ts) adds
+`Authorization: Bearer <Microsoft access token>` to every API request. Better Auth refreshes the
+token when it expires. A 401 from the API sends the user to sign in again. See
+[`API_CONTRACT.md`](API_CONTRACT.md#authentication) for how the backend should validate it.
+
+### Where the code is
+
+| File                                                                                               | What it does                                                |
+| -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| [`lib/auth/server.ts`](lib/auth/server.ts)                                                         | Better Auth setup: Entra provider, session, identity checks |
+| [`lib/auth/policy.ts`](lib/auth/policy.ts)                                                         | Who may sign in (tenant, domains), safe redirects; tested   |
+| [`lib/auth/config.ts`](lib/auth/config.ts)                                                         | Reads and validates the environment variables               |
+| [`lib/auth/session.ts`](lib/auth/session.ts)                                                       | `getSessionUser()` for server components                    |
+| [`lib/auth/client.ts`](lib/auth/client.ts)                                                         | Sign in / sign out from the browser                         |
+| [`proxy.ts`](proxy.ts)                                                                             | Protects every page and API route                           |
+| [`app/sign-in/page.tsx`](app/sign-in/page.tsx), [`components/auth/`](components/auth/)             | The sign-in page                                            |
+| [`app/api/auth/[...all]/route.ts`](app/api/auth/[...all]/route.ts)                                 | Auth endpoints (`/api/auth/callback/microsoft`, ...)        |
+| [`components/providers/current-user-provider.tsx`](components/providers/current-user-provider.tsx) | `useCurrentUser()`: session identity + `GET /me`            |
 
 ## Project structure
 
@@ -168,12 +235,15 @@ components/
   common/                 avatars, platform badges, animated numbers, state panels, thumbnails
   providers/              app providers, i18n, current user
   ui/                     design-system primitives (button, input, dialog/sheet, menus, ...)
-  icons/                  platform brand icons
+  auth/                   sign-in screen
+  icons/                  platform brand icons, Microsoft logo
 lib/
   api/                    types, HTTP client + adapter, mock adapter + data, TanStack Query hooks
+  auth/                   Microsoft sign-in (Better Auth), access policy, session helpers
   i18n/                   locales, dictionaries, formatting
   validation/             Zod schemas
   hooks/                  URL state, media queries, viewport tracking, ...
   platforms.ts            platform config + link detection
 styles/tokens.css         design tokens (colors, shadows)
+proxy.ts                  route protection (sign-in required)
 ```

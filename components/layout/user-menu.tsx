@@ -1,23 +1,15 @@
 "use client";
 
-import {
-  CircleAlert,
-  Languages,
-  LogOut,
-  Moon,
-  RefreshCw,
-  Sun,
-} from "lucide-react";
+import { Languages, LoaderCircle, LogOut, Moon, Sun } from "lucide-react";
+import { useState } from "react";
 import { flushSync } from "react-dom";
 import { EmployeeAvatar } from "@/components/common/employee-avatar";
 import { useThemeSwitch } from "@/components/layout/theme-toggle";
 import { useCurrentUser } from "@/components/providers/current-user-provider";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
@@ -26,18 +18,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MotionButton } from "@/components/ui/motion-button";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   isLocale,
   type Locale,
   LOCALE_NAMES,
   LOCALES,
 } from "@/lib/i18n/config";
+import { signOut } from "@/lib/auth/client";
 import { withViewTransition } from "@/lib/motion";
 
 export function UserMenu() {
@@ -51,58 +38,38 @@ export function UserMenu() {
     withViewTransition(() => flushSync(() => setLocale(next)));
   };
 
-  if (current.status === "loading") {
-    return (
-      <span role="status" className="inline-flex">
-        <Skeleton className="size-10 rounded-full" />
-        <span className="sr-only">{t.header.profileLoading}</span>
-      </span>
-    );
-  }
+  const [signingOut, setSigningOut] = useState(false);
+
+  if (current.status === "signed-out") return null;
+  const { user } = current;
 
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <MotionButton variant="icon" aria-label={t.header.accountMenu}>
-          {current.status === "success" ? (
-            <EmployeeAvatar
-              employee={current.user}
-              size="sm"
-              className="size-10 ring-2 ring-border-strong"
-            />
-          ) : (
-            <span className="inline-flex size-10 items-center justify-center rounded-full bg-danger/12 text-danger-text">
-              <CircleAlert className="size-5" aria-hidden="true" />
-            </span>
-          )}
+          <EmployeeAvatar
+            employee={user}
+            size="sm"
+            className="size-10 ring-2 ring-border-strong"
+          />
         </MotionButton>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-72">
-        {current.status === "success" ? (
-          <div className="flex items-center gap-3 px-3 pt-2 pb-3">
-            <EmployeeAvatar employee={current.user} size="md" />
-            <div className="min-w-0">
-              <p className="truncate font-semibold">{current.user.name}</p>
-              <p className="truncate text-sm text-muted-foreground">
-                {current.user.email}
-              </p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                {current.user.department}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <DropdownMenuGroup>
-            <p className="px-3 pt-2 pb-1 text-sm text-danger-text">
-              {t.header.profileError}
+        <div className="flex items-center gap-3 px-3 pt-2 pb-3">
+          <EmployeeAvatar employee={user} size="md" />
+          <div className="min-w-0">
+            <p className="truncate font-semibold">{user.name}</p>
+            <p className="truncate text-sm text-muted-foreground">
+              {user.email}
             </p>
-            <DropdownMenuItem onSelect={current.refetch}>
-              <RefreshCw />
-              {t.common.retry}
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        )}
+            {user.department && (
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                {user.department}
+              </p>
+            )}
+          </div>
+        </div>
 
         <DropdownMenuSeparator />
         <DropdownMenuLabel>{t.header.theme}</DropdownMenuLabel>
@@ -152,17 +119,17 @@ export function UserMenu() {
         </DropdownMenuRadioGroup>
 
         <DropdownMenuSeparator />
-        {/* Placeholder until Entra ID sign-in is added (see README). */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DropdownMenuItem disabled className="cursor-not-allowed">
-              <LogOut />
-              {t.header.signOut}
-              <Badge className="ml-auto">{t.header.comingSoon}</Badge>
-            </DropdownMenuItem>
-          </TooltipTrigger>
-          <TooltipContent side="left">{t.header.comingSoon}</TooltipContent>
-        </Tooltip>
+        <DropdownMenuItem
+          disabled={signingOut}
+          onSelect={(event) => {
+            event.preventDefault();
+            setSigningOut(true);
+            void signOut();
+          }}
+        >
+          {signingOut ? <LoaderCircle className="animate-spin" /> : <LogOut />}
+          {signingOut ? t.header.signingOut : t.header.signOut}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
