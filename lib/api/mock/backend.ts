@@ -170,10 +170,12 @@ function toRankable(post: MockPost): Rankable {
     views: post.views,
     reactions: post.reactions,
     approvedAt: post.approvedAt ? new Date(post.approvedAt) : null,
+    metricsLocked: post.metricsLocked,
     snapshots: post.snapshots.map((snapshot) => ({
       fetchedAt: new Date(snapshot.fetchedAt),
       views: snapshot.views,
       reactions: snapshot.reactions,
+      source: snapshot.source,
     })),
   };
 }

@@ -193,18 +193,42 @@ export function rankBoard<E extends RankableEmployee>(
 export interface PostHistory {
   /** When the post was (last) approved. */
   approvedAt: Date | null;
+  /** Locked numbers were entered by an admin; later provider snapshots don't replace them. */
+  metricsLocked?: boolean;
   snapshots: readonly {
     fetchedAt: Date;
     views: number | null;
     reactions: number | null;
+    source?: "provider" | "manual";
   }[];
 }
 
+type Snapshot = PostHistory["snapshots"][number];
+
+/** The snapshot that held at `asOf`: the latest one, or the latest manual one while locked. */
+export function snapshotAt(
+  post: PostHistory,
+  asOf: Date,
+): Snapshot | undefined {
+  let latest: Snapshot | undefined;
+  let latestManual: Snapshot | undefined;
+  for (const snapshot of post.snapshots) {
+    if (snapshot.fetchedAt > asOf) continue;
+    if (!latest || snapshot.fetchedAt > latest.fetchedAt) latest = snapshot;
+    if (
+      snapshot.source === "manual" &&
+      (!latestManual || snapshot.fetchedAt > latestManual.fetchedAt)
+    )
+      latestManual = snapshot;
+  }
+  return (post.metricsLocked ? latestManual : undefined) ?? latest;
+}
+
 /**
- * The posts as they stood at `asOf` (24 hours ago, for previousRank): posts
- * approved by then, each with its latest snapshot taken at or before then.
- * A post disqualified since then no longer counts; the history of earlier
- * statuses isn't replayed.
+ * The posts as they stood at `asOf` (24 hours ago for previousRank, or a
+ * chosen time for exports): posts approved by then, each with the snapshot
+ * that held then. A post disqualified since then no longer counts; the
+ * history of earlier statuses isn't replayed.
  */
 export function postsAsOf<P extends RankablePost & PostHistory>(
   posts: readonly P[],
@@ -217,19 +241,12 @@ export function postsAsOf<P extends RankablePost & PostHistory>(
       post.approvedAt > asOf
     )
       return [];
-    let latest: PostHistory["snapshots"][number] | undefined;
-    for (const snapshot of post.snapshots) {
-      if (
-        snapshot.fetchedAt <= asOf &&
-        (!latest || snapshot.fetchedAt > latest.fetchedAt)
-      )
-        latest = snapshot;
-    }
+    const snapshot = snapshotAt(post, asOf);
     return [
       {
         ...post,
-        views: latest?.views ?? null,
-        reactions: latest?.reactions ?? 0,
+        views: snapshot?.views ?? null,
+        reactions: snapshot?.reactions ?? 0,
       },
     ];
   });

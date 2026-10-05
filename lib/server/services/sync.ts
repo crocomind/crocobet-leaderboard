@@ -153,11 +153,20 @@ export async function runSync(
   config: ServerConfig,
   options: SyncOptions,
 ): Promise<SyncResult> {
+  const runId = await claimRun(db, options.trigger, options.now ?? new Date());
+  if (!runId) return { status: "skipped", reason: "already_running" };
+  return executeRun(db, config, runId, options);
+}
+
+/** Does the work of a claimed run and finishes its row. */
+export async function executeRun(
+  db: Db,
+  config: ServerConfig,
+  runId: string,
+  options: Omit<SyncOptions, "trigger">,
+): Promise<Extract<SyncResult, { status: "done" }>> {
   const now = options.now ?? new Date();
   const clock = options.clock ?? (() => new Date());
-  const runId = await claimRun(db, options.trigger, now);
-  if (!runId) return { status: "skipped", reason: "already_running" };
-
   let ok = 0;
   let failed = 0;
   let stoppedEarly = false;

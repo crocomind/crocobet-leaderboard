@@ -37,6 +37,11 @@ vi.mock("@/lib/server/auth", () => ({
 const { GET: getMe } = await import("@/app/api/v1/me/route");
 const { POST: postPost } = await import("@/app/api/v1/posts/route");
 const { GET: getBoard } = await import("@/app/api/v1/leaderboard/route");
+const { GET: getQueue } = await import("@/app/api/v1/admin/posts/route");
+const { POST: moderate } =
+  await import("@/app/api/v1/admin/posts/[id]/[action]/route");
+const { GET: exportCsv } = await import("@/app/api/v1/admin/export/route");
+const { GET: syncStatus } = await import("@/app/api/v1/admin/sync/route");
 
 const ORIGIN = "https://leaderboard.example";
 const noParams = { params: Promise.resolve({}) };
@@ -119,5 +124,50 @@ describe("/api/v1 routes", () => {
       entries: [],
       lastSyncedAt: null,
     });
+  });
+
+  it("answer 403 on admin endpoints for employees, and work for admins", async () => {
+    signedIn = await makeEmployee(db);
+    const id = "00000000-0000-4000-8000-000000000001";
+    const write = (path: string) =>
+      new Request(`${ORIGIN}${path}`, {
+        method: "POST",
+        headers: { origin: ORIGIN, "content-type": "application/json" },
+        body: "{}",
+      });
+    const responses = [
+      await getQueue(new Request(`${ORIGIN}/api/v1/admin/posts`), noParams),
+      await moderate(write(`/api/v1/admin/posts/${id}/approve`), {
+        params: Promise.resolve({ id, action: "approve" }),
+      }),
+      await exportCsv(new Request(`${ORIGIN}/api/v1/admin/export`), noParams),
+      await syncStatus(new Request(`${ORIGIN}/api/v1/admin/sync`), noParams),
+    ];
+    expect(responses.map((response) => response.status)).toEqual([
+      403, 403, 403, 403,
+    ]);
+
+    signedIn = await makeEmployee(db, { role: "admin" });
+    const queue = await getQueue(
+      new Request(`${ORIGIN}/api/v1/admin/posts?status=flagged`),
+      noParams,
+    );
+    expect(queue.status).toBe(200);
+    expect(await queue.json()).toMatchObject({ posts: [], nextCursor: null });
+    const csv = await exportCsv(
+      new Request(`${ORIGIN}/api/v1/admin/export?category=static&period=all`),
+      noParams,
+    );
+    expect(csv.headers.get("content-type")).toBe("text/csv; charset=utf-8");
+    expect(csv.headers.get("content-disposition")).toMatch(
+      /^attachment; filename="croco-standings-static-all-/,
+    );
+    const unknownAction = await moderate(
+      write(`/api/v1/admin/posts/${id}/delete`),
+      {
+        params: Promise.resolve({ id, action: "delete" }),
+      },
+    );
+    expect(unknownAction.status).toBe(404);
   });
 });

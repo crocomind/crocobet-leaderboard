@@ -59,7 +59,7 @@ export async function countedRows(db: Db, filter: BoardFilter) {
  * The same board 24 hours earlier: posts approved by then, each with its
  * latest snapshot at or before then (lib/ranking.ts postsAsOf, in SQL).
  */
-async function rowsAsOf(db: Db, filter: BoardFilter, asOf: Date) {
+export async function rowsAsOf(db: Db, filter: BoardFilter, asOf: Date) {
   const latest = db
     .select({
       views: postMetricSnapshots.views,
@@ -72,7 +72,11 @@ async function rowsAsOf(db: Db, filter: BoardFilter, asOf: Date) {
         lte(postMetricSnapshots.fetchedAt, asOf),
       ),
     )
-    .orderBy(desc(postMetricSnapshots.fetchedAt))
+    // While locked, the admin's (manual) numbers win over later provider snapshots.
+    .orderBy(
+      sql`case when ${posts.metricsLocked} and ${postMetricSnapshots.source} = 'manual' then 0 else 1 end`,
+      desc(postMetricSnapshots.fetchedAt),
+    )
     .limit(1)
     .as("latest");
   const rows = await db
