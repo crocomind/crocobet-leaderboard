@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   type CampaignTagConfig,
   checkCampaignTag,
+  DEFAULT_MENTIONS,
   parseCampaignHashtags,
   parseCampaignMentions,
 } from "@/lib/campaign-tag";
@@ -162,7 +163,33 @@ describe("config parsing", () => {
       facebook: ["Croco Squad"],
       linkedin: ["Croco Squad"],
     });
-    expect(parseCampaignMentions(undefined)).toEqual({});
+    expect(parseCampaignMentions(" none ")).toEqual({});
+  });
+
+  it("recognizes @Croco Squad without any configured accounts", () => {
+    const defaults = {
+      hashtags: ["CrocoBySquad"],
+      mentions: parseCampaignMentions(undefined),
+    };
+    expect(parseCampaignMentions("")).toEqual(DEFAULT_MENTIONS);
+    for (const [platform, caption] of [
+      ["instagram", "Office day with @CrocoSquad"],
+      ["tiktok", "thanks @croco.squad!"],
+      ["instagram", "@croco_squad 🐊"],
+      ["facebook", "Proud to be part of Croco Squad."],
+      ["linkedin", "Croco  Squad, thank you"],
+    ] as const)
+      expect(checkCampaignTag(platform, { caption }, defaults).passed).toBe(
+        true,
+      );
+    expect(
+      checkCampaignTag("instagram", { caption: "Croco Squad vibes" }, defaults)
+        .passed,
+    ).toBe(false);
+    expect(
+      checkCampaignTag("tiktok", { caption: "@crocosquadron" }, defaults)
+        .passed,
+    ).toBe(false);
   });
 
   it("parses CAMPAIGN_HASHTAGS with a default", () => {

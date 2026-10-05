@@ -18,6 +18,12 @@ import { type Platform, PLATFORM_IDS } from "@/lib/platforms";
 export const DEFAULT_CHALLENGE_STARTS_AT = "2026-10-06T00:00:00+04:00";
 export const DEFAULT_CHALLENGE_ENDS_AT = "2027-01-06T00:00:00+04:00";
 
+/** Admins when ADMIN_EMAILS isn't set. ADMIN_EMAILS replaces this list. */
+export const DEFAULT_ADMIN_EMAILS = [
+  "tekizashvili@crocobet.com",
+  "gbedoshvili@crocobet.com",
+];
+
 export interface ServerConfig {
   databaseUrl: string | null;
   cronSecret: string | null;
@@ -152,10 +158,11 @@ export function parseServerConfig(
         perPlatform[platform] ?? fallbackProvider,
       ]),
     ) as Record<Platform, string>,
-    adminEmails: (value.ADMIN_EMAILS ?? "")
-      .split(",")
-      .map((email) => email.trim().toLowerCase())
-      .filter((email) => email.includes("@")),
+    adminEmails: value.ADMIN_EMAILS
+      ? value.ADMIN_EMAILS.split(",")
+          .map((email) => email.trim().toLowerCase())
+          .filter((email) => email.includes("@"))
+      : DEFAULT_ADMIN_EMAILS,
     campaign: {
       startsAt: value.CHALLENGE_STARTS_AT,
       endsAt: value.CHALLENGE_ENDS_AT,

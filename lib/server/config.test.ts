@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_MENTIONS } from "@/lib/campaign-tag";
 import {
   ConfigError,
+  DEFAULT_ADMIN_EMAILS,
   DEFAULT_CHALLENGE_ENDS_AT,
   DEFAULT_CHALLENGE_STARTS_AT,
   parseServerConfig,
@@ -12,11 +14,11 @@ describe("parseServerConfig", () => {
     expect(config).toMatchObject({
       databaseUrl: null,
       cronSecret: null,
-      adminEmails: [],
+      adminEmails: DEFAULT_ADMIN_EMAILS,
       submissionGraceDays: 3,
       metricsGraceDays: 3,
       growthFlag: { factor: 5, min: 1000 },
-      tags: { hashtags: ["CrocoBySquad"], mentions: {} },
+      tags: { hashtags: ["CrocoBySquad"], mentions: DEFAULT_MENTIONS },
     });
     expect(config.campaign).toEqual({
       startsAt: new Date(DEFAULT_CHALLENGE_STARTS_AT),

@@ -8,6 +8,19 @@ import { isPlatform, type Platform } from "@/lib/platforms";
 
 export const DEFAULT_HASHTAGS = ["CrocoBySquad"];
 
+/**
+ * How "@Croco Squad" is recognized when no accounts are configured: the
+ * usual handle spellings, plus the name as a phrase on Facebook and LinkedIn.
+ * No real accounts are needed; CAMPAIGN_MENTIONS replaces these when set.
+ */
+const CROCO_SQUAD_HANDLES = ["crocosquad", "croco.squad", "croco_squad"];
+export const DEFAULT_MENTIONS: Record<Platform, readonly string[]> = {
+  instagram: CROCO_SQUAD_HANDLES,
+  tiktok: CROCO_SQUAD_HANDLES,
+  facebook: ["Croco Squad", ...CROCO_SQUAD_HANDLES],
+  linkedin: ["Croco Squad", ...CROCO_SQUAD_HANDLES],
+};
+
 export interface CampaignTagConfig {
   /** Without "#". */
   hashtags: readonly string[];
@@ -108,10 +121,15 @@ export function checkCampaignTag(
   return { passed: matched.size > 0, matched: [...matched] };
 }
 
-/** "instagram:crocosquad,facebook:Croco Squad" → { instagram: ["crocosquad"], facebook: ["Croco Squad"] }. */
+/**
+ * "instagram:crocosquad,facebook:Croco Squad" → { instagram: ["crocosquad"],
+ * facebook: ["Croco Squad"] }. Empty → DEFAULT_MENTIONS; "none" → hashtags only.
+ */
 export function parseCampaignMentions(
   value: string | undefined,
 ): CampaignTagConfig["mentions"] {
+  if (!value?.trim()) return DEFAULT_MENTIONS;
+  if (value.trim().toLowerCase() === "none") return {};
   const mentions: Partial<Record<Platform, string[]>> = {};
   for (const item of (value ?? "").split(",")) {
     const separator = item.indexOf(":");
