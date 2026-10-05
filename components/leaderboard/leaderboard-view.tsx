@@ -1,6 +1,6 @@
 "use client";
 
-import { Clapperboard, Plus, SearchX } from "lucide-react";
+import { Clapperboard, ImageIcon, Plus, SearchX } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Crossfade } from "@/components/common/crossfade";
@@ -235,7 +235,9 @@ export function LeaderboardView() {
           ) : (
             <StatePanel
               role="status"
-              icon={<Clapperboard />}
+              icon={
+                shown.category === "video" ? <Clapperboard /> : <ImageIcon />
+              }
               title={t.leaderboard.empty.title}
               description={t.leaderboard.empty.description}
               action={

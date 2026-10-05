@@ -6,6 +6,7 @@ import { MotionButton } from "@/components/ui/motion-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isApiError } from "@/lib/api/errors";
 import { useStartSyncMutation, useSyncStatusQuery } from "@/lib/api/queries";
+import { syncInProgress } from "@/lib/api/sync-status";
 import { useNow } from "@/lib/hooks/use-now";
 import { cn } from "@/lib/utils";
 
@@ -22,11 +23,7 @@ export function SyncPanel({
   const start = useStartSyncMutation();
   const now = useNow();
   const last = status.data?.runs[0];
-  // Compared with the fetch time (refreshed every 2 s while a run is going).
-  const running =
-    last !== undefined &&
-    (last.finishedAt === null ||
-      Date.parse(last.finishedAt) > status.dataUpdatedAt);
+  const running = syncInProgress(last, status.dataUpdatedAt);
 
   return (
     <section

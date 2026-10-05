@@ -39,6 +39,7 @@ import type {
   PostCheck,
   SubmitPostPayload,
 } from "@/lib/api/types";
+import { syncInProgress } from "@/lib/api/sync-status";
 
 export const queryKeys = {
   currentUser: ["me"] as const,
@@ -262,10 +263,7 @@ export function useSyncStatusQuery() {
     queryKey: queryKeys.syncStatus,
     queryFn: ({ signal }) => getSyncStatus({ signal }),
     refetchInterval: (query) =>
-      query.state.data?.runs.some(
-        (run) =>
-          run.finishedAt === null || Date.parse(run.finishedAt) > Date.now(),
-      )
+      syncInProgress(query.state.data?.runs[0], query.state.dataUpdatedAt)
         ? 2_000
         : 60_000,
   });

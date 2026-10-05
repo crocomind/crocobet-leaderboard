@@ -82,7 +82,9 @@ export function ViewNav({ id, className }: { id: string; className?: string }) {
                         : undefined
                     }
                     className={cn(
-                      "relative flex h-9 flex-1 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold whitespace-nowrap",
+                      "relative flex h-9 flex-1 items-center justify-center gap-2 rounded-full text-sm font-semibold whitespace-nowrap",
+                      // Three items (with Admin) need tighter pills on phones.
+                      isAdmin ? "px-2.5 sm:px-4" : "px-4",
                       "press motion-press focus-visible:outline-offset-0",
                       active
                         ? "text-foreground"
@@ -100,6 +102,7 @@ export function ViewNav({ id, className }: { id: string; className?: string }) {
                     <Icon
                       className={cn(
                         "size-4 motion-colors",
+                        isAdmin && "hidden sm:block",
                         active && "text-brand-text",
                       )}
                       aria-hidden="true"
