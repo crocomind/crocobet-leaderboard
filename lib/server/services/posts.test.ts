@@ -196,6 +196,63 @@ describe("submitPost", () => {
   });
 });
 
+describe("short links", () => {
+  it("resolves a short link before storing and deduplicating it", async () => {
+    const employee = await makeEmployee(db);
+    const resolveLink = async () => ({
+      ok: true as const,
+      url: "https://www.tiktok.com/@ana/video/7412345678901234567?_r=1",
+    });
+    const post = await submitPost(
+      serviceContext(db, now),
+      employee,
+      { url: "https://vm.tiktok.com/ZMabc123/" },
+      { resolveLink },
+    );
+    expect(post.url).toBe("https://tiktok.com/@ana/video/7412345678901234567");
+    expect(
+      await failure(() =>
+        submitPost(
+          serviceContext(db, now),
+          employee,
+          { url: "https://vm.tiktok.com/ZMother9/" },
+          { resolveLink },
+        ),
+      ),
+    ).toEqual({ status: 409, code: "duplicate_post" });
+  });
+
+  it("accepts the short link as is when it can't be resolved", async () => {
+    const employee = await makeEmployee(db);
+    const post = await submitPost(
+      serviceContext(db, now),
+      employee,
+      { url: "https://vm.tiktok.com/ZMslow1/" },
+      { resolveLink: async () => ({ ok: false, reason: "timeout" }) },
+    );
+    expect(post.url).toBe("https://vm.tiktok.com/ZMslow1");
+  });
+
+  it("refuses a short link that leads to a story or profile", async () => {
+    const employee = await makeEmployee(db);
+    expect(
+      await failure(() =>
+        submitPost(
+          serviceContext(db, now),
+          employee,
+          { url: "https://vm.tiktok.com/ZMprof1/" },
+          {
+            resolveLink: async () => ({
+              ok: true,
+              url: "https://www.tiktok.com/@ana",
+            }),
+          },
+        ),
+      ),
+    ).toEqual({ status: 422, code: "unsupported_content" });
+  });
+});
+
 describe("withdraw and re-check", () => {
   it("lets the owner withdraw only their pending posts", async () => {
     const owner = await makeEmployee(db);

@@ -13,7 +13,7 @@ import {
   submissionsOpen,
   zonedToday,
 } from "@/lib/periods";
-import { analyzePostUrl } from "@/lib/platforms";
+import { analyzePostUrl, type PostUrlAnalysis } from "@/lib/platforms";
 import { countedPosts } from "@/lib/ranking";
 import type { ServerConfig } from "@/lib/server/config";
 import type { Db } from "@/lib/server/db/client";
@@ -24,6 +24,7 @@ import {
   posts,
 } from "@/lib/server/db/schema";
 import { HttpError } from "@/lib/server/http";
+import { resolveShortLink } from "@/lib/server/link-resolver";
 import { runCheck } from "@/lib/server/services/checks";
 import { boardFilter, boardSummary } from "@/lib/server/services/leaderboard";
 import { toPost, toRankable } from "@/lib/server/services/mappers";
@@ -98,12 +99,37 @@ export async function getEmployeePosts(
   );
 }
 
+/**
+ * Short links are resolved first (5 seconds at most, with the SSRF guard).
+ * If that fails, the post is accepted as is and deduplicated during the
+ * check, once the provider reports the real link.
+ */
+async function analyzeSubmission(
+  url: string,
+  resolveLink: typeof resolveShortLink,
+): Promise<PostUrlAnalysis> {
+  const analysis = analyzePostUrl(url);
+  if (analysis.status !== "valid" || !analysis.needsResolution) return analysis;
+  const resolved = await resolveLink(analysis.normalizedUrl, analysis.platform);
+  if (!resolved.ok) return analysis;
+  const target = analyzePostUrl(resolved.url);
+  if (target.status === "unsupported-content") return target;
+  return target.status === "valid" &&
+    !target.needsResolution &&
+    target.platform === analysis.platform
+    ? target
+    : analysis;
+}
+
 export async function submitPost(
   { db, config, now, defer, clock }: ServiceContext,
   employee: EmployeeRow,
   payload: SubmitPostPayload,
+  {
+    resolveLink = resolveShortLink,
+  }: { resolveLink?: typeof resolveShortLink } = {},
 ): Promise<Post> {
-  const analysis = analyzePostUrl(payload.url);
+  const analysis = await analyzeSubmission(payload.url, resolveLink);
   if (analysis.status === "unsupported-platform")
     throw new HttpError(422, "unsupported_platform", "Unsupported platform");
   if (analysis.status === "unsupported-content")

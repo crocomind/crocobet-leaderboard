@@ -1,6 +1,6 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
-import { categoryOf } from "@/lib/platforms";
+import { and, desc, eq, ne, or } from "drizzle-orm";
+import { analyzePostUrl, categoryOf } from "@/lib/platforms";
 import { evaluateFetch } from "@/lib/post-check";
 import type { FetchOutcome } from "@/lib/post-data";
 import type { ServerConfig } from "@/lib/server/config";
@@ -27,6 +27,57 @@ function trimRaw(raw: unknown): unknown {
   } catch {
     return null;
   }
+}
+
+const DUPLICATE_NOTE = "The same post was already submitted.";
+
+/**
+ * For a post stored with an unresolved short link: the canonical link and
+ * ID the provider reports, and whether another post already has them.
+ */
+async function adoptCanonical(
+  db: Db,
+  row: PostRow,
+  outcome: FetchOutcome,
+): Promise<{
+  urlCanonical: string;
+  externalId: string | null;
+  duplicate: boolean;
+} | null> {
+  if (row.externalId !== null || !outcome.ok || !outcome.post.canonicalUrl)
+    return null;
+  const analysis = analyzePostUrl(outcome.post.canonicalUrl);
+  if (
+    analysis.status !== "valid" ||
+    analysis.needsResolution ||
+    analysis.platform !== row.platform ||
+    analysis.normalizedUrl === row.urlCanonical
+  )
+    return null;
+  const externalId = analysis.externalId ?? outcome.post.externalId;
+  const [other] = await db
+    .select({ id: posts.id })
+    .from(posts)
+    .where(
+      and(
+        ne(posts.id, row.id),
+        or(
+          eq(posts.urlCanonical, analysis.normalizedUrl),
+          externalId
+            ? and(
+                eq(posts.platform, row.platform),
+                eq(posts.externalId, externalId),
+              )
+            : undefined,
+        ),
+      ),
+    )
+    .limit(1);
+  return {
+    urlCanonical: analysis.normalizedUrl,
+    externalId,
+    duplicate: other !== undefined,
+  };
 }
 
 const CHECK_EVENTS = {
@@ -96,6 +147,11 @@ export async function applyFetch(
       growthFlag: config.growthFlag,
     },
   );
+  // A short link the submit couldn't resolve: adopt the real link now and
+  // catch a duplicate that slipped through.
+  const canonical = await adoptCanonical(db, row, outcome);
+  const duplicateOf = canonical?.duplicate ?? false;
+
   const check = evaluation.check;
   const checkStatus = check.status;
   const checkDetails: CheckDetails = {
@@ -136,6 +192,20 @@ export async function applyFetch(
         reactions: evaluation.reactions,
         flags: evaluation.flags,
         consecutiveFetchFailures: evaluation.consecutiveFetchFailures,
+        ...(canonical && !duplicateOf
+          ? {
+              urlCanonical: canonical.urlCanonical,
+              externalId: canonical.externalId,
+            }
+          : {}),
+        ...(duplicateOf && row.status === "pending"
+          ? {
+              status: "rejected" as const,
+              statusReason: "duplicate" as const,
+              statusNote: DUPLICATE_NOTE,
+              reviewedAt: now,
+            }
+          : {}),
         ...(fetched && !row.metricsLocked
           ? { metricsFetchedAt: now, metricsSource: "provider" as const }
           : {}),
@@ -163,7 +233,21 @@ export async function applyFetch(
       });
     for (const flag of newFlags)
       events.push({ postId: row.id, action: `flag:${flag}`, createdAt: now });
-    if (logCheck && checkStatus in CHECK_EVENTS)
+    if (duplicateOf && row.status === "pending")
+      events.push({
+        postId: row.id,
+        action: "reject",
+        reason: "duplicate",
+        note: DUPLICATE_NOTE,
+        before: { status: row.status },
+        after: { status: "rejected" },
+        createdAt: now,
+      });
+    // The audit log records every change of the check result.
+    if (
+      (logCheck || row.checkStatus !== checkStatus) &&
+      checkStatus in CHECK_EVENTS
+    )
       events.push({
         postId: row.id,
         action: CHECK_EVENTS[checkStatus as keyof typeof CHECK_EVENTS],
