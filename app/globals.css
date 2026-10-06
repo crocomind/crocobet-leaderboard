@@ -415,6 +415,20 @@
   }
 }
 
+/* The header's loading bar: a soft streak that sweeps across, again and again. */
+@keyframes loading-slide {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 250% 0;
+  }
+}
+
+@utility animate-loading-slide {
+  animation: loading-slide 1.15s var(--ease-in-out-soft) infinite;
+}
+
 /* Slow idle "breathing" for the #1 podium glow. */
 @keyframes breathe {
   0%,

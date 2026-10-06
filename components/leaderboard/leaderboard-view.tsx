@@ -24,12 +24,23 @@ import { useCurrentUser } from "@/components/providers/current-user-provider";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { useSubmitPost } from "@/components/submit/submit-post-provider";
 import { MotionButton } from "@/components/ui/motion-button";
-import { useLeaderboardQuery, useRoundsQuery } from "@/lib/api/queries";
-import type { LeaderboardEntry, LeaderboardQuery } from "@/lib/api/types";
+import {
+  useLeaderboardQuery,
+  usePrefetchBoards,
+  usePrefetchEmployeePosts,
+  useRoundsQuery,
+} from "@/lib/api/queries";
+import {
+  LEADERBOARD_PERIODS,
+  type LeaderboardEntry,
+  type LeaderboardQuery,
+} from "@/lib/api/types";
 import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useViewportPosition } from "@/lib/hooks/use-viewport-position";
+import { CATEGORY_PLATFORMS, CONTENT_CATEGORIES } from "@/lib/platforms";
 import { platformForCategory } from "@/lib/url-state";
+import { cn } from "@/lib/utils";
 
 export function LeaderboardView() {
   const { t, format } = useI18n();
@@ -64,6 +75,55 @@ export function LeaderboardView() {
   const shown = data?.query ?? query;
   const searching = shown.search !== "";
   const userId = currentUser.user?.id;
+
+  // Once a board is on screen, load the ones a click away (its platforms,
+  // the other category, the other periods) so switching to them is instant.
+  const prefetchBoards = usePrefetchBoards();
+  const loaded = data !== undefined && !leaderboard.isPlaceholderData;
+  useEffect(() => {
+    if (!loaded) return;
+    const timer = setTimeout(() => {
+      const { category, platform, period, search } = query;
+      const neighbours: LeaderboardQuery[] = [
+        ...(["all", ...CATEGORY_PLATFORMS[category]] as const).map(
+          (option) => ({ ...query, platform: option }),
+        ),
+        ...CONTENT_CATEGORIES.filter((other) => other !== category).map(
+          (other) => ({ ...query, category: other, platform: "all" as const }),
+        ),
+        ...LEADERBOARD_PERIODS.filter((other) => other !== period).map(
+          (other) => ({
+            category,
+            platform,
+            period: other,
+            round: null,
+            search,
+          }),
+        ),
+      ];
+      prefetchBoards(neighbours);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [loaded, query, prefetchBoards]);
+
+  // An employee's posts start loading on hover, so their sheet opens filled.
+  const prefetchEmployeePosts = usePrefetchEmployeePosts();
+  const previewEntry = useCallback(
+    (entry: LeaderboardEntry) =>
+      prefetchEmployeePosts(entry.employee.id, {
+        category: shown.category,
+        platform: shown.platform,
+        period: shown.period,
+        round: shown.round,
+      }),
+    [
+      prefetchEmployeePosts,
+      shown.category,
+      shown.platform,
+      shown.period,
+      shown.round,
+    ],
+  );
 
   // Stable arrays so the memoized podium and list skip re-renders (and
   // layout measurement) while the user types.
@@ -256,7 +316,14 @@ export function LeaderboardView() {
             />
           )
         ) : (
-          <div className="flex flex-col gap-8">
+          // While the next board loads, the current one fades back a little.
+          <div
+            aria-busy={leaderboard.isPlaceholderData}
+            className={cn(
+              "flex flex-col gap-8 transition-opacity duration-(--dur-base) ease-(--ease-out-soft)",
+              leaderboard.isPlaceholderData && "opacity-55",
+            )}
+          >
             {podiumEntries.length > 0 && (
               <Podium
                 // A new board (category, platform or period) brings its cards in fresh.
@@ -264,6 +331,7 @@ export function LeaderboardView() {
                 entries={podiumEntries}
                 currentUserId={userId}
                 onSelect={openEntry}
+                onPreview={previewEntry}
                 myEntryRef={myEntryRef}
               />
             )}
@@ -273,8 +341,8 @@ export function LeaderboardView() {
                 category={shown.category}
                 currentUserId={userId}
                 onSelect={openEntry}
+                onPreview={previewEntry}
                 myEntryRef={myEntryRef}
-                dimmed={leaderboard.isPlaceholderData}
               />
             )}
           </div>

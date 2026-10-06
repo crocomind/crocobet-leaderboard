@@ -10,7 +10,7 @@ import { LayoutGroup, motion } from "motion/react";
 import type { MouseEvent } from "react";
 import { useCurrentUser } from "@/components/providers/current-user-provider";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { usePrefetchMyPosts } from "@/lib/api/queries";
+import { useViewPreload } from "@/components/layout/use-view-preload";
 import { useAppUrlState, useViewHref } from "@/lib/hooks/use-app-url-state";
 import type { AppView } from "@/lib/url-state";
 import { springLayout } from "@/lib/motion";
@@ -44,7 +44,7 @@ export function ViewNav({ id, className }: { id: string; className?: string }) {
   const { t } = useI18n();
   const { state, setView } = useAppUrlState();
   const viewHref = useViewHref();
-  const prefetchMyPosts = usePrefetchMyPosts();
+  const preload = useViewPreload();
   const currentUser = useCurrentUser();
   // Only admins see the admin item. It's a convenience: the server enforces access.
   const isAdmin = currentUser.user?.role === "admin";
@@ -71,16 +71,8 @@ export function ViewNav({ id, className }: { id: string; className?: string }) {
                       event.preventDefault();
                       if (!active) setView(view);
                     }}
-                    onPointerEnter={
-                      view === "my-posts"
-                        ? () => void prefetchMyPosts()
-                        : undefined
-                    }
-                    onFocus={
-                      view === "my-posts"
-                        ? () => void prefetchMyPosts()
-                        : undefined
-                    }
+                    onPointerEnter={() => preload(view)}
+                    onFocus={() => preload(view)}
                     className={cn(
                       "relative flex h-9 flex-1 items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap",
                       // Three items (with Admin) need tighter pills on phones.
