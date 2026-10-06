@@ -342,40 +342,6 @@ function DrawerContent({
               </span>
             )}
           </p>
-          <p className="mt-3 mb-1.5 text-xs font-medium text-muted-foreground">
-            {t.admin.drawer.linkedHandles}
-          </p>
-          {post.linkedHandles.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              {t.admin.drawer.noHandles}
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-1">
-              {post.linkedHandles.map((linked) => (
-                <li
-                  key={`${linked.platform}:${linked.handle}`}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <PlatformBadge platform={linked.platform} size="xs" />@
-                  {linked.handle}
-                  <span
-                    className={cn(
-                      "text-xs",
-                      linked.employeeId === post.employeeId
-                        ? "text-muted-foreground"
-                        : "font-semibold text-danger-text",
-                    )}
-                  >
-                    (
-                    {linked.employeeId === post.employeeId
-                      ? t.admin.drawer.thisEmployee
-                      : t.admin.drawer.someoneElse}
-                    )
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
         </Section>
 
         <Section title={t.admin.columns.metrics}>

@@ -7,7 +7,7 @@ import { Crossfade } from "@/components/common/crossfade";
 import { GlowBackdrop } from "@/components/common/glow-backdrop";
 import { ErrorState, StatePanel } from "@/components/common/state-panel";
 import { EmployeeSheet } from "@/components/leaderboard/employee-sheet";
-import { BoardDates, LastUpdated } from "@/components/leaderboard/last-updated";
+import { BoardDates } from "@/components/leaderboard/board-dates";
 import { LeaderboardList } from "@/components/leaderboard/leaderboard-list";
 import {
   ListSkeleton,
@@ -163,10 +163,6 @@ export function LeaderboardView() {
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start sm:justify-end sm:self-auto">
           <BoardDates period={data?.period} />
-          <LastUpdated
-            syncedAt={data?.lastSyncedAt}
-            updating={leaderboard.isFetching}
-          />
         </div>
       </div>
 

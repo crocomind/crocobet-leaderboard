@@ -360,12 +360,13 @@
     pointer-events: none;
   }
 
+  /* The glow brightens but never scales on its own: a bigger layer would
+     pull its ring away from the button's edges and show a dark gap. The
+     button itself still grows on hover (MotionButton). */
   .btn-glow {
     box-shadow: var(--glow-brand);
     opacity: 0.6;
-    transition:
-      opacity calc(var(--dur-base) * var(--_out)) var(--ease-out-soft),
-      scale calc(var(--dur-base) * var(--_out)) var(--ease-out-soft);
+    transition: opacity calc(var(--dur-base) * var(--_out)) var(--ease-out-soft);
   }
 
   .btn-sheen {
@@ -389,7 +390,6 @@
 
   .btn-primary:active .btn-glow {
     opacity: 0.85;
-    scale: 0.98;
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -399,7 +399,6 @@
 
     .btn-primary:hover .btn-glow {
       opacity: 1;
-      scale: 1.04;
     }
 
     /* Sweeps once on hover-in; on hover-out it jumps back unseen. */

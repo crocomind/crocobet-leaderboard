@@ -194,33 +194,21 @@ describe("evaluateFetch", () => {
     expect(result.check.publishedInWindow).toBe(false);
   });
 
-  it("raises the ownership flags", () => {
+  it("doesn't flag account ownership, and clears old ownership flags", () => {
+    // Admins judge whose post it is when they approve.
     const linked = [
       { handle: "ana.g", employeeId: "nino" },
       { handle: "ana.real", employeeId: "ana" },
     ];
-    const claimed = evaluateFetch(basePost, fetched(), {
-      ...context,
-      linkedHandles: linked,
-    });
-    expect(claimed.check.ownerMatch).toBe(false);
-    expect(claimed.flags).toContain("handle_claimed_by_other");
-    expect(claimed.flags).not.toContain("author_mismatch");
-
-    const mismatch = evaluateFetch(
-      basePost,
-      fetched({ authorHandle: "someone.else" }),
-      { ...context, linkedHandles: linked },
-    );
-    expect(mismatch.flags).toContain("author_mismatch");
-
-    const match = evaluateFetch(
-      basePost,
-      fetched({ authorHandle: "@Ana.Real" }),
-      { ...context, linkedHandles: linked },
-    );
-    expect(match.check.ownerMatch).toBe(true);
-    expect(match.flags).toEqual([]);
+    for (const authorHandle of ["ana.g", "someone.else"]) {
+      const result = evaluateFetch(
+        { ...basePost, flags: ["author_mismatch", "handle_claimed_by_other"] },
+        fetched({ authorHandle }),
+        { ...context, linkedHandles: linked },
+      );
+      expect(result.flags).not.toContain("author_mismatch");
+      expect(result.flags).not.toContain("handle_claimed_by_other");
+    }
   });
 
   it("keeps the last values on a failed fetch and flags unavailable after 3", () => {

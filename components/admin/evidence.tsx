@@ -10,15 +10,12 @@ import {
   Hash,
   LoaderCircle,
   TriangleAlert,
-  UserCheck,
-  UserRound,
-  UserX,
   CircleX,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { Badge } from "@/components/ui/badge";
-import type { PostCheck, PostFlag } from "@/lib/api/types";
+import { type PostCheck, type PostFlag, RETIRED_FLAGS } from "@/lib/api/types";
 import { tagParts } from "@/lib/campaign-tag";
 import { cn } from "@/lib/utils";
 
@@ -98,7 +95,7 @@ function Line({
   );
 }
 
-/** Hashtag, Croco Squad tag, owner and window evidence, one line each. */
+/** Hashtag, Croco Squad tag and window evidence, one line each. */
 export function CheckEvidence({
   check,
   className,
@@ -128,29 +125,6 @@ export function CheckEvidence({
           {evidence.none}
         </Line>
       )}
-      {check.ownerMatch === true ? (
-        <Line icon={<UserCheck aria-hidden="true" />} tone="ok">
-          {evidence.owner}
-          {check.authorHandle && (
-            <span className="break-all text-muted-foreground">
-              @{check.authorHandle}
-            </span>
-          )}
-        </Line>
-      ) : check.ownerMatch === false ? (
-        <Line icon={<UserX aria-hidden="true" />} tone="bad">
-          {evidence.ownerMismatch}
-          {check.authorHandle && (
-            <span className="break-all">@{check.authorHandle}</span>
-          )}
-        </Line>
-      ) : (
-        <Line icon={<UserRound aria-hidden="true" />} tone="unknown">
-          {check.authorHandle
-            ? `@${check.authorHandle}`
-            : evidence.ownerUnknown}
-        </Line>
-      )}
       {check.publishedInWindow === true ? (
         <Line icon={<CalendarCheck aria-hidden="true" />} tone="ok">
           {evidence.inWindow}
@@ -172,7 +146,6 @@ const SERIOUS_FLAGS = new Set<PostFlag>([
   "suspicious_growth",
   "unavailable",
   "tag_removed",
-  "handle_claimed_by_other",
 ]);
 const INFO_FLAGS = new Set<PostFlag>([
   "category_reclassified",
@@ -187,10 +160,11 @@ export function FlagBadges({
   className?: string;
 }) {
   const { t } = useI18n();
-  if (flags.length === 0) return null;
+  const shown = flags.filter((flag) => !RETIRED_FLAGS.includes(flag));
+  if (shown.length === 0) return null;
   return (
     <span className={cn("flex flex-wrap gap-1", className)}>
-      {flags.map((flag) => (
+      {shown.map((flag) => (
         <Badge
           key={flag}
           title={t.admin.flags[flag]}

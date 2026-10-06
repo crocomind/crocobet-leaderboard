@@ -4,7 +4,7 @@ import {
   CONTENT_TYPES,
   VIDEO_RECLASSIFICATION,
 } from "@/lib/platforms";
-import { POST_FLAGS } from "../types";
+import { POST_FLAGS, RETIRED_FLAGS } from "../types";
 import {
   createInitialState,
   MOCK_CURRENT_USER_ID,
@@ -65,8 +65,9 @@ describe("mock data", () => {
     expect(seen(state.posts.map((post) => post.check.status))).toEqual(
       new Set(["queued", "passed", "failed", "error"]),
     );
+    // Every flag still raised (ownership flags are retired).
     expect(seen(state.posts.flatMap((post) => post.flags))).toEqual(
-      new Set(POST_FLAGS),
+      new Set(POST_FLAGS.filter((flag) => !RETIRED_FLAGS.includes(flag))),
     );
   });
 

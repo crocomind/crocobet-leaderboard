@@ -46,6 +46,15 @@ export const POST_FLAGS = [
 ] as const;
 export type PostFlag = (typeof POST_FLAGS)[number];
 
+/**
+ * Account-ownership flags. No longer raised (admins judge ownership when they
+ * approve) and never shown; kept so older stored values still parse.
+ */
+export const RETIRED_FLAGS: readonly PostFlag[] = [
+  "author_mismatch",
+  "handle_claimed_by_other",
+];
+
 export type EmployeeRole = "employee" | "admin";
 
 /** Public profile. Leaderboard payloads never include the email. */

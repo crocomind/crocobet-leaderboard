@@ -135,8 +135,8 @@ type PostFlag =
   | "unavailable"
   | "metrics_unavailable"
   | "tag_removed"
-  | "author_mismatch"
-  | "handle_claimed_by_other"
+  | "author_mismatch" // retired: no longer raised
+  | "handle_claimed_by_other" // retired: no longer raised
   | "category_reclassified"
   | "published_date_uncertain";
 
@@ -405,9 +405,10 @@ canonical URL. Short links are resolved first.
 
 ## Checks, moderation and refresh
 
-- **The automated check** looks for `#CrocoBySquad` or a Croco Squad tag (either is enough), the author handle,
-  and whether the post was published inside the challenge. It's evidence for the admin; nothing
-  is approved automatically.
+- **The automated check** looks for `#CrocoBySquad` or a Croco Squad tag (either is enough), reads the author handle,
+  and checks whether the post was published inside the challenge. It's evidence for the admin;
+  nothing is approved automatically. Account ownership isn't judged automatically: admins decide
+  it when they approve.
 - **Moderation:**
 
   | From         | Action     | To           | Who            | Requires                                      |
