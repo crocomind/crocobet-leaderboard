@@ -66,6 +66,8 @@ interface PodiumProps {
   entries: LeaderboardEntry[];
   currentUserId: string | undefined;
   onSelect: (entry: LeaderboardEntry) => void;
+  /** Called on hover or focus, before a click (to start loading the sheet). */
+  onPreview?: (entry: LeaderboardEntry) => void;
   /** Attached to the signed-in user's card, if they're on the podium. */
   myEntryRef: RefCallback<HTMLElement>;
 }
@@ -75,6 +77,7 @@ export const Podium = memo(function Podium({
   entries,
   currentUserId,
   onSelect,
+  onPreview,
   myEntryRef,
 }: PodiumProps) {
   const { t } = useI18n();
@@ -113,6 +116,7 @@ export const Podium = memo(function Podium({
                       entry={entry}
                       isMe={entry.employee.id === currentUserId}
                       onSelect={onSelect}
+                      onPreview={onPreview}
                       myEntryRef={myEntryRef}
                     />
                   </motion.div>
@@ -170,12 +174,14 @@ function PodiumCard({
   entry,
   isMe,
   onSelect,
+  onPreview,
   myEntryRef,
 }: {
   rank: PodiumRank;
   entry: LeaderboardEntry;
   isMe: boolean;
   onSelect: (entry: LeaderboardEntry) => void;
+  onPreview?: (entry: LeaderboardEntry) => void;
   myEntryRef: RefCallback<HTMLElement>;
 }) {
   const { t, formatNumber } = useI18n();
@@ -204,6 +210,8 @@ function PodiumCard({
         aria-label={entryLabel(entry, isMe)}
         aria-haspopup="dialog"
         onClick={() => onSelect(entry)}
+        onPointerEnter={() => onPreview?.(entry)}
+        onFocus={() => onPreview?.(entry)}
         className="absolute inset-0 z-[1] rounded-[inherit]"
       />
 

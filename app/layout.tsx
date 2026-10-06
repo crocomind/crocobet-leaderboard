@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_Georgian } from "next/font/google";
-import { cookies, headers } from "next/headers";
 import type { ReactNode } from "react";
 import { AppProviders } from "@/components/providers/app-providers";
 import { getSessionUser } from "@/lib/auth/session";
-import { LOCALE_COOKIE, resolveLocale } from "@/lib/i18n/config";
 import "./globals.css";
 
-// Inter covers Latin; Georgian characters fall through to Noto Sans Georgian.
+// Inter covers the UI. Georgian characters in what employees write (post
+// titles and captions) fall through to Noto Sans Georgian, which only
+// downloads when such text is on screen.
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
   variable: "--font-inter",
@@ -35,27 +35,16 @@ export const viewport: Viewport = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
-  // Rendering in the saved language avoids a flash of English for Georgian users.
-  const [cookieStore, headerList, sessionUser] = await Promise.all([
-    cookies(),
-    headers(),
-    getSessionUser(),
-  ]);
-  const locale = resolveLocale(
-    cookieStore.get(LOCALE_COOKIE)?.value,
-    headerList.get("accept-language"),
-  );
+  const sessionUser = await getSessionUser();
 
   return (
     <html
-      lang={locale}
+      lang="en"
       className={`${inter.variable} ${notoSansGeorgian.variable}`}
       suppressHydrationWarning
     >
       <body>
-        <AppProviders locale={locale} sessionUser={sessionUser}>
-          {children}
-        </AppProviders>
+        <AppProviders sessionUser={sessionUser}>{children}</AppProviders>
       </body>
     </html>
   );

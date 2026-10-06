@@ -53,7 +53,7 @@ function FilterMenu<T extends string>({
           size="sm"
           aria-label={`${label}: ${current ?? allLabel}`}
           className={cn(
-            "group/filter h-9 rounded-full font-medium data-[state=open]:border-brand/50",
+            "group/filter h-10 rounded-full font-medium data-[state=open]:border-brand/50",
             active && "border-brand/50 bg-brand/10 text-brand-text",
           )}
         >
@@ -195,7 +195,7 @@ export function AdminFilters({
               onChange(DEFAULT_ADMIN_FILTERS);
               onSearchChange("");
             }}
-            className="h-9 text-muted-foreground"
+            className="h-10 text-muted-foreground"
           >
             <X aria-hidden="true" />
             {copy.clear}

@@ -3,6 +3,7 @@ import { employeeRoute } from "@/lib/server/route";
 import { uuidSchema } from "@/lib/server/schemas";
 import {
   adminPatchSchema,
+  deleteAdminPost,
   getAdminPostDetail,
   updateAdminPost,
 } from "@/lib/server/services/admin";
@@ -31,5 +32,13 @@ export const PATCH = employeeRoute<{ id: string }>(
         now,
       ),
     ),
+  { admin: true },
+);
+
+export const DELETE = employeeRoute<{ id: string }>(
+  async ({ params, db }) => {
+    await deleteAdminPost(db, postId(params.id));
+    return new Response(null, { status: 204 });
+  },
   { admin: true },
 );

@@ -57,10 +57,13 @@ export type ModerationResult =
   | { ok: false; error: ModerationError };
 
 interface Rule {
-  from: PostStatus;
+  from: PostStatus | readonly PostStatus[];
   to: PostStatus | "deleted";
   who: readonly ("admin" | "owner")[];
 }
+
+const fromStatuses = (rule: Rule): readonly PostStatus[] =>
+  typeof rule.from === "string" ? [rule.from] : rule.from;
 
 const RULES: Record<ModerationAction, Rule> = {
   approve: { from: "pending", to: "approved", who: ["admin"] },
@@ -68,7 +71,12 @@ const RULES: Record<ModerationAction, Rule> = {
   disqualify: { from: "approved", to: "disqualified", who: ["admin"] },
   reinstate: { from: "disqualified", to: "approved", who: ["admin"] },
   reopen: { from: "rejected", to: "pending", who: ["admin"] },
-  withdraw: { from: "pending", to: "deleted", who: ["owner"] },
+  // Owners can delete their own posts whatever their status.
+  withdraw: {
+    from: ["pending", "approved", "rejected", "disqualified"],
+    to: "deleted",
+    who: ["owner"],
+  },
   recheck: { from: "pending", to: "pending", who: ["owner", "admin"] },
 };
 
@@ -84,7 +92,7 @@ const hasNote = (note: string | null | undefined) => Boolean(note?.trim());
 export function applyModeration(input: ModerationInput): ModerationResult {
   const rule = RULES[input.action];
   if (!rule.who.includes(input.actor)) return { ok: false, error: "forbidden" };
-  if (input.status !== rule.from)
+  if (!fromStatuses(rule).includes(input.status))
     return { ok: false, error: "invalid_transition" };
 
   switch (input.action) {
@@ -119,5 +127,7 @@ export function applyModeration(input: ModerationInput): ModerationResult {
 
 /** Which admin actions make sense for a post in this status (for the UI). */
 export function availableAdminActions(status: PostStatus): AdminAction[] {
-  return ADMIN_ACTIONS.filter((action) => RULES[action].from === status);
+  return ADMIN_ACTIONS.filter((action) =>
+    fromStatuses(RULES[action]).includes(status),
+  );
 }

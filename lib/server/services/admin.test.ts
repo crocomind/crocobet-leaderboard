@@ -14,6 +14,7 @@ import {
 import { HttpError } from "@/lib/server/http";
 import {
   bulkModerate,
+  deleteAdminPost,
   exportStandings,
   getAdminPostDetail,
   listAdminPosts,
@@ -268,6 +269,46 @@ describe("moderation", () => {
         { id: approved.id, ok: false, error: "invalid_transition" },
         { id: missing, ok: false, error: "not_found" },
       ],
+    });
+  });
+});
+
+describe("delete", () => {
+  it("removes a post entirely, with its snapshots and events", async () => {
+    const admin = await makeEmployee(db, { role: "admin" });
+    const ana = await makeEmployee(db);
+    const post = await makePost(db, ana.id, "tiktok_video", {
+      status: "disqualified",
+    });
+    await moderatePost(
+      db,
+      admin,
+      post.id,
+      "reinstate",
+      { note: "Looks fine" },
+      new Date(),
+    );
+    await db
+      .insert(postMetricSnapshots)
+      .values({ postId: post.id, views: 10, reactions: 1, source: "manual" });
+    await deleteAdminPost(db, post.id);
+    expect(
+      await db.query.posts.findFirst({ where: eq(posts.id, post.id) }),
+    ).toBeUndefined();
+    expect(
+      await db
+        .select()
+        .from(moderationEvents)
+        .where(eq(moderationEvents.postId, post.id)),
+    ).toEqual([]);
+    expect(
+      await db
+        .select()
+        .from(postMetricSnapshots)
+        .where(eq(postMetricSnapshots.postId, post.id)),
+    ).toEqual([]);
+    await expect(deleteAdminPost(db, post.id)).rejects.toMatchObject({
+      status: 404,
     });
   });
 });

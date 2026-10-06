@@ -9,7 +9,6 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { CategoryLabel } from "@/components/common/category-label";
 import { PlatformBadge } from "@/components/common/platform-badge";
 import { useRoundLabel } from "@/components/leaderboard/use-round-label";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -72,12 +71,12 @@ export function LeaderboardToolbar({
   const categoryOptions: SegmentedOption<ContentCategory>[] = [
     {
       value: "video",
-      label: <CategoryLabel category="video" />,
+      label: t.categories.video,
       icon: <Clapperboard className="size-4" aria-hidden="true" />,
     },
     {
       value: "static",
-      label: <CategoryLabel category="static" />,
+      label: t.categories.static,
       icon: <ImageIcon className="size-4" aria-hidden="true" />,
     },
   ];

@@ -37,7 +37,8 @@ interface LeaderboardListProps {
   currentUserId: string | undefined;
   onSelect: (entry: LeaderboardEntry) => void;
   myEntryRef: RefCallback<HTMLElement>;
-  dimmed?: boolean;
+  /** Called on hover or focus, before a click (to start loading the sheet). */
+  onPreview?: (entry: LeaderboardEntry) => void;
 }
 
 // Memoized so typing in the search box doesn't re-measure every row's layout.
@@ -47,19 +48,13 @@ export const LeaderboardList = memo(function LeaderboardList({
   currentUserId,
   onSelect,
   myEntryRef,
-  dimmed,
+  onPreview,
 }: LeaderboardListProps) {
   const { t } = useI18n();
   const video = category === "video";
 
   return (
-    <section
-      aria-labelledby="rankings-heading"
-      className={cn(
-        "transition-opacity duration-(--dur-base) ease-(--ease-out-soft)",
-        dimmed && "opacity-60",
-      )}
-    >
+    <section aria-labelledby="rankings-heading">
       <h2 id="rankings-heading" className="sr-only">
         {t.leaderboard.listLabel}
       </h2>
@@ -96,6 +91,7 @@ export const LeaderboardList = memo(function LeaderboardList({
               category={category}
               isMe={entry.employee.id === currentUserId}
               onSelect={onSelect}
+              onPreview={onPreview}
               myEntryRef={myEntryRef}
             />
           ))}
@@ -111,6 +107,7 @@ interface LeaderboardRowProps {
   category: ContentCategory;
   isMe: boolean;
   onSelect: (entry: LeaderboardEntry) => void;
+  onPreview?: (entry: LeaderboardEntry) => void;
   myEntryRef: RefCallback<HTMLElement>;
 }
 
@@ -120,6 +117,7 @@ function LeaderboardRow({
   category,
   isMe,
   onSelect,
+  onPreview,
   myEntryRef,
 }: LeaderboardRowProps) {
   const { t, formatCompact, plural } = useI18n();
@@ -173,6 +171,8 @@ function LeaderboardRow({
           aria-label={entryLabel(entry, isMe)}
           aria-haspopup="dialog"
           onClick={() => onSelect(entry)}
+          onPointerEnter={() => onPreview?.(entry)}
+          onFocus={() => onPreview?.(entry)}
           className="absolute inset-0 scroll-mt-24 scroll-mb-32 rounded-[inherit]"
         />
 

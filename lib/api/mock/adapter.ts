@@ -145,6 +145,10 @@ export const mockAdapter: ApiAdapter = {
     respond((mock, now) => mock.bulkModerate(payload, now), options, {
       mutates: true,
     }),
+  deleteAdminPost: (postId, options) =>
+    respond((mock) => mock.deleteAdminPost(postId), options, {
+      mutates: true,
+    }),
   refreshPost: (postId, options) =>
     respond((mock, now) => mock.refreshPost(postId, now), options, {
       mutates: true,

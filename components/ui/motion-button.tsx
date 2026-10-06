@@ -3,7 +3,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { LoaderCircle } from "lucide-react";
 import {
-  AnimatePresence,
   type HTMLMotionProps,
   motion,
   type Transition,
@@ -12,16 +11,13 @@ import {
 } from "motion/react";
 import { type ReactNode, useRef } from "react";
 import {
-  DURATION,
   hasFinePointer,
   LIFT,
   REDUCED_FADE,
   SCALE,
   slower,
-  springLayout,
   springPress,
   springSoft,
-  tween,
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -140,6 +136,9 @@ export interface MotionButtonProps
   loadingLabel?: ReactNode;
 }
 
+const LOADING_LAYER =
+  "col-start-1 row-start-1 inline-flex items-center justify-center gap-2 transition-[opacity,scale] duration-(--dur-fast) ease-(--ease-out-soft)";
+
 /** The app's button: primary, secondary, ghost, danger or icon. */
 export function MotionButton({
   className,
@@ -162,33 +161,31 @@ export function MotionButton({
       aria-busy={loading || undefined}
       data-loading={loading || undefined}
       className={cn(variantClasses({ variant, size }), className)}
-      layout={hasLoadingState ? "size" : undefined}
-      transition={{ layout: springLayout }}
       {...pressMotion}
       {...props}
     >
       <PrimaryLayers variant={variant} />
       {hasLoadingState ? (
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.span
-            key={loading ? "loading" : "idle"}
-            layout="position"
-            className="inline-flex items-center justify-center gap-2"
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            transition={tween(DURATION.fast)}
+        // The label and the spinner share one grid cell and crossfade, so the
+        // button keeps its size and shape while it loads.
+        <span className="grid place-items-center">
+          <span
+            aria-hidden={loading || undefined}
+            className={cn(LOADING_LAYER, loading && "scale-[0.92] opacity-0")}
           >
-            {loading ? (
-              <>
-                <LoaderCircle className="animate-spin" aria-hidden="true" />
-                {loadingLabel}
-              </>
-            ) : (
-              children
-            )}
-          </motion.span>
-        </AnimatePresence>
+            {children}
+          </span>
+          <span
+            aria-hidden={!loading || undefined}
+            className={cn(LOADING_LAYER, !loading && "scale-[0.92] opacity-0")}
+          >
+            <LoaderCircle
+              className={loading ? "animate-spin" : undefined}
+              aria-hidden="true"
+            />
+            {loadingLabel}
+          </span>
+        </span>
       ) : (
         children
       )}

@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
+import { useEffect } from "react";
 import { AdminGate } from "@/components/admin/admin-gate";
 import { Header } from "@/components/layout/header";
 import { MobileSubmitFab } from "@/components/layout/mobile-submit-fab";
@@ -11,6 +12,8 @@ import { LeaderboardView } from "@/components/leaderboard/leaderboard-view";
 import { MyPostsView } from "@/components/my-posts/my-posts-view";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { SubmitPostDialog } from "@/components/submit/submit-post-dialog";
+import { useViewPreload } from "@/components/layout/use-view-preload";
+import { useCurrentUser } from "@/components/providers/current-user-provider";
 import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
 import { DURATION, exitTween, REDUCED_FADE, tween } from "@/lib/motion";
 
@@ -23,6 +26,18 @@ export function AppShell() {
   const { t } = useI18n();
   const { state } = useAppUrlState();
   const reduceMotion = useReducedMotion() ?? false;
+
+  // Once the first screen has settled, load the other views in the background
+  // so switching to them is instant.
+  const preload = useViewPreload();
+  const isAdmin = useCurrentUser().user?.role === "admin";
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      preload("my-posts");
+      if (isAdmin) preload("admin");
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [preload, isAdmin]);
 
   return (
     <div className="relative isolate min-h-dvh overflow-x-clip">

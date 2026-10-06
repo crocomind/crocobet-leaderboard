@@ -10,7 +10,6 @@ import { SubmitPostProvider } from "@/components/submit/submit-post-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isApiError } from "@/lib/api/errors";
 import type { SessionUser } from "@/lib/auth/types";
-import type { Locale } from "@/lib/i18n/config";
 
 function createQueryClient() {
   return new QueryClient({
@@ -27,11 +26,9 @@ function createQueryClient() {
 }
 
 export function AppProviders({
-  locale,
   sessionUser,
   children,
 }: {
-  locale: Locale;
   sessionUser: SessionUser | null;
   children: ReactNode;
 }) {
@@ -46,7 +43,7 @@ export function AppProviders({
       disableTransitionOnChange
     >
       <QueryClientProvider client={queryClient}>
-        <I18nProvider initialLocale={locale}>
+        <I18nProvider>
           {/* Skips transform/layout animations for users who prefer reduced motion. */}
           <MotionConfig reducedMotion="user">
             <TooltipProvider delayDuration={250}>

@@ -1,6 +1,12 @@
 "use client";
 
-import { ArrowUpRight, Lock, RefreshCw, ScanSearch } from "lucide-react";
+import {
+  ArrowUpRight,
+  Lock,
+  RefreshCw,
+  ScanSearch,
+  Trash2,
+} from "lucide-react";
 import { type FormEvent, type ReactNode, useId, useState } from "react";
 import {
   AdminActions,
@@ -12,6 +18,7 @@ import {
   FlagBadges,
 } from "@/components/admin/evidence";
 import { MetricSparklines } from "@/components/admin/sparkline";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { Crossfade } from "@/components/common/crossfade";
 import { EmployeeAvatar } from "@/components/common/employee-avatar";
 import { PlatformBadge } from "@/components/common/platform-badge";
@@ -33,6 +40,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   useAdminPostQuery,
   useRecheckPostMutation,
+  useDeleteAdminPostMutation,
   useRefreshPostMutation,
   useUpdateAdminPostMutation,
 } from "@/lib/api/queries";
@@ -81,7 +89,11 @@ export function PostReviewDrawer({
         stateKey={detail.data ? "detail" : detail.isError ? "error" : "loading"}
       >
         {detail.data ? (
-          <DrawerContent post={detail.data} {...props} />
+          <DrawerContent
+            post={detail.data}
+            onClose={() => onOpenChange(false)}
+            {...props}
+          />
         ) : detail.isError ? (
           <div className="p-6">
             <ResponsiveDialogTitle className="sr-only">
@@ -178,13 +190,17 @@ function DrawerContent({
   post,
   onAction,
   onMessage,
+  onClose,
   busy,
 }: Omit<PostReviewDrawerProps, "postId" | "open" | "onOpenChange"> & {
   post: AdminPostDetail;
+  onClose: () => void;
 }) {
   const { t, format, formatDate, formatDateTime, formatNumber } = useI18n();
   const refresh = useRefreshPostMutation();
   const recheck = useRecheckPostMutation();
+  const remove = useDeleteAdminPostMutation();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const href = safeExternalUrl(post.url);
   const video = post.category === "video";
 
@@ -306,7 +322,47 @@ function DrawerContent({
               {t.admin.actions.recheck}
             </MotionButton>
           )}
+          <MotionButton
+            variant="ghost"
+            size="sm"
+            className="text-danger-text hover:bg-danger/12"
+            onClick={() => {
+              remove.reset();
+              setConfirmDelete(true);
+            }}
+          >
+            <Trash2 aria-hidden="true" />
+            {t.admin.actions.delete}
+          </MotionButton>
         </div>
+
+        <ConfirmDialog
+          open={confirmDelete}
+          onOpenChange={setConfirmDelete}
+          title={t.admin.drawer.deleteTitle}
+          description={
+            <>
+              {t.admin.drawer.deleteDescription}
+              {remove.isError && (
+                <span role="alert" className="mt-2 block text-danger-text">
+                  {t.admin.toasts.error}
+                </span>
+              )}
+            </>
+          }
+          confirmLabel={t.admin.actions.delete}
+          destructive
+          pending={remove.isPending}
+          onConfirm={() =>
+            remove.mutate(post.id, {
+              onSuccess: () => {
+                setConfirmDelete(false);
+                onClose();
+                onMessage(t.admin.toasts.deleted);
+              },
+            })
+          }
+        />
 
         <Section title={t.admin.columns.evidence} className="border-t-0 pt-0">
           <CheckEvidence check={post.check} />

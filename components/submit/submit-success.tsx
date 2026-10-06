@@ -110,14 +110,16 @@ export function SubmitSuccess({
         </span>
       </motion.p>
 
+      {/* Side by side when both fit, otherwise stacked with the main step on
+          top, so long labels never overflow the dialog. */}
       <motion.div
-        className="mt-8 flex w-full flex-col-reverse gap-3 sm:flex-row"
+        className="mt-8 flex w-full flex-wrap-reverse gap-3"
         {...fadeUp(0.55)}
       >
         <MotionButton
           variant="secondary"
           size="lg"
-          className="sm:flex-1"
+          className="grow basis-0"
           onClick={onSubmitAnother}
         >
           <Plus aria-hidden="true" />
@@ -126,7 +128,7 @@ export function SubmitSuccess({
         {/* Focus lands on the main next step so Enter continues. */}
         <MotionButton
           size="lg"
-          className="sm:flex-1"
+          className="grow basis-0"
           onClick={onViewMyPosts}
           autoFocus
         >

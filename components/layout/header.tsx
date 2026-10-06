@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
+import { TopLoadingBar } from "@/components/layout/top-loading-bar";
 import { UserMenu } from "@/components/layout/user-menu";
 import { ViewNav } from "@/components/layout/view-nav";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -17,6 +18,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-glass backdrop-blur-xl backdrop-saturate-150">
+      <TopLoadingBar />
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
         <a
           href={viewHref("leaderboard")}

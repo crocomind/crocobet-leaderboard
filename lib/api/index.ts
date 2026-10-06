@@ -35,6 +35,7 @@ export const updateAdminPost = forward("updateAdminPost");
 export const moderatePost = forward("moderatePost");
 export const bulkModerate = forward("bulkModerate");
 export const refreshPost = forward("refreshPost");
+export const deleteAdminPost = forward("deleteAdminPost");
 export const getSyncStatus = forward("getSyncStatus");
 export const startSync = forward("startSync");
 export const exportStandings = forward("exportStandings");

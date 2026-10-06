@@ -2,7 +2,7 @@ import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
 export const inputClassName = cn(
-  "h-12 w-full min-w-0 rounded-control border border-input bg-surface px-4 text-[15px] text-foreground shadow-soft",
+  "block h-12 w-full min-w-0 rounded-control border border-input bg-surface px-4 text-[15px] text-foreground shadow-soft",
   "motion-colors placeholder:text-muted-foreground focus-visible:outline-none",
   "focus:border-brand aria-invalid:border-danger",
   "disabled:cursor-not-allowed disabled:opacity-50",

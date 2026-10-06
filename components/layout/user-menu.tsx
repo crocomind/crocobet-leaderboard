@@ -1,8 +1,7 @@
 "use client";
 
-import { Languages, LoaderCircle, LogOut, Moon, Sun } from "lucide-react";
+import { LoaderCircle, LogOut, Moon, Sun } from "lucide-react";
 import { useState } from "react";
-import { flushSync } from "react-dom";
 import { EmployeeAvatar } from "@/components/common/employee-avatar";
 import { useThemeSwitch } from "@/components/layout/use-theme-switch";
 import { useCurrentUser } from "@/components/providers/current-user-provider";
@@ -18,25 +17,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MotionButton } from "@/components/ui/motion-button";
-import {
-  isLocale,
-  type Locale,
-  LOCALE_NAMES,
-  LOCALES,
-} from "@/lib/i18n/config";
 import { signOut } from "@/lib/auth/client";
-import { withViewTransition } from "@/lib/motion";
 
 export function UserMenu() {
-  const { t, locale, setLocale } = useI18n();
+  const { t } = useI18n();
   const { theme, switchTo } = useThemeSwitch();
   const current = useCurrentUser();
-
-  // Language changes crossfade the page like theme changes do.
-  const switchLocale = (next: Locale) => {
-    if (next === locale) return;
-    withViewTransition(() => flushSync(() => setLocale(next)));
-  };
 
   const [signingOut, setSigningOut] = useState(false);
 
@@ -93,29 +79,6 @@ export function UserMenu() {
             <Sun />
             {t.header.themeLight}
           </DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
-
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel className="flex items-center gap-1.5">
-          <Languages className="size-3.5" aria-hidden="true" />
-          {t.header.language}
-        </DropdownMenuLabel>
-        <DropdownMenuRadioGroup
-          value={locale}
-          onValueChange={(value) => {
-            if (isLocale(value)) switchLocale(value);
-          }}
-        >
-          {LOCALES.map((option) => (
-            <DropdownMenuRadioItem
-              key={option}
-              value={option}
-              lang={option}
-              onSelect={(event) => event.preventDefault()}
-            >
-              {LOCALE_NAMES[option]}
-            </DropdownMenuRadioItem>
-          ))}
         </DropdownMenuRadioGroup>
 
         <DropdownMenuSeparator />

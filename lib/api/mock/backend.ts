@@ -874,6 +874,14 @@ export class MockBackend {
     };
   }
 
+  deleteAdminPost(postId: string): void {
+    this.requireAdmin();
+    const post = this.find(postId);
+    this.state.posts = this.state.posts.filter(
+      (candidate) => candidate !== post,
+    );
+  }
+
   refreshPost(postId: string, now: Date): void {
     this.requireAdmin();
     const post = this.find(postId);

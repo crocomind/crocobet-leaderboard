@@ -8,6 +8,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { useCallback } from "react";
 import {
   bulkModerate,
   createRound,
@@ -27,6 +28,7 @@ import {
   moderatePost,
   recheckPost,
   refreshPost,
+  deleteAdminPost,
   startSync,
   submitPost,
   updateAdminPost,
@@ -66,8 +68,13 @@ export const queryKeys = {
   rounds: ["rounds"] as const,
 };
 
-/** Metrics refresh twice a day on the backend; no need to refetch more often. */
-const STATS_STALE_MS = 60_000;
+/**
+ * Metrics refresh twice a day on the backend, and every change made in the
+ * app invalidates what it touches, so boards stay fresh for a while.
+ */
+const STATS_STALE_MS = 5 * 60_000;
+/** Boards stay cached this long after they leave the screen, so going back is instant. */
+const STATS_GC_MS = 30 * 60_000;
 /** While a check runs, poll for its result. */
 const CHECK_POLL_MS = 3_000;
 
@@ -113,6 +120,7 @@ export function useLeaderboardQuery(query: LeaderboardQuery) {
     queryKey: queryKeys.leaderboard(query),
     queryFn: ({ signal }) => getLeaderboard(query, { signal }),
     staleTime: STATS_STALE_MS,
+    gcTime: STATS_GC_MS,
     refetchInterval: 5 * 60_000,
     // Keep showing the old list while a new filter loads, so rows can animate
     // to their new positions instead of flashing a skeleton.
@@ -144,7 +152,41 @@ export function useEmployeePostsQuery(
       getEmployeePosts(employeeId ?? "", query, { signal }),
     enabled: employeeId !== null,
     staleTime: STATS_STALE_MS,
+    gcTime: STATS_GC_MS,
   });
+}
+
+/** Loads boards in the background (cached ones are skipped), so switching to them is instant. */
+export function usePrefetchBoards() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (queries: readonly LeaderboardQuery[]) => {
+      for (const query of queries)
+        void queryClient.prefetchQuery({
+          queryKey: queryKeys.leaderboard(query),
+          queryFn: ({ signal }) => getLeaderboard(query, { signal }),
+          staleTime: STATS_STALE_MS,
+          gcTime: STATS_GC_MS,
+        });
+    },
+    [queryClient],
+  );
+}
+
+/** Loads an employee's counted posts before their sheet opens (on hover or focus). */
+export function usePrefetchEmployeePosts() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (employeeId: string, query: EmployeePostsQuery) =>
+      void queryClient.prefetchQuery({
+        queryKey: queryKeys.employeePosts(employeeId, query),
+        queryFn: ({ signal }) =>
+          getEmployeePosts(employeeId, query, { signal }),
+        staleTime: STATS_STALE_MS,
+        gcTime: STATS_GC_MS,
+      }),
+    [queryClient],
+  );
 }
 
 export function useSubmitPostMutation() {
@@ -183,15 +225,47 @@ export function useRecheckPostMutation() {
 
 export function usePrefetchMyPosts() {
   const queryClient = useQueryClient();
-  return () =>
-    queryClient.prefetchQuery({
-      queryKey: queryKeys.myPosts,
-      queryFn: ({ signal }) => getMyPosts({ signal }),
-      staleTime: STATS_STALE_MS,
-    });
+  return useCallback(
+    () =>
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.myPosts,
+        queryFn: ({ signal }) => getMyPosts({ signal }),
+        staleTime: STATS_STALE_MS,
+      }),
+    [queryClient],
+  );
 }
 
 // ---------------------------------------------------------------- admin
+
+/** What the admin queue opens with: pending posts, no filters. */
+export const DEFAULT_ADMIN_QUERY: AdminPostsQuery = {
+  status: "pending",
+  check: "all",
+  flag: "all",
+  category: "all",
+  platform: "all",
+  q: "",
+};
+
+/** Loads the first page of the admin queue and the sync panel ahead of time. */
+export function usePrefetchAdmin() {
+  const queryClient = useQueryClient();
+  return useCallback(() => {
+    void queryClient.prefetchInfiniteQuery({
+      queryKey: queryKeys.adminPosts(DEFAULT_ADMIN_QUERY),
+      queryFn: ({ pageParam, signal }) =>
+        getAdminPosts(DEFAULT_ADMIN_QUERY, pageParam, { signal }),
+      initialPageParam: null as string | null,
+      staleTime: 15_000,
+    });
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.syncStatus,
+      queryFn: ({ signal }) => getSyncStatus({ signal }),
+      staleTime: 15_000,
+    });
+  }, [queryClient]);
+}
 
 export function useAdminPostsQuery(query: AdminPostsQuery) {
   return useInfiniteQuery({
@@ -258,6 +332,28 @@ export function useBulkModerateMutation() {
   return useMutation({
     mutationFn: (payload: BulkModerationPayload) => bulkModerate(payload),
     onSuccess: () => invalidateAfterChange(queryClient),
+  });
+}
+
+/** Removes a post entirely; every board, list and the employee's My Posts update. */
+export function useDeleteAdminPostMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (postId: string) => deleteAdminPost(postId),
+    // Lists refresh in the background, so the drawer closes right away. The
+    // deleted post's own detail is left out: it would only 404.
+    onSuccess: (_, postId) => {
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.leaderboardAll }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.myPosts }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.employeesAll }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.adminAll,
+          predicate: (query) =>
+            !(query.queryKey[1] === "post" && query.queryKey[2] === postId),
+        }),
+      ]);
+    },
   });
 }
 
