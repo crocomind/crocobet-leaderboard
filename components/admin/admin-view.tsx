@@ -154,10 +154,7 @@ export default function AdminPanel() {
   };
 
   const handleAction: OnAdminAction = (action, post) => {
-    if (
-      action === "reopen" ||
-      (action === "approve" && post.check.status === "passed")
-    )
+    if (action === "approve" || action === "reopen")
       return runModeration(action, [post.id], {});
     setDialogError(null);
     setDialog({ action, postIds: [post.id] });
@@ -169,9 +166,7 @@ export default function AdminPanel() {
   };
 
   const selectedPosts = posts.filter((post) => selected.has(post.id));
-  const approvable = selectedPosts.filter(
-    (post) => post.check.status === "passed",
-  );
+  const approvable = selectedPosts.filter((post) => post.status === "pending");
 
   return (
     <div className="relative isolate">

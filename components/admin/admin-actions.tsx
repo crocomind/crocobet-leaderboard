@@ -39,10 +39,7 @@ export function AdminActions({
     <div className={cn("flex flex-wrap gap-1.5", className)}>
       {actions.map((action) => {
         const Icon = ICONS[action];
-        const anyway = action === "approve" && post.check.status !== "passed";
-        const label = anyway
-          ? t.admin.actions.approveAnyway
-          : t.admin.actions[action];
+        const label = t.admin.actions[action];
         const destructive = action === "reject" || action === "disqualify";
         return (
           <MotionButton
@@ -51,7 +48,7 @@ export function AdminActions({
             variant={
               destructive
                 ? "danger"
-                : action === "approve" && !anyway
+                : action === "approve"
                   ? "primary"
                   : "secondary"
             }
@@ -63,7 +60,6 @@ export function AdminActions({
           >
             <Icon aria-hidden="true" />
             {label}
-            {anyway && "…"}
             {destructive && "…"}
           </MotionButton>
         );

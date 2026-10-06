@@ -233,7 +233,7 @@ const en = {
   submit: {
     title: "Submit a post",
     description: "Paste the link to your post on {platforms}.",
-    rule: "It must include #CrocoBySquad or tag @Croco Squad.",
+    rule: "It must include #CrocoBySquad or tag Croco Squad (@croco.squad on Instagram).",
     urlLabel: "Post link",
     urlPlaceholder: "Paste your post link",
     paste: "Paste",
@@ -412,7 +412,6 @@ const en = {
     error: "Couldn't load the queue.",
     actions: {
       approve: "Approve",
-      approveAnyway: "Approve anyway",
       reject: "Reject",
       disqualify: "Disqualify",
       reinstate: "Reinstate",
@@ -425,7 +424,7 @@ const en = {
     bulk: {
       label: "Bulk actions",
       selected: "{count} selected",
-      approve: "Approve the ones that passed",
+      approve: "Approve",
       reject: "Reject…",
       clear: "Clear selection",
       selectAll: "Select all on this page",
@@ -492,9 +491,6 @@ const en = {
       other: "Other",
     },
     moderation: {
-      approveTitle: "Approve anyway",
-      approveHint:
-        "The check didn't pass. Explain why the post should count anyway.",
       rejectTitle: "Reject post",
       disqualifyTitle: "Disqualify post",
       reinstateTitle: "Reinstate post",
@@ -517,7 +513,7 @@ const en = {
       check_failed: "Check failed: tag missing",
       check_error: "Check couldn't read the post",
       approve: "Approved",
-      approve_override: "Approved anyway",
+      approve_override: "Approved (check didn't pass)",
       reject: "Rejected",
       disqualify: "Disqualified",
       reinstate: "Reinstated",
@@ -534,7 +530,7 @@ const en = {
     },
     sync: {
       title: "Metrics sync",
-      schedule: "Runs automatically at 08:00 and 20:00 Tbilisi time.",
+      schedule: "Runs automatically at 12:00 and 23:59 Tbilisi time.",
       lastRun: "Last run {time}",
       never: "No runs yet",
       running: "Running…",
@@ -820,7 +816,7 @@ const ka: Dictionary = {
   submit: {
     title: "პოსტის დამატება",
     description: "ჩასვით თქვენი პოსტის ბმული ({platforms}).",
-    rule: "პოსტი უნდა შეიცავდეს #CrocoBySquad-ს ან მონიშნავდეს @Croco Squad-ს.",
+    rule: "პოსტი უნდა შეიცავდეს #CrocoBySquad-ს ან მონიშნავდეს Croco Squad-ს (Instagram-ზე @croco.squad).",
     urlLabel: "პოსტის ბმული",
     urlPlaceholder: "ჩასვით პოსტის ბმული",
     paste: "ჩასმა",
@@ -1001,7 +997,6 @@ const ka: Dictionary = {
     error: "რიგის ჩატვირთვა ვერ მოხერხდა.",
     actions: {
       approve: "დამტკიცება",
-      approveAnyway: "მაინც დამტკიცება",
       reject: "უარყოფა",
       disqualify: "დისკვალიფიკაცია",
       reinstate: "აღდგენა",
@@ -1014,7 +1009,7 @@ const ka: Dictionary = {
     bulk: {
       label: "ჯგუფური მოქმედებები",
       selected: "მონიშნულია {count}",
-      approve: "შემოწმებაგავლილების დამტკიცება",
+      approve: "დამტკიცება",
       reject: "უარყოფა…",
       clear: "მონიშვნის მოხსნა",
       selectAll: "ამ გვერდზე ყველას მონიშვნა",
@@ -1081,9 +1076,6 @@ const ka: Dictionary = {
       other: "სხვა",
     },
     moderation: {
-      approveTitle: "მაინც დამტკიცება",
-      approveHint:
-        "შემოწმება ვერ გაიარა. ახსენით, რატომ უნდა ჩაითვალოს პოსტი მაინც.",
       rejectTitle: "პოსტის უარყოფა",
       disqualifyTitle: "პოსტის დისკვალიფიკაცია",
       reinstateTitle: "პოსტის აღდგენა",
@@ -1106,7 +1098,7 @@ const ka: Dictionary = {
       check_failed: "შემოწმება ვერ გაიარა: ნიშნული აკლია",
       check_error: "შემოწმებამ პოსტი ვერ წაიკითხა",
       approve: "დამტკიცდა",
-      approve_override: "მაინც დამტკიცდა",
+      approve_override: "დამტკიცდა (შემოწმება ვერ გაიარა)",
       reject: "უარყოფილია",
       disqualify: "დისკვალიფიცირებულია",
       reinstate: "აღდგენილია",
@@ -1123,7 +1115,7 @@ const ka: Dictionary = {
     },
     sync: {
       title: "მეტრიკების სინქრონიზაცია",
-      schedule: "ავტომატურად ეშვება 08:00-სა და 20:00-ზე (თბილისის დროით).",
+      schedule: "ავტომატურად ეშვება 12:00-სა და 23:59-ზე (თბილისის დროით).",
       lastRun: "ბოლო გაშვება: {time}",
       never: "ჯერ არ გაშვებულა",
       running: "მიმდინარეობს…",

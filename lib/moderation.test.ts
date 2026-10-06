@@ -10,33 +10,9 @@ const run = (
 ) => applyModeration({ actor: "admin", ...input });
 
 describe("allowed transitions", () => {
-  it("approves a pending post whose check passed", () => {
-    expect(
-      run({ status: "pending", action: "approve", checkStatus: "passed" }),
-    ).toEqual({ ok: true, next: "approved" });
-  });
-
-  it("requires 'approve anyway' plus a note when the check didn't pass", () => {
-    expect(
-      run({ status: "pending", action: "approve", checkStatus: "failed" }),
-    ).toEqual({ ok: false, error: "check_not_passed" });
-    expect(
-      run({
-        status: "pending",
-        action: "approve",
-        checkStatus: "error",
-        override: true,
-      }),
-    ).toEqual({ ok: false, error: "note_required" });
-    expect(
-      run({
-        status: "pending",
-        action: "approve",
-        checkStatus: "queued",
-        override: true,
-        note: "Tag is in the first comment",
-      }),
-    ).toEqual({
+  it("approves a pending post in one step, whatever the check found", () => {
+    // The check is evidence for the admin; their approval is what counts.
+    expect(run({ status: "pending", action: "approve" })).toEqual({
       ok: true,
       next: "approved",
     });
@@ -130,9 +106,10 @@ describe("refused transitions", () => {
     ["approved", "reopen"],
     ["disqualified", "reject"],
   ] as const)("%s → %s is invalid", (status, action) => {
-    expect(
-      run({ status, action, checkStatus: "passed", reason: "spam", note: "x" }),
-    ).toEqual({ ok: false, error: "invalid_transition" });
+    expect(run({ status, action, reason: "spam", note: "x" })).toEqual({
+      ok: false,
+      error: "invalid_transition",
+    });
   });
 
   it("only owners withdraw and only admins moderate", () => {
@@ -145,7 +122,6 @@ describe("refused transitions", () => {
         status: "pending",
         action: "approve",
         actor: "owner",
-        checkStatus: "passed",
       }),
     ).toEqual({
       ok: false,

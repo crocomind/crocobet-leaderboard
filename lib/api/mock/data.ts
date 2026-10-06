@@ -15,7 +15,7 @@ import {
 import type { MockEmployee, MockPost, MockState, ProviderTruth } from "./types";
 
 /** Bump when the shape or the generator changes; stored mock state is then regenerated. */
-export const MOCK_STATE_VERSION = 3;
+export const MOCK_STATE_VERSION = 4;
 
 /** The employee the mock backend treats as signed in. */
 export const MOCK_CURRENT_USER_ID = "emp-tamar-lomidze";
@@ -558,9 +558,11 @@ function caption(random: Random, spec: Spec, platform: string): string {
   const line = spec.title ?? random.pick(TITLES);
   if (spec.tag === "hashtag") return `${line}\n\n#CrocoBySquad #crocobet`;
   if (spec.tag === "mention")
-    return platform === "facebook" || platform === "linkedin"
-      ? `${line}\n\nWith the Croco Squad team!`
-      : `${line}\n\nThanks @crocosquad`;
+    return platform === "instagram"
+      ? `${line}\n\nThanks @croco.squad`
+      : platform === "linkedin"
+        ? `${line}\n\nWith crocobet.com | Croco Squad!`
+        : `${line}\n\nWith @Croco Squad!`;
   return `${line}\n\n#crocobet #teamlife`;
 }
 
@@ -786,7 +788,7 @@ export function createInitialState(now: Date): MockState {
           "approve",
           MOCK_REVIEWER_ID,
           spec.outcome === "approve_override"
-            ? { override: true, note: reviewNote ?? undefined }
+            ? { note: reviewNote ?? undefined }
             : {},
           when,
         );

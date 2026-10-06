@@ -51,33 +51,33 @@ rebuild (or restart `npm run dev`). Everything else is server-only. **Never** pu
 `NEXT_PUBLIC_` variable. On Vercel, set them under **Project → Settings → Environment
 Variables** and redeploy.
 
-| Variable                                               | Scope  | Description                                                                                                                                             |
-| ------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_USE_MOCKS`                                | Public | `true` uses the built-in mock API. Anything else calls the real API.                                                                                    |
-| `NEXT_PUBLIC_API_BASE_URL`                             | Public | `/api/v1` for the backend in this repo. Required when mocks are off.                                                                                    |
-| `NEXT_PUBLIC_MOCK_ROLE`                                | Public | Mocks only: `admin` or `employee`. Default: `admin` in development, `employee` otherwise.                                                               |
-| `NEXT_PUBLIC_MOCK_ERROR_RATE`                          | Public | Mocks only: the share of requests that fail on purpose (0 to 1, default 0.05). 0 for demos.                                                             |
-| `NEXT_PUBLIC_API_SCOPE`                                | Public | **Leave empty** for the backend in this repo. Only for an external API (see [Authentication](#authentication)).                                         |
-| `BETTER_AUTH_SECRET`                                   | Secret | Encrypts the session cookies. `openssl rand -base64 32`. Changing it signs everyone out.                                                                |
-| `BETTER_AUTH_URL`                                      | Server | Public URL of the app, e.g. `https://leaderboard.crocomind.com` (locally `http://localhost:3000`).                                                      |
-| `AUTH_MICROSOFT_TENANT_ID`, `AUTH_MICROSOFT_CLIENT_ID` | Server | The app registration's Directory (tenant) ID and Application (client) ID.                                                                               |
-| `AUTH_MICROSOFT_CLIENT_SECRET`                         | Secret | The app registration's client secret value.                                                                                                             |
-| `AUTH_ALLOWED_EMAIL_DOMAINS`                           | Server | Who may sign in, comma-separated. Default `crocobet.com`.                                                                                               |
-| `DATABASE_URL`                                         | Secret | Supabase Postgres, **transaction pooler** (port 6543).                                                                                                  |
-| `MIGRATIONS_DATABASE_URL`                              | Secret | Migrations only: the session pooler or direct connection (port 5432). Falls back to `DATABASE_URL`.                                                     |
-| `CRON_SECRET`                                          | Secret | Vercel Cron sends it as a Bearer token; the cron route answers 401 without it. At least 16 characters.                                                  |
-| `POST_DATA_PROVIDER`, `POST_DATA_PROVIDER_<PLATFORM>`  | Server | `apify`, `fixture` or `manual` (per platform: `_INSTAGRAM`, `_FACEBOOK`, `_TIKTOK`, `_LINKEDIN`). Default `fixture`; `manual` on Vercel production.     |
-| `APIFY_API_TOKEN`                                      | Secret | Apify personal API token, for `POST_DATA_PROVIDER=apify`. Without it, `apify` falls back to manual entry.                                               |
-| `APIFY_MAX_CHARGE_USD`                                 | Server | Cost cap per scraper run, in US dollars. Default 1.                                                                                                     |
-| `APIFY_ACTOR_<PLATFORM>`                               | Server | Optional: another Apify scraper for a platform (`username~actor-name`). See [Automatic metrics](#automatic-metrics-apify).                              |
-| `ADMIN_EMAILS`                                         | Server | Admins, comma-separated. Default: `tekizashvili@crocobet.com`, `gbedoshvili@crocobet.com`. Setting it replaces the list.                                |
-| `CHALLENGE_STARTS_AT`, `CHALLENGE_ENDS_AT`             | Server | The challenge until an admin sets its dates in the app (which wins): ISO date-times with an offset, e.g. `2026-10-06T00:00:00+04:00`. End exclusive.    |
-| `CAMPAIGN_TIMEZONE`                                    | Server | Default `Asia/Tbilisi`. Weeks and months are computed in it.                                                                                            |
-| `CAMPAIGN_HASHTAGS`                                    | Server | Default `CrocoBySquad`.                                                                                                                                 |
-| `CAMPAIGN_MENTIONS`                                    | Server | Optional. Empty: `@crocosquad`, `@croco.squad`, `@croco_squad`, and "Croco Squad" on Facebook and LinkedIn. `none`: the hashtag only. Or your own list. |
-| `SUBMISSION_GRACE_DAYS`, `METRICS_GRACE_DAYS`          | Server | Days after the challenge that submissions and metric refreshes continue. Default 3 each.                                                                |
-| `GROWTH_FLAG_FACTOR`, `GROWTH_FLAG_MIN`                | Server | The `suspicious_growth` flag: growth between two snapshots above both (default ×5 and 1,000).                                                           |
-| `SUPABASE_*`                                           | Secret | Reserved. The backend talks to Postgres directly and doesn't use the Supabase API keys.                                                                 |
+| Variable                                               | Scope  | Description                                                                                                                                                                              |
+| ------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_USE_MOCKS`                                | Public | `true` uses the built-in mock API. Anything else calls the real API.                                                                                                                     |
+| `NEXT_PUBLIC_API_BASE_URL`                             | Public | `/api/v1` for the backend in this repo. Required when mocks are off.                                                                                                                     |
+| `NEXT_PUBLIC_MOCK_ROLE`                                | Public | Mocks only: `admin` or `employee`. Default: `admin` in development, `employee` otherwise.                                                                                                |
+| `NEXT_PUBLIC_MOCK_ERROR_RATE`                          | Public | Mocks only: the share of requests that fail on purpose (0 to 1, default 0.05). 0 for demos.                                                                                              |
+| `NEXT_PUBLIC_API_SCOPE`                                | Public | **Leave empty** for the backend in this repo. Only for an external API (see [Authentication](#authentication)).                                                                          |
+| `BETTER_AUTH_SECRET`                                   | Secret | Encrypts the session cookies. `openssl rand -base64 32`. Changing it signs everyone out.                                                                                                 |
+| `BETTER_AUTH_URL`                                      | Server | Public URL of the app, e.g. `https://leaderboard.crocomind.com` (locally `http://localhost:3000`).                                                                                       |
+| `AUTH_MICROSOFT_TENANT_ID`, `AUTH_MICROSOFT_CLIENT_ID` | Server | The app registration's Directory (tenant) ID and Application (client) ID.                                                                                                                |
+| `AUTH_MICROSOFT_CLIENT_SECRET`                         | Secret | The app registration's client secret value.                                                                                                                                              |
+| `AUTH_ALLOWED_EMAIL_DOMAINS`                           | Server | Who may sign in, comma-separated. Default `crocobet.com`.                                                                                                                                |
+| `DATABASE_URL`                                         | Secret | Supabase Postgres, **transaction pooler** (port 6543).                                                                                                                                   |
+| `MIGRATIONS_DATABASE_URL`                              | Secret | Migrations only: the session pooler or direct connection (port 5432). Falls back to `DATABASE_URL`.                                                                                      |
+| `CRON_SECRET`                                          | Secret | Vercel Cron sends it as a Bearer token; the cron route answers 401 without it. At least 16 characters.                                                                                   |
+| `POST_DATA_PROVIDER`, `POST_DATA_PROVIDER_<PLATFORM>`  | Server | `apify`, `fixture` or `manual` (per platform: `_INSTAGRAM`, `_FACEBOOK`, `_TIKTOK`, `_LINKEDIN`). Default `fixture`; `manual` on Vercel production.                                      |
+| `APIFY_API_TOKEN`                                      | Secret | Apify personal API token, for `POST_DATA_PROVIDER=apify`. Without it, `apify` falls back to manual entry.                                                                                |
+| `APIFY_MAX_CHARGE_USD`                                 | Server | Cost cap per scraper run, in US dollars. Default 1.                                                                                                                                      |
+| `APIFY_ACTOR_<PLATFORM>`                               | Server | Optional: another Apify scraper for a platform (`username~actor-name`). See [Automatic metrics](#automatic-metrics-apify).                                                               |
+| `ADMIN_EMAILS`                                         | Server | Admins, comma-separated. Default: `tekizashvili@crocobet.com`, `gbedoshvili@crocobet.com`. Setting it replaces the list.                                                                 |
+| `CHALLENGE_STARTS_AT`, `CHALLENGE_ENDS_AT`             | Server | The challenge until an admin sets its dates in the app (which wins): ISO date-times with an offset, e.g. `2026-10-06T00:00:00+04:00`. End exclusive.                                     |
+| `CAMPAIGN_TIMEZONE`                                    | Server | Default `Asia/Tbilisi`. Weeks and months are computed in it.                                                                                                                             |
+| `CAMPAIGN_HASHTAGS`                                    | Server | Default `CrocoBySquad`.                                                                                                                                                                  |
+| `CAMPAIGN_MENTIONS`                                    | Server | Optional. Empty: the real Croco Squad accounts (`@croco.squad` on Instagram, "Croco Squad" on TikTok and Facebook, "crocobet.com \| Croco Squad" on LinkedIn). `none`: the hashtag only. |
+| `SUBMISSION_GRACE_DAYS`, `METRICS_GRACE_DAYS`          | Server | Days after the challenge that submissions and metric refreshes continue. Default 3 each.                                                                                                 |
+| `GROWTH_FLAG_FACTOR`, `GROWTH_FLAG_MIN`                | Server | The `suspicious_growth` flag: growth between two snapshots above both (default ×5 and 1,000).                                                                                            |
+| `SUPABASE_*`                                           | Secret | Reserved. The backend talks to Postgres directly and doesn't use the Supabase API keys.                                                                                                  |
 
 The server validates its variables on first use ([`lib/server/config.ts`](lib/server/config.ts))
 and fails with a clear message when one is invalid.
@@ -253,8 +253,8 @@ output), or set that platform to `manual`.
 
 ### Twice-daily refresh (Vercel Cron)
 
-[`vercel.json`](vercel.json) calls `GET /api/cron/refresh-metrics` at 04:00 and 16:00 UTC
-(08:00 and 20:00 in Tbilisi). Set `CRON_SECRET` in Vercel; Vercel sends it as
+[`vercel.json`](vercel.json) calls `GET /api/cron/refresh-metrics` at 08:00 and 19:59 UTC
+(12:00 and 23:59 in Tbilisi, which has no daylight saving time). Set `CRON_SECRET` in Vercel; Vercel sends it as
 `Authorization: Bearer …`, and the route answers 401 without it. Cron jobs run on production
 deployments only. Admins can also press **Refresh now**.
 

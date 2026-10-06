@@ -116,7 +116,6 @@ export const moderationSchema = z
   .object({
     reason: z.enum(MODERATION_REASONS).optional(),
     note: z.string().trim().max(NOTE_MAX_LENGTH).optional(),
-    override: z.boolean().optional(),
   })
   .strict();
 
@@ -332,11 +331,6 @@ const MODERATION_ERRORS: Record<
   forbidden: [403, "forbidden", "Not allowed"],
   reason_required: [422, "validation_error", "A reason is required"],
   note_required: [422, "validation_error", "A note is required"],
-  check_not_passed: [
-    422,
-    "validation_error",
-    "The check didn't pass; approve anyway with a note",
-  ],
   rate_limited: [429, "rate_limited", "Try again in a few minutes"],
 };
 
@@ -362,10 +356,8 @@ export async function moderatePost(
       status: row.status,
       action,
       actor: "admin",
-      checkStatus: row.checkStatus,
       reason: payload.reason ?? null,
       note,
-      override: payload.override,
       now,
     });
     if (!result.ok) {
@@ -450,7 +442,6 @@ export async function bulkModerate(
         {
           reason: payload.reason,
           note: payload.note,
-          override: payload.override,
         },
         now,
       );

@@ -9,7 +9,7 @@ export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 /**
- * Vercel Cron, at 04:00 and 16:00 UTC (08:00 and 20:00 in Tbilisi). Vercel
+ * Vercel Cron, at 08:00 and 19:59 UTC (12:00 and 23:59 in Tbilisi). Vercel
  * sends `Authorization: Bearer $CRON_SECRET`; anything else gets a 401.
  * proxy.ts doesn't guard /api/cron, so this check is the only gate.
  */

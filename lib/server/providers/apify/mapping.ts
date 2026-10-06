@@ -161,9 +161,11 @@ const tiktok: ActorSpec = {
             ...list(item.mentions).map((mention) =>
               str(mention)?.replace(/^@/, ""),
             ),
-            ...list(item.detailedMentions).map((mention) =>
+            // Handles and display names: Croco Squad is tagged by name.
+            ...list(item.detailedMentions).flatMap((mention) => [
               str(obj(mention).name),
-            ),
+              str(obj(mention).nickName),
+            ]),
           ].filter((mention): mention is string => Boolean(mention)),
           authorHandle: str(author.name)?.toLowerCase() ?? null,
           authorName: str(author.nickName),

@@ -166,30 +166,39 @@ describe("config parsing", () => {
     expect(parseCampaignMentions(" none ")).toEqual({});
   });
 
-  it("recognizes @Croco Squad without any configured accounts", () => {
+  it("recognizes the real Croco Squad tags by default", () => {
     const defaults = {
       hashtags: ["CrocoBySquad"],
       mentions: parseCampaignMentions(undefined),
     };
     expect(parseCampaignMentions("")).toEqual(DEFAULT_MENTIONS);
     for (const [platform, caption] of [
-      ["instagram", "Office day with @CrocoSquad"],
-      ["tiktok", "thanks @croco.squad!"],
-      ["instagram", "@croco_squad 🐊"],
-      ["facebook", "Proud to be part of Croco Squad."],
-      ["linkedin", "Croco  Squad, thank you"],
+      ["instagram", "Office day with @croco.squad"],
+      ["tiktok", "thanks @Croco Squad!"],
+      ["facebook", "Proud to be part of @Croco Squad."],
+      ["linkedin", "Thank you crocobet.com | Croco  Squad"],
     ] as const)
       expect(checkCampaignTag(platform, { caption }, defaults).passed).toBe(
         true,
       );
+    // TikTok and Facebook report tagged accounts by display name.
     expect(
-      checkCampaignTag("instagram", { caption: "Croco Squad vibes" }, defaults)
-        .passed,
-    ).toBe(false);
-    expect(
-      checkCampaignTag("tiktok", { caption: "@crocosquadron" }, defaults)
-        .passed,
-    ).toBe(false);
+      checkCampaignTag(
+        "tiktok",
+        { caption: "Our day", mentions: ["crocosquad_ge", "Croco Squad"] },
+        defaults,
+      ).matched,
+    ).toEqual(["Croco Squad"]);
+    // Other accounts with similar handles don't count.
+    for (const [platform, caption] of [
+      ["instagram", "@crocosquad"],
+      ["instagram", "Croco Squad vibes"],
+      ["tiktok", "@crocosquadron"],
+      ["linkedin", "The Croco Squadron"],
+    ] as const)
+      expect(checkCampaignTag(platform, { caption }, defaults).passed).toBe(
+        false,
+      );
   });
 
   it("parses CAMPAIGN_HASHTAGS with a default", () => {
