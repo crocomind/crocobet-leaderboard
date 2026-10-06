@@ -28,7 +28,8 @@ import {
   useWithdrawPostMutation,
 } from "@/lib/api/queries";
 import type { Post, PostCheck, PostStatus } from "@/lib/api/types";
-import { safeExternalUrl } from "@/lib/platforms";
+import { squadTag, tagParts } from "@/lib/campaign-tag";
+import { type Platform, safeExternalUrl } from "@/lib/platforms";
 import { trackSpotlight } from "@/lib/spotlight";
 import { cn } from "@/lib/utils";
 
@@ -51,8 +52,17 @@ export function StatusBadge({ status }: { status: PostStatus }) {
 }
 
 /** What the automated check found, in the owner's words. */
-function CheckNotice({ check }: { check: PostCheck }) {
+function CheckNotice({
+  check,
+  platform,
+}: {
+  check: PostCheck;
+  platform: Platform;
+}) {
   const { t, format } = useI18n();
+  // The post needs both the hashtag and a Croco Squad tag; say what's missing.
+  const found = tagParts(check.matched);
+  const squad = squadTag(platform) ?? "@Croco Squad";
   const notice = {
     queued: {
       icon: LoaderCircle,
@@ -76,7 +86,14 @@ function CheckNotice({ check }: { check: PostCheck }) {
     },
     failed: {
       icon: TriangleAlert,
-      text: t.myPosts.check.failed,
+      text: format(
+        found.hashtag
+          ? t.myPosts.check.failedMention
+          : found.mention
+            ? t.myPosts.check.failedHashtag
+            : t.myPosts.check.failed,
+        { squad },
+      ),
       tone: "border-warning/25 bg-warning/10 text-warning-text",
       spin: false,
     },
@@ -167,7 +184,7 @@ export function PostCard({ post }: { post: Post }) {
           </p>
         </div>
 
-        {pending && <CheckNotice check={post.check} />}
+        {pending && <CheckNotice check={post.check} platform={post.platform} />}
 
         {(post.status === "rejected" || post.status === "disqualified") && (
           <div className="rounded-xl border border-danger/25 bg-danger/10 px-3 py-2 text-xs">

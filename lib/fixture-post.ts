@@ -1,3 +1,9 @@
+import {
+  type CampaignTagConfig,
+  DEFAULT_HASHTAGS,
+  DEFAULT_MENTIONS,
+  squadTag,
+} from "@/lib/campaign-tag";
 import { categoryOf } from "@/lib/platforms";
 import { publishedAtFromExternalId } from "@/lib/post-ids";
 import type {
@@ -71,13 +77,17 @@ export interface FixtureOptions {
   now: Date;
   /** When the post was submitted: anchors a stable publish date for platforms whose IDs don't encode it. */
   submittedAt?: Date;
-  /** Words that make the caption pass the campaign check. Default "#CrocoBySquad". */
-  tag?: string;
+  /** The campaign tags a tagged fixture caption uses (the hashtag and the platform's Croco Squad tag). */
+  tags?: CampaignTagConfig;
 }
 
 export function fixtureFetch(
   ref: PostRef,
-  { now, submittedAt = now, tag = "#CrocoBySquad" }: FixtureOptions,
+  {
+    now,
+    submittedAt = now,
+    tags = { hashtags: DEFAULT_HASHTAGS, mentions: DEFAULT_MENTIONS },
+  }: FixtureOptions,
 ): FetchOutcome {
   const random = prng(hash(ref.url));
 
@@ -101,6 +111,10 @@ export function fixtureFetch(
 
   const mediaKind = mediaKindFor(ref, random);
   const tagged = random() < 0.78;
+  const hashtag = tags.hashtags[0] ?? "CrocoBySquad";
+  const tag = [`#${hashtag}`, squadTag(ref.platform, tags.mentions)]
+    .filter(Boolean)
+    .join(" ");
   const caption = `${CAPTIONS[Math.floor(random() * CAPTIONS.length)]}${tagged ? ` ${tag}` : ""}`;
   const authorHandle = handleFromUrl(ref, random);
 
@@ -121,7 +135,7 @@ export function fixtureFetch(
     externalId: ref.externalId,
     mediaKind,
     caption,
-    hashtags: tagged ? [tag.replace(/^#/, "")] : [],
+    hashtags: tagged ? [hashtag] : [],
     mentions: [],
     authorHandle,
     authorName: null,

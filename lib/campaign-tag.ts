@@ -1,9 +1,9 @@
 import { isPlatform, type Platform } from "@/lib/platforms";
 
 /**
- * The campaign rule: a post counts only if it uses one of the campaign
- * hashtags (#CrocoBySquad) or mentions the Croco Squad account. The result is
- * evidence for the admin who approves posts; nothing is approved automatically.
+ * The campaign rule: a post needs the campaign hashtag (#CrocoBySquad) and a
+ * tag of the Croco Squad account on its platform. The result is evidence for
+ * the admin who approves posts; nothing is approved automatically.
  */
 
 export const DEFAULT_HASHTAGS = ["CrocoBySquad"];
@@ -35,9 +35,27 @@ export interface TagEvidence {
 }
 
 export interface TagCheckResult {
+  /** The hashtag and, where an account is configured, its tag. */
   passed: boolean;
-  /** What matched, normalized, e.g. ["#crocobysquad", "@crocosquad"]. */
+  /** What matched, normalized, e.g. ["#crocobysquad", "@croco.squad"]. */
   matched: string[];
+}
+
+/** Which halves of the rule a check's matches cover (hashtags start with "#"). */
+export function tagParts(matched: readonly string[]) {
+  return {
+    hashtag: matched.some((token) => token.startsWith("#")),
+    mention: matched.some((token) => !token.startsWith("#")),
+  };
+}
+
+/** How to tag Croco Squad on a platform, e.g. "@croco.squad" or "@Croco Squad". */
+export function squadTag(
+  platform: Platform,
+  mentions: CampaignTagConfig["mentions"] = DEFAULT_MENTIONS,
+): string | null {
+  const account = mentions[platform]?.[0]?.trim();
+  return account ? `@${stripPrefix(account, "@")}` : null;
 }
 
 const normalize = (value: string) => value.normalize("NFKC").toLowerCase();
@@ -124,7 +142,11 @@ export function checkCampaignTag(
     }
   }
 
-  return { passed: matched.size > 0, matched: [...matched] };
+  const { hashtag, mention } = tagParts([...matched]);
+  return {
+    passed: hashtag && (accounts.length === 0 || mention),
+    matched: [...matched],
+  };
 }
 
 /**

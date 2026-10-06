@@ -405,7 +405,7 @@ canonical URL. Short links are resolved first.
 
 ## Checks, moderation and refresh
 
-- **The automated check** looks for `#CrocoBySquad` (or a Croco Squad mention), the author handle,
+- **The automated check** looks for `#CrocoBySquad` and a Croco Squad tag (both are needed), the author handle,
   and whether the post was published inside the challenge. It's evidence for the admin; nothing
   is approved automatically.
 - **Moderation:**

@@ -1,7 +1,7 @@
 # Croco Creators
 
 The **Croco By Squad** leaderboard: an internal competition for Crocobet employees who post about
-work on TikTok, Instagram, Facebook and LinkedIn. Posts must use **#CrocoBySquad** or tag
+work on TikTok, Instagram, Facebook and LinkedIn. Posts must use **#CrocoBySquad** and tag
 **@Croco Squad**, an admin approves each one, and approved posts climb two boards:
 
 | Board      | What counts                                           | Score             |
