@@ -174,21 +174,23 @@ describe("submissions", () => {
     });
   });
 
-  it("lets the owner withdraw only pending posts", () => {
+  it("lets the owner delete their posts, whatever their status", () => {
     const post = employee.submitPost({ url }, start);
-    employee.withdrawPost(post.id);
-    expect(state.posts.some((candidate) => candidate.id === post.id)).toBe(
-      false,
-    );
     const approved = findPost(
       (candidate) =>
         candidate.employeeId === MOCK_CURRENT_USER_ID &&
         candidate.status === "approved",
     );
-    expect(errorOf(() => employee.withdrawPost(approved.id))).toMatchObject({
-      status: 409,
-      code: "invalid_transition",
-    });
+    for (const id of [post.id, approved.id]) {
+      employee.withdrawPost(id);
+      expect(state.posts.some((candidate) => candidate.id === id)).toBe(false);
+    }
+    const someoneElses = findPost(
+      (candidate) => candidate.employeeId !== MOCK_CURRENT_USER_ID,
+    );
+    expect(errorOf(() => employee.withdrawPost(someoneElses.id))).toMatchObject(
+      { status: 404 },
+    );
   });
 
   it("limits the owner to one re-check every 10 minutes", () => {
@@ -314,6 +316,20 @@ describe("moderation", () => {
 });
 
 describe("admin", () => {
+  it("deletes any post entirely", () => {
+    const post = findPost((candidate) => candidate.status === "disqualified");
+    expect(errorOf(() => employee.deleteAdminPost(post.id))).toMatchObject({
+      status: 403,
+    });
+    admin.deleteAdminPost(post.id);
+    expect(state.posts.some((candidate) => candidate.id === post.id)).toBe(
+      false,
+    );
+    expect(errorOf(() => admin.deleteAdminPost(post.id))).toMatchObject({
+      status: 404,
+    });
+  });
+
   it("is forbidden for employees", () => {
     for (const call of [
       () => employee.getAdminPosts(queue(), null),

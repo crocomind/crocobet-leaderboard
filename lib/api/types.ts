@@ -436,6 +436,8 @@ export interface ApiAdapter {
     options?: RequestOptions,
   ): Promise<BulkModerationResult>;
   refreshPost(postId: string, options?: RequestOptions): Promise<void>;
+  /** Removes a post entirely (admin). */
+  deleteAdminPost(postId: string, options?: RequestOptions): Promise<void>;
   getSyncStatus(options?: RequestOptions): Promise<SyncStatusResponse>;
   startSync(options?: RequestOptions): Promise<SyncRun>;
   exportStandings(query: ExportQuery, options?: RequestOptions): Promise<Blob>;

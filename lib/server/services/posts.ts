@@ -220,7 +220,7 @@ async function findPost(db: Db, postId: string) {
   return row;
 }
 
-/** The owner takes back a pending post. */
+/** The owner deletes one of their posts, whatever its status. */
 export async function withdrawPost(
   db: Db,
   employee: EmployeeRow,
@@ -235,11 +235,8 @@ export async function withdrawPost(
     actor: "owner",
   });
   if (!result.ok)
-    throw new HttpError(
-      409,
-      "invalid_transition",
-      "Only pending posts can be withdrawn",
-    );
+    throw new HttpError(409, "invalid_transition", "Can't delete this post");
+  // Its snapshots and audit events go with it (on delete cascade).
   await db.delete(posts).where(eq(posts.id, row.id));
 }
 

@@ -196,11 +196,11 @@ const en = {
     statsPending: "Stats show up after the first check.",
     recheck: "Re-check",
     recheckTooSoon: "You can re-check once every 10 minutes.",
-    withdraw: "Withdraw",
-    withdrawTitle: "Withdraw this post?",
-    withdrawDescription:
-      "It's removed before review. You can submit it again later.",
-    withdrawConfirm: "Withdraw post",
+    delete: "Delete post",
+    deleteTitle: "Delete this post?",
+    deleteDescription:
+      "It's removed from My Posts and from every board, with its numbers. You can submit it again later.",
+    deleteConfirm: "Delete post",
     actionError: "That didn't work. Try again.",
     posted: "Posted {date}",
     submitted: "Submitted {date}",
@@ -405,6 +405,7 @@ const en = {
     },
     error: "Couldn't load the queue.",
     actions: {
+      delete: "Delete post",
       approve: "Approve",
       reject: "Reject",
       disqualify: "Disqualify",
@@ -435,11 +436,15 @@ const en = {
       refresh: "Metrics refreshed.",
       recheck: "The check is running again.",
       syncStarted: "Sync started.",
+      deleted: "Post deleted.",
       error: "That didn't work. Try again.",
       tooSoon: "Please wait a few minutes before trying again.",
     },
     drawer: {
       label: "Post review",
+      deleteTitle: "Delete this post?",
+      deleteDescription:
+        "It's removed entirely, with its numbers and history, from every board and from the employee's My Posts. This can't be undone.",
       submitted: "Submitted {date}",
       reviewed: "Reviewed by {name} · {date}",
       caption: "Caption",
@@ -769,11 +774,11 @@ const ka: Dictionary = {
     statsPending: "სტატისტიკა პირველი შემოწმების შემდეგ გამოჩნდება.",
     recheck: "ხელახლა შემოწმება",
     recheckTooSoon: "ხელახლა შემოწმება შესაძლებელია 10 წუთში ერთხელ.",
-    withdraw: "გაწვევა",
-    withdrawTitle: "გავიწვიოთ ეს პოსტი?",
-    withdrawDescription:
-      "პოსტი განხილვამდე წაიშლება. შეგიძლიათ მოგვიანებით თავიდან დაამატოთ.",
-    withdrawConfirm: "პოსტის გაწვევა",
+    delete: "პოსტის წაშლა",
+    deleteTitle: "წავშალოთ ეს პოსტი?",
+    deleteDescription:
+      "პოსტი წაიშლება ჩემი პოსტებიდან და ყველა ლიდერბორდიდან, მისი მონაცემებით. მოგვიანებით შეგიძლიათ თავიდან დაამატოთ.",
+    deleteConfirm: "პოსტის წაშლა",
     actionError: "ვერ მოხერხდა. სცადეთ თავიდან.",
     posted: "გამოქვეყნდა {date}",
     submitted: "დაემატა {date}",
@@ -980,6 +985,7 @@ const ka: Dictionary = {
     },
     error: "რიგის ჩატვირთვა ვერ მოხერხდა.",
     actions: {
+      delete: "პოსტის წაშლა",
       approve: "დამტკიცება",
       reject: "უარყოფა",
       disqualify: "დისკვალიფიკაცია",
@@ -1010,11 +1016,15 @@ const ka: Dictionary = {
       refresh: "მეტრიკები განახლდა.",
       recheck: "შემოწმება თავიდან დაიწყო.",
       syncStarted: "სინქრონიზაცია დაიწყო.",
+      deleted: "პოსტი წაიშალა.",
       error: "ვერ მოხერხდა. სცადეთ თავიდან.",
       tooSoon: "გთხოვთ, რამდენიმე წუთში სცადოთ.",
     },
     drawer: {
       label: "პოსტის განხილვა",
+      deleteTitle: "წავშალოთ ეს პოსტი?",
+      deleteDescription:
+        "პოსტი სრულად წაიშლება, მისი მონაცემებითა და ისტორიით: ყველა ლიდერბორდიდან და თანამშრომლის პოსტებიდან. ამის დაბრუნება შეუძლებელია.",
       submitted: "დაემატა {date}",
       reviewed: "განიხილა {name} · {date}",
       caption: "აღწერა",

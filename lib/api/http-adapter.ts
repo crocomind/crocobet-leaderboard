@@ -105,6 +105,9 @@ export const httpAdapter: ApiAdapter = {
       signal,
     }),
 
+  deleteAdminPost: (postId, { signal } = {}) =>
+    request<void>(adminPostPath(postId), { method: "DELETE", signal }),
+
   getSyncStatus: ({ signal } = {}) =>
     request<SyncStatusResponse>("/admin/sync", { signal }),
 

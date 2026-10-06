@@ -69,14 +69,16 @@ describe("allowed transitions", () => {
     });
   });
 
-  it("lets the owner withdraw a pending post", () => {
-    expect(
-      applyModeration({
-        status: "pending",
-        action: "withdraw",
-        actor: "owner",
-      }),
-    ).toEqual({ ok: true, next: "deleted" });
+  it("lets the owner delete their post, whatever its status", () => {
+    for (const status of [
+      "pending",
+      "approved",
+      "rejected",
+      "disqualified",
+    ] as const)
+      expect(
+        applyModeration({ status, action: "withdraw", actor: "owner" }),
+      ).toEqual({ ok: true, next: "deleted" });
   });
 
   it("lets the owner re-check at most once every 10 minutes", () => {
@@ -127,13 +129,6 @@ describe("refused transitions", () => {
       ok: false,
       error: "forbidden",
     });
-    expect(
-      applyModeration({
-        status: "approved",
-        action: "withdraw",
-        actor: "owner",
-      }),
-    ).toEqual({ ok: false, error: "invalid_transition" });
   });
 });
 

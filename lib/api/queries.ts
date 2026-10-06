@@ -28,6 +28,7 @@ import {
   moderatePost,
   recheckPost,
   refreshPost,
+  deleteAdminPost,
   startSync,
   submitPost,
   updateAdminPost,
@@ -331,6 +332,28 @@ export function useBulkModerateMutation() {
   return useMutation({
     mutationFn: (payload: BulkModerationPayload) => bulkModerate(payload),
     onSuccess: () => invalidateAfterChange(queryClient),
+  });
+}
+
+/** Removes a post entirely; every board, list and the employee's My Posts update. */
+export function useDeleteAdminPostMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (postId: string) => deleteAdminPost(postId),
+    // Lists refresh in the background, so the drawer closes right away. The
+    // deleted post's own detail is left out: it would only 404.
+    onSuccess: (_, postId) => {
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.leaderboardAll }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.myPosts }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.employeesAll }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.adminAll,
+          predicate: (query) =>
+            !(query.queryKey[1] === "post" && query.queryKey[2] === postId),
+        }),
+      ]);
+    },
   });
 }
 

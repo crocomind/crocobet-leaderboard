@@ -254,7 +254,7 @@ describe("short links", () => {
 });
 
 describe("withdraw and re-check", () => {
-  it("lets the owner withdraw only their pending posts", async () => {
+  it("lets the owner delete any of their posts, and nobody else's", async () => {
     const owner = await makeEmployee(db);
     const other = await makeEmployee(db);
     const pending = await makePost(db, owner.id, "tiktok_video", {
@@ -265,14 +265,12 @@ describe("withdraw and re-check", () => {
       status: 404,
       code: "not_found",
     });
-    expect(await failure(() => withdrawPost(db, owner, approved.id))).toEqual({
-      status: 409,
-      code: "invalid_transition",
-    });
-    await withdrawPost(db, owner, pending.id);
-    expect(
-      await db.query.posts.findFirst({ where: eq(posts.id, pending.id) }),
-    ).toBeUndefined();
+    for (const post of [pending, approved]) {
+      await withdrawPost(db, owner, post.id);
+      expect(
+        await db.query.posts.findFirst({ where: eq(posts.id, post.id) }),
+      ).toBeUndefined();
+    }
   });
 
   it("limits the owner to one re-check every 10 minutes; admins can always", async () => {

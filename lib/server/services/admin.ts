@@ -592,6 +592,15 @@ export async function updateAdminPost(
   return getAdminPostDetail(db, postId);
 }
 
+/** Removes a post entirely, whatever its status, with its snapshots and audit events. */
+export async function deleteAdminPost(db: Db, postId: string): Promise<void> {
+  const [deleted] = await db
+    .delete(posts)
+    .where(eq(posts.id, postId))
+    .returning({ id: posts.id });
+  if (!deleted) throw new HttpError(404, "not_found", "Post not found");
+}
+
 /** Fetches one post again now (any status) and audits it. */
 export async function refreshAdminPost(
   db: Db,

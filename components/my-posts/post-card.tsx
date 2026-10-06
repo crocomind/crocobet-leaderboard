@@ -12,7 +12,7 @@ import {
   LoaderCircle,
   RefreshCw,
   TriangleAlert,
-  Undo2,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
@@ -136,12 +136,28 @@ export function PostCard({ post }: { post: Post }) {
       onPointerMove={trackSpotlight}
       className="card-depth card-spotlight relative flex h-full hover-lift flex-col rounded-card border border-border bg-surface/85 shadow-soft backdrop-blur motion-lift [--lift:3px] hover:border-brand/30"
     >
-      <PostThumbnail
-        platform={post.platform}
-        category={post.category}
-        thumbnailUrl={post.thumbnailUrl}
-        className="aspect-[16/9] w-full rounded-t-card"
-      />
+      <div className="relative">
+        <PostThumbnail
+          platform={post.platform}
+          category={post.category}
+          thumbnailUrl={post.thumbnailUrl}
+          className="aspect-[16/9] w-full rounded-t-card"
+        />
+        {/* Every post can be deleted by its owner, whatever its status. */}
+        <MotionButton
+          variant="icon"
+          size="icon-sm"
+          aria-label={`${t.myPosts.delete}: ${title}`}
+          title={t.myPosts.delete}
+          className="absolute top-3 right-3 z-10 border border-white/15 bg-black/45 text-white backdrop-blur hover:bg-danger hover:text-white"
+          onClick={() => {
+            withdraw.reset();
+            setConfirmOpen(true);
+          }}
+        >
+          <Trash2 aria-hidden="true" />
+        </MotionButton>
+      </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
         <div className="flex items-center justify-between gap-2">
@@ -265,18 +281,6 @@ export function PostCard({ post }: { post: Post }) {
               <RefreshCw aria-hidden="true" />
               {t.myPosts.recheck}
             </MotionButton>
-            <MotionButton
-              variant="ghost"
-              size="sm"
-              className="flex-1 text-muted-foreground hover:text-foreground"
-              onClick={() => {
-                withdraw.reset();
-                setConfirmOpen(true);
-              }}
-            >
-              <Undo2 aria-hidden="true" />
-              {t.myPosts.withdraw}
-            </MotionButton>
           </div>
         )}
       </div>
@@ -284,10 +288,10 @@ export function PostCard({ post }: { post: Post }) {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={t.myPosts.withdrawTitle}
+        title={t.myPosts.deleteTitle}
         description={
           <>
-            {t.myPosts.withdrawDescription}
+            {t.myPosts.deleteDescription}
             {withdraw.isError && (
               <span role="alert" className="mt-2 block text-danger-text">
                 {t.myPosts.actionError}
@@ -295,7 +299,7 @@ export function PostCard({ post }: { post: Post }) {
             )}
           </>
         }
-        confirmLabel={t.myPosts.withdrawConfirm}
+        confirmLabel={t.myPosts.deleteConfirm}
         destructive
         pending={withdraw.isPending}
         onConfirm={() =>
