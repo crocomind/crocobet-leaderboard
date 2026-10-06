@@ -3,7 +3,6 @@
 import { CircleAlert, CircleCheck, ShieldCheck } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
-import { flushSync } from "react-dom";
 import { GlowBackdrop } from "@/components/common/glow-backdrop";
 import { MicrosoftLogo } from "@/components/icons/microsoft-logo";
 import { Logo } from "@/components/layout/logo";
@@ -11,15 +10,7 @@ import { useI18n } from "@/components/providers/i18n-provider";
 import { MotionButton } from "@/components/ui/motion-button";
 import { signInWithMicrosoft } from "@/lib/auth/client";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
-import { LOCALE_NAMES, LOCALES } from "@/lib/i18n/config";
-import {
-  DURATION,
-  REDUCED_FADE,
-  springGentle,
-  tween,
-  withViewTransition,
-} from "@/lib/motion";
-import { cn } from "@/lib/utils";
+import { DURATION, REDUCED_FADE, springGentle, tween } from "@/lib/motion";
 
 type AuthErrors = Dictionary["auth"]["errors"];
 
@@ -65,7 +56,7 @@ export function SignInScreen({
   missingConfig,
   configured,
 }: SignInScreenProps) {
-  const { t, format, formatList, locale, setLocale } = useI18n();
+  const { t, format, formatList } = useI18n();
   const reduceMotion = useReducedMotion() ?? false;
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(
@@ -168,33 +159,6 @@ export function SignInScreen({
             />
             {format(t.auth.onlyEmployees, { domains })}
           </p>
-        </div>
-
-        <div
-          className="mt-6 flex justify-center gap-1"
-          role="group"
-          aria-label={t.header.language}
-        >
-          {LOCALES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              lang={option}
-              aria-pressed={option === locale}
-              onClick={() =>
-                option !== locale &&
-                withViewTransition(() => flushSync(() => setLocale(option)))
-              }
-              className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-medium motion-colors",
-                option === locale
-                  ? "bg-hover text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {LOCALE_NAMES[option]}
-            </button>
-          ))}
         </div>
       </motion.div>
     </main>

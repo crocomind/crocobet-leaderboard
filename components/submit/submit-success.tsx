@@ -111,7 +111,7 @@ export function SubmitSuccess({
       </motion.p>
 
       {/* Side by side when both fit, otherwise stacked with the main step on
-          top (long labels, e.g. in Georgian, would overflow the dialog). */}
+          top, so long labels never overflow the dialog. */}
       <motion.div
         className="mt-8 flex w-full flex-wrap-reverse gap-3"
         {...fadeUp(0.55)}

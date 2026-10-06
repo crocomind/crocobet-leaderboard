@@ -1,6 +1,6 @@
 /**
  * CSV standings export, shared by the server and the mock API. Excel opens
- * the file correctly thanks to the BOM (Georgian names), and cells that a
+ * the file correctly thanks to the BOM (non-Latin text in titles), and cells that a
  * spreadsheet would run as formulas are neutralized.
  */
 

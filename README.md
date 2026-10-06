@@ -294,7 +294,9 @@ unfinished `sync_runs` row (a crashed run stops blocking after 15 minutes).
   `rounded-panel` (32px, modals and podium cards). They're defined in `app/globals.css`.
 - **Logo:** put the official logo at `public/logo.svg` and the header uses it. Until then it
   shows the text "Croco Creators", and the browser console logs a 404 for `/logo.svg`.
-- **Fonts:** Inter for Latin and Noto Sans Georgian for Georgian, loaded with `next/font`.
+- **Fonts:** Inter, loaded with `next/font`. Georgian characters in what employees write (post
+  titles and captions) fall back to Noto Sans Georgian, which only downloads when such text is on
+  screen.
 - **Charts** are small inline SVGs (no chart library).
 
 ## Motion
@@ -322,14 +324,12 @@ Rules the code follows:
 - Buttons are [`components/ui/motion-button.tsx`](components/ui/motion-button.tsx)
   (`MotionButton` / `MotionLinkButton`).
 
-## Translations
+## UI text
 
-All UI strings are in [`lib/i18n/dictionaries.ts`](lib/i18n/dictionaries.ts), with English
-(`en`) and Georgian (`ka`). TypeScript makes sure both have the same keys. The chosen language
-is saved in a `locale` cookie, so the server renders the right language without a flash. Before
-anyone picks one, the browser's language decides. Georgian numbers, dates and relative times are
-formatted in [`lib/i18n/format.ts`](lib/i18n/format.ts) rather than with `Intl`, because Chrome
-ships without Georgian `Intl` data.
+The app is in English only. All UI strings are in
+[`lib/i18n/dictionaries.ts`](lib/i18n/dictionaries.ts), and numbers, dates and relative times are
+formatted in [`lib/i18n/format.ts`](lib/i18n/format.ts); components read both through
+`useI18n()`.
 
 ## Authentication
 
@@ -448,7 +448,7 @@ lib/
   api/                    types, HTTP client + adapter, mock backend, TanStack Query hooks
   auth/                   Microsoft sign-in (Better Auth), access policy, session helpers
   server/                 the backend: config, database, services, providers, link resolver
-  i18n/                   locales, dictionaries, formatting
+  i18n/                   UI strings and formatting
   validation/             Zod schemas
   hooks/                  URL state, media queries, viewport tracking, ...
   *.ts                    shared rules: platforms, scoring, periods, ranking, moderation, ...

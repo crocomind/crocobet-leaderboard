@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronDown, Download } from "lucide-react";
-import { CategoryLabel } from "@/components/common/category-label";
 import { useRoundLabel } from "@/components/leaderboard/use-round-label";
 import {
   DropdownMenu,
@@ -131,8 +130,8 @@ function ExportForm({ onDone }: { onDone: () => void }) {
             value={category}
             onValueChange={setCategory}
             options={[
-              { value: "video", label: <CategoryLabel category="video" /> },
-              { value: "static", label: <CategoryLabel category="static" /> },
+              { value: "video", label: t.categories.video },
+              { value: "static", label: t.categories.static },
             ]}
             className="w-full"
           />
