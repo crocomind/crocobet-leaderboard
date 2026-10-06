@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import type { MicrosoftEntraIDProfile } from "better-auth/social-providers";
 import { decodeJwt } from "jose";
+import { scheduleProfileSync } from "@/lib/server/services/profile";
 import { type AuthConfig, readAuthConfig } from "./config";
 import { checkEntraIdentity, type IdentityRejection } from "./policy";
 
@@ -35,6 +36,13 @@ function createAuth(config: AuthConfig) {
       storeStateStrategy: "cookie",
       storeAccountCookie: true,
     },
+    user: {
+      // The Entra object ID, carried in the session cookie: the API keys
+      // employees on it (Better Auth's own user id isn't stable without a database).
+      additionalFields: {
+        entraOid: { type: "string", required: false, input: false },
+      },
+    },
     rateLimit: {
       // Better Auth allows 3 /sign-in requests per 10 s per IP by default, which
       // is meant for password logins. Here sign-in only builds the Microsoft
@@ -51,12 +59,15 @@ function createAuth(config: AuthConfig) {
         // Show the account picker, so signing out and back in can switch accounts.
         prompt: "select_account",
         disableDefaultScope: true,
+        // User.Read lets the API copy the name, department and photo from
+        // Microsoft Graph. An access token covers one resource, so with an
+        // external API scope set, the token is for that API instead.
         scope: [
           "openid",
           "profile",
           "email",
           "offline_access",
-          ...(config.apiScope ? [config.apiScope] : []),
+          ...(config.apiScope ? [config.apiScope] : ["User.Read"]),
         ],
         // Runs on every sign-in. The ID token comes straight from Microsoft's
         // token endpoint (TLS + client secret); we check that it's for this
@@ -72,12 +83,20 @@ function createAuth(config: AuthConfig) {
           });
           if (!identity.ok) throw signInErrorRedirect(config, identity.reason);
 
+          // Profile and photo, after the response; never blocks sign-in.
+          if (!config.apiScope)
+            scheduleProfileSync(
+              { oid: identity.oid, email: identity.email, name: identity.name },
+              tokens.accessToken,
+            );
+
           // The account is keyed on the Entra object ID (oid), read from `data`.
           return {
             user: {
               name: identity.name,
               email: identity.email,
               emailVerified: true,
+              entraOid: identity.oid,
             },
             data: claims,
           };

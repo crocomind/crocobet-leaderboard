@@ -22,7 +22,7 @@ const notoSansGeorgian = Noto_Sans_Georgian({
 
 export const metadata: Metadata = {
   title: "Croco Creators",
-  description: "The video creators leaderboard for the Crocobet team.",
+  description: "The post creators leaderboard for the Crocobet team.",
   robots: { index: false, follow: false },
 };
 

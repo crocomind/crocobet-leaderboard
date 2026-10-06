@@ -6,7 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { type ReactNode, useState } from "react";
 import { CurrentUserProvider } from "@/components/providers/current-user-provider";
 import { I18nProvider } from "@/components/providers/i18n-provider";
-import { SubmitVideoProvider } from "@/components/submit/submit-video-provider";
+import { SubmitPostProvider } from "@/components/submit/submit-post-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isApiError } from "@/lib/api/errors";
 import type { SessionUser } from "@/lib/auth/types";
@@ -51,7 +51,7 @@ export function AppProviders({
           <MotionConfig reducedMotion="user">
             <TooltipProvider delayDuration={250}>
               <CurrentUserProvider sessionUser={sessionUser}>
-                <SubmitVideoProvider>{children}</SubmitVideoProvider>
+                <SubmitPostProvider>{children}</SubmitPostProvider>
               </CurrentUserProvider>
             </TooltipProvider>
           </MotionConfig>

@@ -1,0 +1,44 @@
+[
+  {
+    "inputUrl": "https://www.instagram.com/p/DZN3mhZBQ_Q/",
+    "id": "3913028191006298064",
+    "type": "Video",
+    "shortCode": "DZN3mhZBQ_Q",
+    "caption": "The universe is full of clues… with @crocosquad",
+    "hashtags": [],
+    "mentions": ["crocosquad"],
+    "taggedUsers": [{ "username": "nasa", "full_name": "NASA" }],
+    "url": "https://www.instagram.com/p/DZN3mhZBQ_Q/",
+    "commentsCount": 92,
+    "displayUrl": "https://scontent.cdninstagram.com/v/t51/715570175_n.jpg",
+    "likesCount": 11481,
+    "timestamp": "2026-06-05T19:58:30.000Z",
+    "ownerFullName": "NASA Webb Telescope",
+    "ownerUsername": "nasawebb",
+    "productType": "clips",
+    "videoDuration": 228,
+    "videoViewCount": 41365,
+    "videoPlayCount": 241820,
+    "childPosts": []
+  },
+  {
+    "inputUrl": "https://www.instagram.com/p/Photo123AbC/",
+    "id": "3913028191006298999",
+    "type": "Sidecar",
+    "shortCode": "Photo123AbC",
+    "caption": "Team day #CrocoBySquad",
+    "hashtags": ["CrocoBySquad"],
+    "mentions": [],
+    "url": "https://www.instagram.com/p/Photo123AbC/",
+    "displayUrl": "https://scontent.cdninstagram.com/v/t51/photo.jpg",
+    "likesCount": -1,
+    "timestamp": "2026-10-10T08:00:00.000Z",
+    "ownerFullName": "Ana",
+    "ownerUsername": "ana.g"
+  },
+  {
+    "inputUrl": "https://www.instagram.com/p/Gone0000000/",
+    "error": "not_found",
+    "errorDescription": "Post does not exist or is private"
+  }
+]

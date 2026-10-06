@@ -1,25 +1,17 @@
-import { analyzeVideoUrl } from "@/lib/platforms";
-import { normalizeForSearch } from "@/lib/utils";
 import { ApiError } from "../errors";
-import type {
-  ApiAdapter,
-  Employee,
-  LeaderboardResponse,
-  MyVideosResponse,
-  RequestOptions,
-  Video,
-} from "../types";
-import { MOCK_CURRENT_USER_ID, MOCK_EMPLOYEES, MOCK_VIDEOS } from "./data";
-import { metricValue } from "@/lib/leaderboard";
+import type { ApiAdapter, EmployeeRole, RequestOptions } from "../types";
+import { MockBackend } from "./backend";
 import {
-  countsTowardsRanking,
-  periodWindow,
-  previousWindow,
-  rankEmployees,
-} from "./ranking";
+  createInitialState,
+  MOCK_CURRENT_USER_ID,
+  MOCK_STATE_VERSION,
+} from "./data";
+import type { MockState } from "./types";
 
-const STORAGE_KEY = "croco-creators.mock-submissions";
-const SYNC_INTERVAL_MS = 10 * 60_000;
+const STORAGE_KEY = "croco-creators.mock-state";
+const LEGACY_STORAGE_KEY = "croco-creators.mock-submissions";
+/** Stored mock data older than this is regenerated around the current date. */
+const MAX_STATE_AGE_MS = 3 * 86_400_000;
 
 /** Share of mock requests that fail, so error states can be seen. 0 turns it off. */
 const ERROR_RATE = (() => {
@@ -27,33 +19,45 @@ const ERROR_RATE = (() => {
   return Number.isFinite(value) ? Math.min(Math.max(value, 0), 1) : 0.05;
 })();
 
-// Submissions made in the browser, kept in localStorage so they survive reloads.
-let submissions: Video[] | undefined;
+/** NEXT_PUBLIC_MOCK_ROLE=admin|employee. Default: admin in development. */
+const MOCK_ROLE: EmployeeRole = (() => {
+  const role = process.env.NEXT_PUBLIC_MOCK_ROLE;
+  if (role === "admin" || role === "employee") return role;
+  return process.env.NODE_ENV === "development" ? "admin" : "employee";
+})();
 
-function loadSubmissions(): Video[] {
-  if (submissions) return submissions;
-  submissions = [];
+function loadState(now: Date): MockState {
   try {
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    if (Array.isArray(parsed)) submissions = parsed as Video[];
+    const stored = raw ? (JSON.parse(raw) as MockState) : null;
+    if (
+      stored?.version === MOCK_STATE_VERSION &&
+      now.getTime() - Date.parse(stored.generatedAt) < MAX_STATE_AGE_MS
+    )
+      return stored;
   } catch {
-    // No storage (private mode, tests); keep submissions in memory only.
+    // No storage (private mode, tests) or unreadable data: start fresh.
   }
-  return submissions;
+  return createInitialState(now);
 }
 
-function saveSubmissions(videos: Video[]) {
-  submissions = videos;
+function saveState(state: MockState) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(videos));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
     // Ignore; the in-memory copy still works for this session.
   }
 }
 
-function allVideos(): Video[] {
-  return [...MOCK_VIDEOS, ...loadSubmissions()];
+let backend: MockBackend | undefined;
+
+function getBackend(now: Date): MockBackend {
+  backend ??= new MockBackend(loadState(now), {
+    id: MOCK_CURRENT_USER_ID,
+    role: MOCK_ROLE,
+  });
+  return backend;
 }
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
@@ -73,12 +77,16 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-/** Simulates latency and the occasional failure, then returns a copy of the result. */
+/**
+ * Simulates latency and the occasional failure, runs the request against the
+ * mock backend (which throws ApiErrors like the real one) and returns a copy.
+ */
 async function respond<T>(
-  produce: () => T,
+  produce: (mock: MockBackend, now: Date) => T,
   { signal }: RequestOptions = {},
+  { mutates = false } = {},
 ): Promise<T> {
-  await sleep(350 + Math.random() * 550, signal);
+  await sleep(300 + Math.random() * 500, signal);
   if (Math.random() < ERROR_RATE) {
     throw new ApiError({
       status: 503,
@@ -86,154 +94,84 @@ async function respond<T>(
       message: "Simulated network error (mock API)",
     });
   }
-  return structuredClone(produce());
-}
-
-function currentUser(): Employee {
-  const user = MOCK_EMPLOYEES.find(
-    (employee) => employee.id === MOCK_CURRENT_USER_ID,
-  );
-  if (!user) throw new Error("Mock current user is missing");
-  return user;
+  const now = new Date();
+  const mock = getBackend(now);
+  const settled = mock.settle(now);
+  try {
+    return structuredClone(produce(mock, now));
+  } finally {
+    if (mutates || settled) saveState(mock.state);
+  }
 }
 
 export const mockAdapter: ApiAdapter = {
+  getCurrentUser: (options) =>
+    respond((mock) => mock.getCurrentUser(), options),
   getLeaderboard: (query, options) =>
-    respond((): LeaderboardResponse => {
-      const now = Date.now();
-      const videos = allVideos();
-      const ranked = rankEmployees(MOCK_EMPLOYEES, videos, {
-        metric: query.metric,
-        platform: query.platform,
-        window: periodWindow(query.period, now),
-      });
-      const previous = rankEmployees(MOCK_EMPLOYEES, videos, {
-        metric: query.metric,
-        platform: query.platform,
-        window: previousWindow(query.period, now),
-      });
-      const previousRanks = new Map(
-        previous.map((entry) => [entry.employee.id, entry.rank]),
-      );
-      const entries = ranked.map((entry) => ({
-        ...entry,
-        previousRank: previousRanks.get(entry.employee.id) ?? null,
-      }));
+    respond((mock, now) => mock.getLeaderboard(query, now), options),
+  getMyPosts: (options) =>
+    respond((mock, now) => mock.getMyPosts(now), options),
+  getEmployeePosts: (employeeId, query, options) =>
+    respond(
+      (mock, now) => mock.getEmployeePosts(employeeId, query, now),
+      options,
+    ),
+  submitPost: (payload, options) =>
+    respond((mock, now) => mock.submitPost(payload, now), options, {
+      mutates: true,
+    }),
+  withdrawPost: (postId, options) =>
+    respond((mock) => mock.withdrawPost(postId), options, { mutates: true }),
+  recheckPost: (postId, options) =>
+    respond((mock, now) => mock.recheckPost(postId, now), options, {
+      mutates: true,
+    }),
 
-      const myIndex = entries.findIndex(
-        (entry) => entry.employee.id === MOCK_CURRENT_USER_ID,
-      );
-      const mine = entries[myIndex];
-      const above = entries[myIndex - 1];
-      const myStanding = mine
-        ? {
-            entry: mine,
-            gapToNext: above
-              ? metricValue(above, query.metric) -
-                metricValue(mine, query.metric)
-              : null,
-          }
-        : null;
+  getAdminPosts: (query, cursor, options) =>
+    respond((mock) => mock.getAdminPosts(query, cursor), options),
+  getAdminPost: (postId, options) =>
+    respond((mock) => mock.getAdminPost(postId), options),
+  updateAdminPost: (postId, patch, options) =>
+    respond((mock, now) => mock.updateAdminPost(postId, patch, now), options, {
+      mutates: true,
+    }),
+  moderatePost: (postId, action, payload, options) =>
+    respond(
+      (mock, now) => mock.moderatePost(postId, action, payload, now),
+      options,
+      { mutates: true },
+    ),
+  bulkModerate: (payload, options) =>
+    respond((mock, now) => mock.bulkModerate(payload, now), options, {
+      mutates: true,
+    }),
+  refreshPost: (postId, options) =>
+    respond((mock, now) => mock.refreshPost(postId, now), options, {
+      mutates: true,
+    }),
+  getSyncStatus: (options) => respond((mock) => mock.getSyncStatus(), options),
+  startSync: (options) =>
+    respond((mock, now) => mock.startSync(now), options, { mutates: true }),
+  exportStandings: (query, options) =>
+    respond(
+      (mock, now) =>
+        new Blob([mock.exportStandings(query, now)], {
+          type: "text/csv;charset=utf-8",
+        }),
+      options,
+    ),
 
-      const search = normalizeForSearch(query.search);
-      return {
-        query,
-        entries: search
-          ? entries.filter((entry) =>
-              normalizeForSearch(entry.employee.name).includes(search),
-            )
-          : entries,
-        totalParticipants: entries.length,
-        myStanding,
-        lastSyncedAt: new Date(
-          Math.floor(now / SYNC_INTERVAL_MS) * SYNC_INTERVAL_MS,
-        ).toISOString(),
-      };
-    }, options),
-
-  getMyVideos: (options) =>
-    respond((): MyVideosResponse => {
-      const videos = allVideos();
-      const mine = videos
-        .filter((video) => video.employeeId === MOCK_CURRENT_USER_ID)
-        .sort((a, b) => Date.parse(b.submittedAt) - Date.parse(a.submittedAt));
-      const verified = mine.filter((video) => video.status === "verified");
-      const allTime = rankEmployees(MOCK_EMPLOYEES, videos, {
-        metric: "score",
-        platform: "all",
-        window: periodWindow("all", Date.now()),
-      });
-
-      return {
-        videos: mine,
-        summary: {
-          totalViews: verified.reduce((sum, video) => sum + video.views, 0),
-          totalReactions: verified.reduce(
-            (sum, video) => sum + video.reactions,
-            0,
-          ),
-          videoCount: mine.length,
-          rank:
-            allTime.find((entry) => entry.employee.id === MOCK_CURRENT_USER_ID)
-              ?.rank ?? null,
-          totalParticipants: allTime.length,
-        },
-      };
-    }, options),
-
-  getEmployeeVideos: (employeeId, query, options) =>
-    respond((): Video[] => {
-      const window = periodWindow(query.period, Date.now());
-      return allVideos()
-        .filter(
-          (video) =>
-            video.employeeId === employeeId &&
-            countsTowardsRanking(video, query.platform, window),
-        )
-        .sort((a, b) => b.views - a.views);
-    }, options),
-
-  submitVideo: async (payload, options) => {
-    const result = analyzeVideoUrl(payload.url);
-    const videos = allVideos();
-
-    // Checked before the simulated failure so these behave like real 4xx responses.
-    if (result.status !== "valid" || result.platform !== payload.platform) {
-      await sleep(400, options?.signal);
-      throw new ApiError({
-        status: 422,
-        code: "validation_error",
-        message: "Invalid video link",
-      });
-    }
-    if (videos.some((video) => video.url === result.normalizedUrl)) {
-      await sleep(400, options?.signal);
-      throw new ApiError({
-        status: 409,
-        code: "duplicate_video",
-        message: "This video has already been submitted",
-      });
-    }
-
-    return respond((): Video => {
-      const video: Video = {
-        id: `vid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-        employeeId: MOCK_CURRENT_USER_ID,
-        url: result.normalizedUrl,
-        platform: result.platform,
-        title: payload.title?.trim() || null,
-        postedAt: payload.postedAt ?? null,
-        submittedAt: new Date().toISOString(),
-        status: "pending",
-        rejectionReason: null,
-        views: 0,
-        reactions: 0,
-        thumbnailUrl: null,
-      };
-      saveSubmissions([...loadSubmissions(), video]);
-      return video;
-    }, options);
-  },
-
-  getCurrentUser: (options) => respond(currentUser, options),
+  getRounds: (options) => respond((mock) => mock.getRounds(), options),
+  createRound: (input, options) =>
+    respond((mock) => mock.createRound(input), options, { mutates: true }),
+  updateRound: (roundId, patch, options) =>
+    respond((mock) => mock.updateRound(roundId, patch), options, {
+      mutates: true,
+    }),
+  deleteRound: (roundId, options) =>
+    respond((mock) => mock.deleteRound(roundId), options, { mutates: true }),
+  generateRounds: (kind, options) =>
+    respond((mock) => mock.generateRounds(kind), options, { mutates: true }),
+  updateChallenge: (input, options) =>
+    respond((mock) => mock.updateChallenge(input), options, { mutates: true }),
 };

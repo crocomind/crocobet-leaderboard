@@ -1,13 +1,13 @@
 "use client";
 
-import { Clapperboard, Plus, SearchX } from "lucide-react";
+import { Clapperboard, ImageIcon, Plus, SearchX } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Crossfade } from "@/components/common/crossfade";
 import { GlowBackdrop } from "@/components/common/glow-backdrop";
 import { ErrorState, StatePanel } from "@/components/common/state-panel";
 import { EmployeeSheet } from "@/components/leaderboard/employee-sheet";
-import { LastUpdated } from "@/components/leaderboard/last-updated";
+import { BoardDates, LastUpdated } from "@/components/leaderboard/last-updated";
 import { LeaderboardList } from "@/components/leaderboard/leaderboard-list";
 import {
   ListSkeleton,
@@ -19,21 +19,23 @@ import {
   type StandingAction,
 } from "@/components/leaderboard/my-standing-bar";
 import { Podium } from "@/components/leaderboard/podium";
+import { useRoundLabel } from "@/components/leaderboard/use-round-label";
 import { useCurrentUser } from "@/components/providers/current-user-provider";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { useSubmitVideo } from "@/components/submit/submit-video-provider";
+import { useSubmitPost } from "@/components/submit/submit-post-provider";
 import { MotionButton } from "@/components/ui/motion-button";
-import { useLeaderboardQuery } from "@/lib/api/queries";
+import { useLeaderboardQuery, useRoundsQuery } from "@/lib/api/queries";
 import type { LeaderboardEntry, LeaderboardQuery } from "@/lib/api/types";
 import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useViewportPosition } from "@/lib/hooks/use-viewport-position";
+import { platformForCategory } from "@/lib/url-state";
 
 export function LeaderboardView() {
   const { t, format } = useI18n();
   const { state, update } = useAppUrlState();
   const currentUser = useCurrentUser();
-  const { openSubmit } = useSubmitVideo();
+  const { openSubmit } = useSubmitPost();
   const reduceMotion = useReducedMotion();
 
   // The input updates instantly; the query and URL follow after a short pause.
@@ -45,13 +47,16 @@ export function LeaderboardView() {
 
   const query = useMemo<LeaderboardQuery>(
     () => ({
-      metric: state.metric,
+      category: state.category,
       platform: state.platform,
       period: state.period,
+      round: state.round || null,
       search,
     }),
-    [state.metric, state.platform, state.period, search],
+    [state.category, state.platform, state.period, state.round, search],
   );
+  const rounds = useRoundsQuery();
+  const roundLabel = useRoundLabel();
   const leaderboard = useLeaderboardQuery(query);
   const { data } = leaderboard;
   // While new filters load, the previous result stays on screen; render it
@@ -120,14 +125,17 @@ export function LeaderboardView() {
     myEntryElement?.focus({ preventScroll: true });
   };
 
-  const metricLabel =
-    shown.metric === "score" ? t.metrics.score : t.metrics[shown.metric];
+  // A chosen past round is named after itself; the current one is "This week".
+  const periodLabel =
+    shown.round && data?.period.round
+      ? roundLabel(data.period.round, data.period.start, data.period.timeZone)
+      : t.periods[shown.period];
   const announcement =
     data && !leaderboard.isPlaceholderData
       ? [
           format(t.leaderboard.announce, {
-            metric: metricLabel,
-            period: t.periods[shown.period],
+            category: t.categories[shown.category],
+            period: periodLabel,
             count: data.totalParticipants,
           }),
           standing
@@ -153,22 +161,31 @@ export function LeaderboardView() {
             {t.leaderboard.subtitle}
           </p>
         </div>
-        <LastUpdated
-          syncedAt={data?.lastSyncedAt}
-          updating={leaderboard.isFetching}
-          className="self-start sm:self-auto"
-        />
+        <div className="flex flex-wrap items-center gap-2 self-start sm:justify-end sm:self-auto">
+          <BoardDates period={data?.period} />
+          <LastUpdated
+            syncedAt={data?.lastSyncedAt}
+            updating={leaderboard.isFetching}
+          />
+        </div>
       </div>
 
       <div className="mt-6">
         <LeaderboardToolbar
-          metric={state.metric}
+          category={state.category}
           platform={state.platform}
           period={state.period}
+          round={state.round}
+          rounds={rounds.data}
           search={searchText}
-          onMetricChange={(metric) => update({ metric })}
+          onCategoryChange={(category) =>
+            update({
+              category,
+              platform: platformForCategory(state.platform, category),
+            })
+          }
           onPlatformChange={(platform) => update({ platform })}
-          onPeriodChange={(period) => update({ period })}
+          onPeriodChange={(period, round) => update({ period, round })}
           onSearchChange={setSearchText}
         />
       </div>
@@ -229,13 +246,15 @@ export function LeaderboardView() {
           ) : (
             <StatePanel
               role="status"
-              icon={<Clapperboard />}
+              icon={
+                shown.category === "video" ? <Clapperboard /> : <ImageIcon />
+              }
               title={t.leaderboard.empty.title}
               description={t.leaderboard.empty.description}
               action={
                 <MotionButton onClick={openSubmit}>
                   <Plus aria-hidden="true" />
-                  {t.header.submitVideo}
+                  {t.header.submitPost}
                 </MotionButton>
               }
             />
@@ -245,7 +264,6 @@ export function LeaderboardView() {
             {podiumEntries.length > 0 && (
               <Podium
                 entries={podiumEntries}
-                metric={shown.metric}
                 currentUserId={userId}
                 onSelect={openEntry}
                 myEntryRef={myEntryRef}
@@ -254,7 +272,7 @@ export function LeaderboardView() {
             {listEntries.length > 0 && (
               <LeaderboardList
                 entries={listEntries}
-                metric={shown.metric}
+                category={shown.category}
                 currentUserId={userId}
                 onSelect={openEntry}
                 myEntryRef={myEntryRef}
@@ -269,8 +287,11 @@ export function LeaderboardView() {
         entry={selected}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+        category={shown.category}
         platform={shown.platform}
         period={shown.period}
+        round={shown.round}
+        periodLabel={periodLabel}
         isMe={selected?.employee.id === userId}
       />
 
@@ -278,7 +299,6 @@ export function LeaderboardView() {
         visible={showStanding}
         user={currentUser.user}
         standing={standing}
-        metric={shown.metric}
         action={standingAction}
         onAction={handleStandingAction}
       />

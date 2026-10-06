@@ -1,11 +1,5 @@
 import { httpAdapter } from "./http-adapter";
-import type {
-  ApiAdapter,
-  EmployeeVideosQuery,
-  LeaderboardQuery,
-  RequestOptions,
-  SubmitVideoPayload,
-} from "./types";
+import type { ApiAdapter } from "./types";
 
 export const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "true";
 
@@ -20,35 +14,36 @@ function getAdapter(): Promise<ApiAdapter> {
   return adapterPromise;
 }
 
-export async function getLeaderboard(
-  query: LeaderboardQuery,
-  options?: RequestOptions,
-) {
-  return (await getAdapter()).getLeaderboard(query, options);
+/** A function that forwards to the active adapter's method. */
+function forward<K extends keyof ApiAdapter>(method: K): ApiAdapter[K] {
+  return (async (...args: unknown[]) => {
+    const adapter = await getAdapter();
+    return (adapter[method] as (...params: unknown[]) => unknown)(...args);
+  }) as ApiAdapter[K];
 }
 
-export async function getMyVideos(options?: RequestOptions) {
-  return (await getAdapter()).getMyVideos(options);
-}
-
-export async function getEmployeeVideos(
-  employeeId: string,
-  query: EmployeeVideosQuery,
-  options?: RequestOptions,
-) {
-  return (await getAdapter()).getEmployeeVideos(employeeId, query, options);
-}
-
-export async function submitVideo(
-  payload: SubmitVideoPayload,
-  options?: RequestOptions,
-) {
-  return (await getAdapter()).submitVideo(payload, options);
-}
-
-export async function getCurrentUser(options?: RequestOptions) {
-  return (await getAdapter()).getCurrentUser(options);
-}
+export const getCurrentUser = forward("getCurrentUser");
+export const getLeaderboard = forward("getLeaderboard");
+export const getMyPosts = forward("getMyPosts");
+export const getEmployeePosts = forward("getEmployeePosts");
+export const submitPost = forward("submitPost");
+export const withdrawPost = forward("withdrawPost");
+export const recheckPost = forward("recheckPost");
+export const getAdminPosts = forward("getAdminPosts");
+export const getAdminPost = forward("getAdminPost");
+export const updateAdminPost = forward("updateAdminPost");
+export const moderatePost = forward("moderatePost");
+export const bulkModerate = forward("bulkModerate");
+export const refreshPost = forward("refreshPost");
+export const getSyncStatus = forward("getSyncStatus");
+export const startSync = forward("startSync");
+export const exportStandings = forward("exportStandings");
+export const getRounds = forward("getRounds");
+export const createRound = forward("createRound");
+export const updateRound = forward("updateRound");
+export const deleteRound = forward("deleteRound");
+export const generateRounds = forward("generateRounds");
+export const updateChallenge = forward("updateChallenge");
 
 export * from "./types";
 export { ApiError, isApiError } from "./errors";

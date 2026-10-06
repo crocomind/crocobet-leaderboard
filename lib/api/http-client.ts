@@ -54,12 +54,21 @@ export interface HttpRequestOptions {
   query?: Record<string, QueryValue>;
   body?: unknown;
   signal?: AbortSignal;
+  /** "blob" for file downloads (CSV export). Default: JSON. */
+  responseType?: "json" | "blob";
 }
 
 const KNOWN_CODES = new Set<string>([
-  "duplicate_video",
+  "duplicate_post",
   "invalid_url",
   "unsupported_platform",
+  "unsupported_content",
+  "challenge_closed",
+  "invalid_transition",
+  "round_overlap",
+  "outside_challenge",
+  "invalid_dates",
+  "rounds_exist",
   "validation_error",
   "unauthorized",
   "forbidden",
@@ -72,7 +81,6 @@ function codeFromStatus(status: number): ApiErrorCode {
   if (status === 401) return "unauthorized";
   if (status === 403) return "forbidden";
   if (status === 404) return "not_found";
-  if (status === 409) return "duplicate_video";
   if (status === 422 || status === 400) return "validation_error";
   if (status === 429) return "rate_limited";
   if (status >= 500) return "service_unavailable";
@@ -86,11 +94,15 @@ function buildUrl(path: string, query: HttpRequestOptions["query"]): URL {
       status: 0,
       code: "config_error",
       message:
-        "NEXT_PUBLIC_API_BASE_URL is not set. Set it, or set NEXT_PUBLIC_USE_MOCKS=true.",
+        "NEXT_PUBLIC_API_BASE_URL is not set. Set it (/api/v1 for the in-repo backend), or set NEXT_PUBLIC_USE_MOCKS=true.",
     });
   }
 
-  const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  // A relative base (/api/v1, the in-repo backend) resolves against this origin.
+  const absolute = baseUrl.startsWith("/")
+    ? new URL(baseUrl, window.location.origin).href
+    : baseUrl;
+  const base = absolute.endsWith("/") ? absolute : `${absolute}/`;
   const url = new URL(path.replace(/^\/+/, ""), base);
   for (const [key, value] of Object.entries(query ?? {})) {
     if (value !== undefined && value !== null && value !== "") {
@@ -127,11 +139,17 @@ async function readErrorBody(
 /** JSON HTTP client for the real backend. All requests go through here. */
 export async function request<T>(
   path: string,
-  { method = "GET", query, body, signal }: HttpRequestOptions = {},
+  {
+    method = "GET",
+    query,
+    body,
+    signal,
+    responseType = "json",
+  }: HttpRequestOptions = {},
 ): Promise<T> {
   const url = buildUrl(path, query);
   const headers: Record<string, string> = {
-    Accept: "application/json",
+    Accept: responseType === "json" ? "application/json" : "*/*",
     ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     ...(await getAuthHeaders()),
   };
@@ -170,6 +188,8 @@ export async function request<T>(
     });
   }
 
-  if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  if (responseType === "blob") return (await response.blob()) as T;
+  // 202 and 204 responses may have no body.
+  const text = response.status === 204 ? "" : await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }

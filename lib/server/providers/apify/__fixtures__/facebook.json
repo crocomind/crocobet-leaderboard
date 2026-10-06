@@ -1,0 +1,45 @@
+[
+  {
+    "facebookUrl": "https://www.facebook.com/bbcearth",
+    "postId": "895509256298494",
+    "pageName": "bbcearth",
+    "url": "https://www.facebook.com/reel/895509256298494/",
+    "time": "2026-01-20T14:00:46.000Z",
+    "timestamp": 1768917646,
+    "user": {
+      "id": "100044214140223",
+      "name": "BBC Earth",
+      "profileUrl": "https://www.facebook.com/100044214140223"
+    },
+    "text": "Like many animals, panda bears… #CrocoBySquad",
+    "textReferences": [
+      { "url": "https://www.facebook.com/hashtag/crocobysquad" }
+    ],
+    "likes": 147,
+    "comments": 2,
+    "shares": 3,
+    "viewsCount": 309624,
+    "reactionLikeCount": 112,
+    "reactionLoveCount": 29,
+    "isVideo": true,
+    "topLevelUrl": "https://www.facebook.com/100044214140223/posts/1441693187314472",
+    "inputUrl": "https://www.facebook.com/reel/895509256298494"
+  },
+  {
+    "postId": "1234567890123456",
+    "pageName": "crocobet",
+    "url": "https://www.facebook.com/crocobet/posts/1234567890123456",
+    "time": "2026-10-11T09:30:00.000Z",
+    "user": { "id": "200", "name": "Crocobet" },
+    "text": "Our office makeover, with Croco Squad",
+    "likes": 88,
+    "isVideo": false,
+    "media": [
+      {
+        "__typename": "Photo",
+        "thumbnail": "https://scontent.xx.fbcdn.net/photo.jpg"
+      }
+    ],
+    "inputUrl": "https://www.facebook.com/crocobet/posts/1234567890123456"
+  }
+]

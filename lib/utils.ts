@@ -29,3 +29,18 @@ export function normalizeForSearch(value: string): string {
     .toLocaleLowerCase()
     .trim();
 }
+
+const pad = (value: number) => String(value).padStart(2, "0");
+
+/** An ISO timestamp as <input type="datetime-local"> wants it, in local time. */
+export function toLocalDateTimeInput(iso: string | Date): string {
+  const date = typeof iso === "string" ? new Date(iso) : iso;
+  return `${toIsoDate(date)}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** The value of a datetime-local input (local time) as an ISO timestamp, or null. */
+export function fromLocalDateTimeInput(value: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}

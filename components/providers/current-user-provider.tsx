@@ -1,13 +1,24 @@
 "use client";
 
 import { createContext, type ReactNode, useContext, useMemo } from "react";
-import type { Employee } from "@/lib/api/types";
+import type { EmployeeRole } from "@/lib/api/types";
 import { useCurrentUserQuery } from "@/lib/api/queries";
 import type { SessionUser } from "@/lib/auth/types";
 
+/** The signed-in user: identity from the session, plus the employee record from GET /me. */
+export interface CurrentUser {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  avatarUrl: string | null;
+  /** "employee" until /me says otherwise. The server enforces access either way. */
+  role: EmployeeRole;
+}
+
 export type CurrentUserState =
   | { status: "signed-out"; user: null }
-  | { status: "signed-in"; user: Employee };
+  | { status: "signed-in"; user: CurrentUser };
 
 const CurrentUserContext = createContext<CurrentUserState | null>(null);
 
@@ -17,9 +28,9 @@ const CurrentUserContext = createContext<CurrentUserState | null>(null);
  *
  * Identity (name, email) comes from the Microsoft sign-in session, which the
  * server passes in, so it's available on first render with no loading state.
- * The employee record from GET /me adds the business ID and department when
- * the API has them. If /me fails, the user stays signed in with their session
- * identity.
+ * The employee record from GET /me adds the business ID, department, photo
+ * and role. If /me fails, the user stays signed in with their session
+ * identity and the employee role.
  */
 export function CurrentUserProvider({
   sessionUser,
@@ -40,6 +51,7 @@ export function CurrentUserProvider({
         email: sessionUser.email,
         department: employee?.department ?? "",
         avatarUrl: employee?.avatarUrl ?? sessionUser.image,
+        role: employee?.role ?? "employee",
       },
     };
   }, [sessionUser, employee]);

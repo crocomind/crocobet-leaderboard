@@ -103,7 +103,7 @@ export function exitTween(duration: number = DURATION.slow): Transition {
 export const LIFT = {
   /** Buttons lift this many px on hover. */
   button: 2,
-  /** Podium cards (rows and video cards use --lift in CSS). */
+  /** Podium cards (rows and post cards use --lift in CSS). */
   podium: 3,
 } as const;
 

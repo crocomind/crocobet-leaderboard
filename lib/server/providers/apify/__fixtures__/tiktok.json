@@ -1,0 +1,44 @@
+[
+  {
+    "id": "7543693751290481942",
+    "text": "ootd ☁️☁️\n\n#CrocoBySquad #foruyou",
+    "createTime": 1756403075,
+    "createTimeISO": "2025-08-28T17:44:35.000Z",
+    "authorMeta": {
+      "id": "6733984297591636998",
+      "name": "gretalynnhihi",
+      "nickName": "Greta Lynn"
+    },
+    "webVideoUrl": "https://www.tiktok.com/@gretalynnhihi/video/7543693751290481942",
+    "submittedVideoUrl": "https://www.tiktok.com/@gretalynnhihi/video/7543693751290481942",
+    "videoMeta": {
+      "duration": 15,
+      "coverUrl": "https://p16-pu-sign-no.tiktokcdn-eu.com/cover.jpeg"
+    },
+    "diggCount": 23400,
+    "shareCount": 145,
+    "playCount": 145900,
+    "collectCount": 1637,
+    "commentCount": 46,
+    "mentions": ["@crocosquad"],
+    "detailedMentions": [
+      {
+        "id": "1",
+        "name": "crocosquad",
+        "nickName": "Croco Squad",
+        "profileUrl": "https://www.tiktok.com/@crocosquad"
+      }
+    ],
+    "hashtags": [
+      { "id": "1", "name": "CrocoBySquad", "title": "", "cover": "" },
+      { "id": "4982299", "name": "foruyou", "title": "", "cover": "" }
+    ],
+    "isSlideshow": false
+  },
+  {
+    "url": "https://www.tiktok.com/@someone/video/7400000000000000001",
+    "input": "https://www.tiktok.com/@someone/video/7400000000000000001",
+    "error": "Post not found or private",
+    "errorCode": "POST_NOT_FOUND_OR_PRIVATE"
+  }
+]

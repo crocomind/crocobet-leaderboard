@@ -1,0 +1,36 @@
+[
+  {
+    "type": "post",
+    "id": "7329207003942125568",
+    "linkedinUrl": "https://www.linkedin.com/posts/williamhgates_childhood-activity-7329207003942125568-_gfJ",
+    "content": "The leading causes of childhood death… #CrocoBySquad",
+    "author": {
+      "publicIdentifier": "williamhgates",
+      "type": "profile",
+      "name": "Bill Gates"
+    },
+    "postedAt": {
+      "timestamp": 1747419119821,
+      "date": "2025-05-16T18:11:59.821Z"
+    },
+    "postImages": [],
+    "socialContent": { "hideReactionsCount": false, "hideViewsCount": false },
+    "engagement": {
+      "likes": 2916,
+      "comments": 328,
+      "shares": 153,
+      "reactions": [{ "type": "LIKE", "count": 2477 }]
+    }
+  },
+  {
+    "type": "post",
+    "id": "7300000000000000001",
+    "linkedinUrl": "https://www.linkedin.com/posts/someone_x-activity-7300000000000000001-AbCd",
+    "content": "Hidden reactions",
+    "author": { "publicIdentifier": "someone", "name": "Some One" },
+    "postedAt": { "timestamp": 1747419119821 },
+    "postImages": [{ "url": "https://media.licdn.com/image.jpg" }],
+    "socialContent": { "hideReactionsCount": true, "hideViewsCount": true },
+    "engagement": { "likes": 0, "comments": 0, "shares": 0 }
+  }
+]

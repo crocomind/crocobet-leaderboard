@@ -1,8 +1,15 @@
 /** Error codes the backend returns in `{ "error": { "code": ... } }`. */
 export type ApiErrorCode =
-  | "duplicate_video"
+  | "duplicate_post"
   | "invalid_url"
   | "unsupported_platform"
+  | "unsupported_content"
+  | "challenge_closed"
+  | "invalid_transition"
+  | "round_overlap"
+  | "outside_challenge"
+  | "invalid_dates"
+  | "rounds_exist"
   | "validation_error"
   | "unauthorized"
   | "forbidden"
