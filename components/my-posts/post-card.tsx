@@ -28,7 +28,7 @@ import {
   useWithdrawPostMutation,
 } from "@/lib/api/queries";
 import type { Post, PostCheck, PostStatus } from "@/lib/api/types";
-import { squadTag, tagParts } from "@/lib/campaign-tag";
+import { squadTag } from "@/lib/campaign-tag";
 import { type Platform, safeExternalUrl } from "@/lib/platforms";
 import { trackSpotlight } from "@/lib/spotlight";
 import { cn } from "@/lib/utils";
@@ -60,8 +60,7 @@ function CheckNotice({
   platform: Platform;
 }) {
   const { t, format } = useI18n();
-  // The post needs both the hashtag and a Croco Squad tag; say what's missing.
-  const found = tagParts(check.matched);
+  // How to tag Croco Squad on this platform, e.g. @croco.squad on Instagram.
   const squad = squadTag(platform) ?? "@Croco Squad";
   const notice = {
     queued: {
@@ -86,14 +85,7 @@ function CheckNotice({
     },
     failed: {
       icon: TriangleAlert,
-      text: format(
-        found.hashtag
-          ? t.myPosts.check.failedMention
-          : found.mention
-            ? t.myPosts.check.failedHashtag
-            : t.myPosts.check.failed,
-        { squad },
-      ),
+      text: format(t.myPosts.check.failed, { squad }),
       tone: "border-warning/25 bg-warning/10 text-warning-text",
       spin: false,
     },

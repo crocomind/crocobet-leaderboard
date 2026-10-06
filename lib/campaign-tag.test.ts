@@ -34,22 +34,26 @@ const checkHashtag = (
   extra = {},
 ) => checkCampaignTag(platform, { caption, ...extra }, hashtagOnly);
 
-describe("the rule: the hashtag and a Croco Squad tag", () => {
-  it("passes with both, and not with only one of them", () => {
+describe("the rule: the hashtag or a Croco Squad tag", () => {
+  it("passes with either one (or both), and not with neither", () => {
     expect(
       check("instagram", "Team day #CrocoBySquad with @crocosquad"),
     ).toEqual({
       passed: true,
       matched: ["#crocobysquad", "@crocosquad"],
     });
-    expect(check("instagram", "Team day #CrocoBySquad").passed).toBe(false);
-    expect(check("instagram", "Team day with @crocosquad").passed).toBe(false);
-  });
-
-  it("needs only the hashtag where no account is configured", () => {
-    expect(checkHashtag("instagram", "Team day #CrocoBySquad").passed).toBe(
-      true,
-    );
+    expect(check("instagram", "Team day #CrocoBySquad")).toEqual({
+      passed: true,
+      matched: ["#crocobysquad"],
+    });
+    expect(check("instagram", "Team day with @crocosquad")).toEqual({
+      passed: true,
+      matched: ["@crocosquad"],
+    });
+    expect(check("instagram", "Team day")).toEqual({
+      passed: false,
+      matched: [],
+    });
   });
 
   it("says which half matched", () => {
@@ -214,10 +218,10 @@ describe("config parsing", () => {
     };
     expect(parseCampaignMentions("")).toEqual(DEFAULT_MENTIONS);
     for (const [platform, caption] of [
-      ["instagram", "Office day with @croco.squad #CrocoBySquad"],
-      ["tiktok", "thanks @Croco Squad! #CrocoBySquad"],
-      ["facebook", "#CrocoBySquad Proud to be part of @Croco Squad."],
-      ["linkedin", "Thank you crocobet.com | Croco  Squad #CrocoBySquad"],
+      ["instagram", "Office day with @croco.squad"],
+      ["tiktok", "thanks @Croco Squad!"],
+      ["facebook", "Proud to be part of @Croco Squad."],
+      ["linkedin", "Thank you crocobet.com | Croco  Squad"],
     ] as const)
       expect(checkCampaignTag(platform, { caption }, defaults).passed).toBe(
         true,
@@ -232,10 +236,10 @@ describe("config parsing", () => {
     ).toEqual(["Croco Squad"]);
     // Other accounts with similar handles don't count.
     for (const [platform, caption] of [
-      ["instagram", "#CrocoBySquad @crocosquad"],
-      ["instagram", "#CrocoBySquad Croco Squad vibes"],
-      ["tiktok", "#CrocoBySquad @crocosquadron"],
-      ["linkedin", "#CrocoBySquad The Croco Squadron"],
+      ["instagram", "@crocosquad"],
+      ["instagram", "Croco Squad vibes"],
+      ["tiktok", "@crocosquadron"],
+      ["linkedin", "The Croco Squadron"],
     ] as const)
       expect(checkCampaignTag(platform, { caption }, defaults).passed).toBe(
         false,

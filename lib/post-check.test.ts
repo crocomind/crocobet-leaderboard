@@ -91,14 +91,11 @@ describe("evaluateFetch", () => {
     expect(result.check.status).toBe("failed");
     expect(result.check.tagFound).toBe(false);
     expect(result.views).toBe(1500);
-    // The hashtag alone isn't enough: Croco Squad must be tagged too.
-    expect(
-      evaluateFetch(
-        basePost,
-        fetched({ caption: "Office tour #CrocoBySquad" }),
-        context,
-      ).check,
-    ).toMatchObject({ status: "failed", matched: ["#crocobysquad"] });
+    // Either one is enough: the hashtag alone, or the tag alone.
+    for (const caption of ["Office tour #CrocoBySquad", "With @crocosquad"])
+      expect(
+        evaluateFetch(basePost, fetched({ caption }), context).check.status,
+      ).toBe("passed");
   });
 
   it("flags tag_removed only on approved posts", () => {

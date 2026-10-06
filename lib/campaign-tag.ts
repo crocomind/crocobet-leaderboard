@@ -1,9 +1,10 @@
 import { isPlatform, type Platform } from "@/lib/platforms";
 
 /**
- * The campaign rule: a post needs the campaign hashtag (#CrocoBySquad) and a
- * tag of the Croco Squad account on its platform. The result is evidence for
- * the admin who approves posts; nothing is approved automatically.
+ * The campaign rule: a post needs the campaign hashtag (#CrocoBySquad) or a
+ * tag of the Croco Squad account on its platform; either one is enough. The
+ * result is evidence for the admin who approves posts; nothing is approved
+ * automatically.
  */
 
 export const DEFAULT_HASHTAGS = ["CrocoBySquad"];
@@ -35,7 +36,7 @@ export interface TagEvidence {
 }
 
 export interface TagCheckResult {
-  /** The hashtag and, where an account is configured, its tag. */
+  /** The hashtag or a Croco Squad tag was found (either is enough). */
   passed: boolean;
   /** What matched, normalized, e.g. ["#crocobysquad", "@croco.squad"]. */
   matched: string[];
@@ -142,11 +143,7 @@ export function checkCampaignTag(
     }
   }
 
-  const { hashtag, mention } = tagParts([...matched]);
-  return {
-    passed: hashtag && (accounts.length === 0 || mention),
-    matched: [...matched],
-  };
+  return { passed: matched.size > 0, matched: [...matched] };
 }
 
 /**

@@ -20,7 +20,7 @@ import {
 import type { MockEmployee, MockPost, MockState, ProviderTruth } from "./types";
 
 /** Bump when the shape or the generator changes; stored mock state is then regenerated. */
-export const MOCK_STATE_VERSION = 5;
+export const MOCK_STATE_VERSION = 6;
 
 /** The employee the mock backend treats as signed in. */
 export const MOCK_CURRENT_USER_ID = "emp-tamar-lomidze";
@@ -219,7 +219,7 @@ interface Spec {
   note?: string;
   reviewDelayHours?: number;
   disqualifyAfterHours?: number;
-  /** "both" passes the check; the others miss the mention, the hashtag or both. */
+  /** The tags in the caption; any but "none" passes the check. */
   tag: "both" | "hashtag" | "mention" | "none";
   error?: CheckError;
   /** The check hasn't run yet (submitted a moment ago). */
@@ -481,7 +481,7 @@ function randomSpec(context: Context, person: Person): Spec {
       ? { ...spec, outcome: "pending" }
       : { ...spec, outcome: "reject", reason: "unavailable" };
   }
-  if (spec.tag !== "both") {
+  if (spec.tag === "none") {
     if (fresh) return { ...spec, outcome: "pending" };
     return random.chance(0.8)
       ? { ...spec, outcome: "reject", reason: "missing_tag" }

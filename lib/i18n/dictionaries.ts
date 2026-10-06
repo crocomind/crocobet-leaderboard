@@ -92,7 +92,7 @@ const en = {
   leaderboard: {
     title: "Leaderboard",
     subtitle:
-      "Post with #CrocoBySquad and tag @Croco Squad, collect views and reactions, and climb the ranks.",
+      "Post with #CrocoBySquad or tag @Croco Squad, collect views and reactions, and climb the ranks.",
     lastUpdated: "Last updated {time}",
     notSynced: "Waiting for the first update",
     updating: "Updating…",
@@ -188,10 +188,7 @@ const en = {
     check: {
       running: "Checking your post…",
       passed: "Tag found: {matched}",
-      failed: "Add #CrocoBySquad and tag {squad}, then re-check.",
-      failedHashtag:
-        "#CrocoBySquad is missing: add it to the caption, then re-check.",
-      failedMention: "Croco Squad isn't tagged: tag {squad}, then re-check.",
+      failed: "Add #CrocoBySquad or tag {squad}, then re-check.",
       error: "We couldn't read this post (is it private?).",
     },
     reason: "Reason: {reason}",
@@ -221,7 +218,7 @@ const en = {
     },
   },
   reasons: {
-    missing_tag: "#CrocoBySquad or the Croco Squad tag is missing",
+    missing_tag: "The post has neither #CrocoBySquad nor a Croco Squad tag",
     not_owner: "It wasn't posted from your own account",
     outside_challenge: "It was published outside the challenge",
     duplicate: "It was already submitted",
@@ -234,7 +231,7 @@ const en = {
   submit: {
     title: "Submit a post",
     description: "Paste the link to your post on {platforms}.",
-    rule: "It must include #CrocoBySquad and tag Croco Squad (@croco.squad on Instagram).",
+    rule: "It must include #CrocoBySquad or tag Croco Squad (@croco.squad on Instagram).",
     urlLabel: "Post link",
     urlPlaceholder: "Paste your post link",
     paste: "Paste",
@@ -361,14 +358,9 @@ const en = {
     checkStatus: {
       queued: "Queued",
       running: "Checking",
-      passed: "Tags found",
+      passed: "Tag found",
       failed: "Tag missing",
       error: "Couldn't read",
-    },
-    checkMissing: {
-      hashtag: "No #CrocoBySquad",
-      mention: "No Croco Squad tag",
-      both: "No hashtag or tag",
     },
     checkErrors: {
       not_found: "Post not found",
@@ -399,9 +391,8 @@ const en = {
     },
     evidence: {
       hashtag: "#CrocoBySquad",
-      hashtagMissing: "No #CrocoBySquad",
       mention: "Croco Squad tagged",
-      mentionMissing: "No Croco Squad tag",
+      none: "No hashtag or tag",
       owner: "Own account",
       ownerMismatch: "Other account",
       ownerUnknown: "Account not linked yet",
@@ -683,7 +674,7 @@ const ka: Dictionary = {
   leaderboard: {
     title: "ლიდერბორდი",
     subtitle:
-      "გამოაქვეყნეთ პოსტი #CrocoBySquad-ით და მონიშნეთ @Croco Squad, დააგროვეთ ნახვები და რეაქციები და აიწიეთ ლიდერბორდში.",
+      "გამოაქვეყნეთ პოსტი #CrocoBySquad-ით ან მონიშნეთ @Croco Squad, დააგროვეთ ნახვები და რეაქციები და აიწიეთ ლიდერბორდში.",
     lastUpdated: "ბოლო განახლება: {time}",
     notSynced: "პირველი განახლების მოლოდინში",
     updating: "ახლდება…",
@@ -779,11 +770,8 @@ const ka: Dictionary = {
     check: {
       running: "პოსტი მოწმდება…",
       passed: "ნიშნული ნაპოვნია: {matched}",
-      failed: "დაამატეთ #CrocoBySquad, მონიშნეთ {squad} და ხელახლა შეამოწმეთ.",
-      failedHashtag:
-        "#CrocoBySquad აკლია: დაამატეთ აღწერაში და ხელახლა შეამოწმეთ.",
-      failedMention:
-        "Croco Squad არ არის მონიშნული: მონიშნეთ {squad} და ხელახლა შეამოწმეთ.",
+      failed:
+        "დაამატეთ #CrocoBySquad ან მონიშნეთ {squad} და ხელახლა შეამოწმეთ.",
       error: "ამ პოსტის წაკითხვა ვერ მოხერხდა (ხომ არ არის დახურული?).",
     },
     reason: "მიზეზი: {reason}",
@@ -826,7 +814,7 @@ const ka: Dictionary = {
   submit: {
     title: "პოსტის დამატება",
     description: "ჩასვით თქვენი პოსტის ბმული ({platforms}).",
-    rule: "პოსტი უნდა შეიცავდეს #CrocoBySquad-ს და მონიშნავდეს Croco Squad-ს (Instagram-ზე @croco.squad).",
+    rule: "პოსტი უნდა შეიცავდეს #CrocoBySquad-ს ან მონიშნავდეს Croco Squad-ს (Instagram-ზე @croco.squad).",
     urlLabel: "პოსტის ბმული",
     urlPlaceholder: "ჩასვით პოსტის ბმული",
     paste: "ჩასმა",
@@ -955,14 +943,9 @@ const ka: Dictionary = {
     checkStatus: {
       queued: "რიგშია",
       running: "მოწმდება",
-      passed: "ნიშნულები ნაპოვნია",
+      passed: "ნიშნული ნაპოვნია",
       failed: "ნიშნული აკლია",
       error: "ვერ წავიკითხეთ",
-    },
-    checkMissing: {
-      hashtag: "#CrocoBySquad აკლია",
-      mention: "მონიშვნა აკლია",
-      both: "ჰეშთეგი და მონიშვნა აკლია",
     },
     checkErrors: {
       not_found: "პოსტი ვერ მოიძებნა",
@@ -993,9 +976,8 @@ const ka: Dictionary = {
     },
     evidence: {
       hashtag: "#CrocoBySquad",
-      hashtagMissing: "#CrocoBySquad აკლია",
       mention: "Croco Squad მონიშნულია",
-      mentionMissing: "მონიშვნა აკლია",
+      none: "არც ჰეშთეგია და არც მონიშვნა",
       owner: "საკუთარი ანგარიში",
       ownerMismatch: "სხვა ანგარიში",
       ownerUnknown: "ანგარიში ჯერ არ არის მიბმული",

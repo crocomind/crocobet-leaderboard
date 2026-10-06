@@ -31,7 +31,6 @@ export function CheckBadge({
   className?: string;
 }) {
   const { t } = useI18n();
-  const found = tagParts(check.matched);
   const [variant, icon, label] =
     check.status === "passed"
       ? ([
@@ -43,11 +42,7 @@ export function CheckBadge({
         ? ([
             "warning",
             <TriangleAlert key="icon" aria-hidden="true" />,
-            found.hashtag
-              ? t.admin.checkMissing.mention
-              : found.mention
-                ? t.admin.checkMissing.hashtag
-                : t.admin.checkMissing.both,
+            t.admin.checkStatus.failed,
           ] as const)
         : check.status === "error"
           ? ([
@@ -117,33 +112,21 @@ export function CheckEvidence({
   const found = check.tagFound === null ? null : tagParts(check.matched);
   return (
     <span className={cn("flex flex-col gap-1", className)}>
-      {found && (
-        <>
-          <Line
-            icon={
-              found.hashtag ? (
-                <Hash aria-hidden="true" />
-              ) : (
-                <CircleX aria-hidden="true" />
-              )
-            }
-            tone={found.hashtag ? "ok" : "bad"}
-          >
-            {found.hashtag ? evidence.hashtag : evidence.hashtagMissing}
-          </Line>
-          <Line
-            icon={
-              found.mention ? (
-                <AtSign aria-hidden="true" />
-              ) : (
-                <CircleX aria-hidden="true" />
-              )
-            }
-            tone={found.mention ? "ok" : "bad"}
-          >
-            {found.mention ? evidence.mention : evidence.mentionMissing}
-          </Line>
-        </>
+      {/* What was found (either one is enough), or that neither was. */}
+      {found?.hashtag && (
+        <Line icon={<Hash aria-hidden="true" />} tone="ok">
+          {evidence.hashtag}
+        </Line>
+      )}
+      {found?.mention && (
+        <Line icon={<AtSign aria-hidden="true" />} tone="ok">
+          {evidence.mention}
+        </Line>
+      )}
+      {found && !found.hashtag && !found.mention && (
+        <Line icon={<CircleX aria-hidden="true" />} tone="bad">
+          {evidence.none}
+        </Line>
       )}
       {check.ownerMatch === true ? (
         <Line icon={<UserCheck aria-hidden="true" />} tone="ok">
