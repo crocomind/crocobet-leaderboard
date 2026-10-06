@@ -103,14 +103,15 @@ function SummaryCard({
           : "rounded-card border border-border bg-surface/85 p-4 shadow-soft backdrop-blur sm:p-5"
       }
     >
-      <dt className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+      {/* On phones the icon sits above the label, so long words fit. */}
+      <dt className="flex flex-col items-start gap-2 text-sm font-medium text-muted-foreground sm:flex-row sm:items-center">
         <span
           aria-hidden="true"
           className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-brand/12 text-brand-text [&_svg]:size-4"
         >
           {icon}
         </span>
-        <span className="min-w-0 truncate">{label}</span>
+        <span className="min-w-0 leading-tight">{label}</span>
       </dt>
       <dd className="mt-3 text-2xl font-extrabold tracking-tight tabular-nums sm:text-3xl">
         {children}

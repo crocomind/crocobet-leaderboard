@@ -17,7 +17,7 @@ import type { ModerationPayload, ModerationReason } from "@/lib/api/types";
 import { MODERATION_REASONS, NOTE_MAX_LENGTH } from "@/lib/moderation";
 
 /** Actions that need a reason, a note or a confirmation before they run. */
-export type DialogAction = "approve" | "reject" | "disqualify" | "reinstate";
+export type DialogAction = "reject" | "disqualify" | "reinstate";
 
 interface ModerationDialogProps {
   action: DialogAction | null;
@@ -74,14 +74,12 @@ function ModerationForm({
   const noteError = needsNote && !note.trim() ? copy.noteMissing : null;
 
   const title = {
-    approve: copy.approveTitle,
     reject:
       count > 1 ? format(copy.bulkRejectTitle, { count }) : copy.rejectTitle,
     disqualify: copy.disqualifyTitle,
     reinstate: copy.reinstateTitle,
   }[action];
   const submitLabel = {
-    approve: t.admin.actions.approveAnyway,
     reject: t.admin.actions.reject,
     disqualify: copy.continue,
     reinstate: t.admin.actions.reinstate,
@@ -90,7 +88,6 @@ function ModerationForm({
   const payload = (): ModerationPayload => ({
     ...(reason ? { reason } : {}),
     ...(note.trim() ? { note: note.trim() } : {}),
-    ...(action === "approve" ? { override: true } : {}),
   });
 
   const handleSubmit = (event: FormEvent) => {
@@ -145,11 +142,7 @@ function ModerationForm({
         <div className="min-w-0 flex-1">
           <ResponsiveDialogTitle>{title}</ResponsiveDialogTitle>
           <ResponsiveDialogDescription className="mt-1">
-            {action === "approve"
-              ? copy.approveHint
-              : visibleToEmployee
-                ? copy.noteVisible
-                : t.admin.drawer.editNote}
+            {visibleToEmployee ? copy.noteVisible : t.admin.drawer.editNote}
           </ResponsiveDialogDescription>
         </div>
         <ResponsiveDialogClose label={t.common.close} className="-mt-1 -mr-2" />

@@ -46,7 +46,7 @@ function fetched(overrides: Partial<FetchedPost> = {}) {
       canonicalUrl: null,
       externalId: "C1",
       mediaKind: "video" as const,
-      caption: "Office tour #CrocoBySquad",
+      caption: "Office tour #CrocoBySquad @crocosquad",
       hashtags: [],
       mentions: [],
       authorHandle: "ana.g",
@@ -67,7 +67,7 @@ describe("evaluateFetch", () => {
     expect(result.check).toMatchObject({
       status: "passed",
       tagFound: true,
-      matched: ["#crocobysquad"],
+      matched: ["#crocobysquad", "@crocosquad"],
       authorHandle: "ana.g",
       ownerMatch: null,
       publishedInWindow: true,
@@ -77,7 +77,7 @@ describe("evaluateFetch", () => {
       views: 1500,
       reactions: 120,
       publishedAtSource: "provider",
-      title: "Office tour #CrocoBySquad",
+      title: "Office tour #CrocoBySquad @crocosquad",
       flags: [],
     });
   });
@@ -91,6 +91,11 @@ describe("evaluateFetch", () => {
     expect(result.check.status).toBe("failed");
     expect(result.check.tagFound).toBe(false);
     expect(result.views).toBe(1500);
+    // Either one is enough: the hashtag alone, or the tag alone.
+    for (const caption of ["Office tour #CrocoBySquad", "With @crocosquad"])
+      expect(
+        evaluateFetch(basePost, fetched({ caption }), context).check.status,
+      ).toBe("passed");
   });
 
   it("flags tag_removed only on approved posts", () => {

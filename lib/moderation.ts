@@ -1,8 +1,9 @@
 import type { PostStatus } from "@/lib/ranking";
 
 /**
- * Moderation rules: admins approve every post before it counts, and can
- * disqualify approved posts at any time. Pure, so the mock API and the server
+ * Moderation rules: admins approve every post before it counts, whether or
+ * not the automated check passed (it's evidence for them), and can disqualify
+ * approved posts at any time. Pure, so the mock API and the server
  * enforce exactly the same transitions.
  */
 
@@ -38,11 +39,8 @@ export interface ModerationInput {
   status: PostStatus;
   action: ModerationAction;
   actor: "admin" | "owner";
-  checkStatus?: CheckStatus;
   reason?: ModerationReason | null;
   note?: string | null;
-  /** "Approve anyway" when the check didn't pass. Needs a note. */
-  override?: boolean;
   lastRecheckAt?: Date | null;
   now?: Date;
 }
@@ -52,7 +50,6 @@ export type ModerationError =
   | "forbidden"
   | "reason_required"
   | "note_required"
-  | "check_not_passed"
   | "rate_limited";
 
 export type ModerationResult =
@@ -92,10 +89,6 @@ export function applyModeration(input: ModerationInput): ModerationResult {
 
   switch (input.action) {
     case "approve":
-      if (input.checkStatus !== "passed") {
-        if (!input.override) return { ok: false, error: "check_not_passed" };
-        if (!hasNote(input.note)) return { ok: false, error: "note_required" };
-      }
       break;
     case "reject":
       if (!input.reason) return { ok: false, error: "reason_required" };

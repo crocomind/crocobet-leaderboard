@@ -1,5 +1,10 @@
+import { squadTag } from "@/lib/campaign-tag";
 import { weekRange, zonedToday } from "@/lib/periods";
-import { analyzePostUrl, type ContentType } from "@/lib/platforms";
+import {
+  analyzePostUrl,
+  type ContentType,
+  type Platform,
+} from "@/lib/platforms";
 import { generateRounds } from "@/lib/rounds";
 import type { CheckError, ModerationReason } from "../types";
 import {
@@ -15,7 +20,7 @@ import {
 import type { MockEmployee, MockPost, MockState, ProviderTruth } from "./types";
 
 /** Bump when the shape or the generator changes; stored mock state is then regenerated. */
-export const MOCK_STATE_VERSION = 3;
+export const MOCK_STATE_VERSION = 6;
 
 /** The employee the mock backend treats as signed in. */
 export const MOCK_CURRENT_USER_ID = "emp-tamar-lomidze";
@@ -214,7 +219,8 @@ interface Spec {
   note?: string;
   reviewDelayHours?: number;
   disqualifyAfterHours?: number;
-  tag: "hashtag" | "mention" | "none";
+  /** The tags in the caption; any but "none" passes the check. */
+  tag: "both" | "hashtag" | "mention" | "none";
   error?: CheckError;
   /** The check hasn't run yet (submitted a moment ago). */
   queued?: boolean;
@@ -241,7 +247,7 @@ const CURRENT_USER_SPECS: Spec[] = [
     submitDelayHours: 2,
     outcome: "approve",
     reviewDelayHours: 5,
-    tag: "hashtag",
+    tag: "both",
     title: "Support team's morning standup",
     level: 1.1,
   },
@@ -251,7 +257,7 @@ const CURRENT_USER_SPECS: Spec[] = [
     submitDelayHours: 3,
     outcome: "approve",
     reviewDelayHours: 8,
-    tag: "mention",
+    tag: "both",
     title: "ჩვენი გუნდის ერთი დღე",
     level: 1.1,
   },
@@ -261,7 +267,7 @@ const CURRENT_USER_SPECS: Spec[] = [
     submitDelayHours: 1,
     outcome: "approve",
     reviewDelayHours: 20,
-    tag: "hashtag",
+    tag: "both",
     title: "What I learned in my first year at Crocobet",
     level: 1.3,
   },
@@ -271,7 +277,7 @@ const CURRENT_USER_SPECS: Spec[] = [
     submitDelayHours: 6,
     outcome: "approve",
     reviewDelayHours: 10,
-    tag: "hashtag",
+    tag: "both",
     title: "Celebrating 1,000 solved support tickets",
     level: 1.1,
   },
@@ -280,7 +286,7 @@ const CURRENT_USER_SPECS: Spec[] = [
     publishedHoursAgo: 6,
     submitDelayHours: 1,
     outcome: "pending",
-    tag: "hashtag",
+    tag: "both",
     title: "Desk setup tour 2026",
     level: 1.1,
   },
@@ -298,7 +304,7 @@ const CURRENT_USER_SPECS: Spec[] = [
     publishedHoursAgo: 4,
     submitDelayHours: 1,
     outcome: "pending",
-    tag: "hashtag",
+    tag: "both",
     error: "private",
     title: null,
     level: 1.1,
@@ -308,7 +314,7 @@ const CURRENT_USER_SPECS: Spec[] = [
     publishedHoursAgo: 0.2,
     submitDelayHours: 0,
     outcome: "pending",
-    tag: "hashtag",
+    tag: "both",
     queued: true,
     title: "Friday team lunch",
     level: 1.1,
@@ -333,7 +339,7 @@ const CURRENT_USER_SPECS: Spec[] = [
     reviewDelayHours: 6,
     spikeAfterHours: 4 * 24,
     disqualifyAfterHours: 6 * 24,
-    tag: "hashtag",
+    tag: "both",
     title: "Coffee machine chronicles",
     level: 1.1,
   },
@@ -344,7 +350,7 @@ const story = (spec: Partial<Spec> & Pick<Spec, "contentType">): Spec => ({
   submitDelayHours: 2,
   outcome: "approve",
   reviewDelayHours: 6,
-  tag: "hashtag",
+  tag: "both",
   title: null,
   level: 1.4,
   ...spec,
@@ -453,9 +459,9 @@ function randomSpec(context: Context, person: Person): Spec {
     outcome: "approve",
     reviewDelayHours: random.between(2, 30),
     tag: random.chance(0.86)
-      ? random.chance(0.12)
-        ? "mention"
-        : "hashtag"
+      ? random.chance(0.88)
+        ? "both"
+        : random.pick(["hashtag", "mention"] as const)
       : "none",
     title: random.chance(0.85) ? random.pick(TITLES) : null,
     level: person.level,
@@ -554,13 +560,12 @@ function buildUrl(
   }
 }
 
-function caption(random: Random, spec: Spec, platform: string): string {
+function caption(random: Random, spec: Spec, platform: Platform): string {
   const line = spec.title ?? random.pick(TITLES);
+  const squad = squadTag(platform);
+  if (spec.tag === "both") return `${line}\n\n#CrocoBySquad #crocobet ${squad}`;
   if (spec.tag === "hashtag") return `${line}\n\n#CrocoBySquad #crocobet`;
-  if (spec.tag === "mention")
-    return platform === "facebook" || platform === "linkedin"
-      ? `${line}\n\nWith the Croco Squad team!`
-      : `${line}\n\nThanks @crocosquad`;
+  if (spec.tag === "mention") return `${line}\n\nWith ${squad}!`;
   return `${line}\n\n#crocobet #teamlife`;
 }
 
@@ -674,7 +679,10 @@ export function createInitialState(now: Date): MockState {
       const truth: ProviderTruth = {
         error: spec.error ?? null,
         caption: caption(random, spec, analysis.platform),
-        hashtags: spec.tag === "hashtag" ? ["CrocoBySquad", "crocobet"] : [],
+        hashtags:
+          spec.tag === "both" || spec.tag === "hashtag"
+            ? ["CrocoBySquad", "crocobet"]
+            : [],
         authorHandle: spec.authorHandle ?? employee.handles[analysis.platform],
         mediaKind:
           spec.reallyVideo || analysis.category === "video"
@@ -786,7 +794,7 @@ export function createInitialState(now: Date): MockState {
           "approve",
           MOCK_REVIEWER_ID,
           spec.outcome === "approve_override"
-            ? { override: true, note: reviewNote ?? undefined }
+            ? { note: reviewNote ?? undefined }
             : {},
           when,
         );

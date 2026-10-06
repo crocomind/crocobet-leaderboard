@@ -5,6 +5,8 @@ import {
   DEFAULT_MENTIONS,
   parseCampaignHashtags,
   parseCampaignMentions,
+  squadTag,
+  tagParts,
 } from "@/lib/campaign-tag";
 
 const config: CampaignTagConfig = {
@@ -21,6 +23,57 @@ const check = (
   caption: string | null,
   extra = {},
 ) => checkCampaignTag(platform, { caption, ...extra }, config);
+/** Only the hashtag is required (no accounts configured). */
+const hashtagOnly: CampaignTagConfig = {
+  hashtags: ["CrocoBySquad"],
+  mentions: {},
+};
+const checkHashtag = (
+  platform: Parameters<typeof checkCampaignTag>[0],
+  caption: string | null,
+  extra = {},
+) => checkCampaignTag(platform, { caption, ...extra }, hashtagOnly);
+
+describe("the rule: the hashtag or a Croco Squad tag", () => {
+  it("passes with either one (or both), and not with neither", () => {
+    expect(
+      check("instagram", "Team day #CrocoBySquad with @crocosquad"),
+    ).toEqual({
+      passed: true,
+      matched: ["#crocobysquad", "@crocosquad"],
+    });
+    expect(check("instagram", "Team day #CrocoBySquad")).toEqual({
+      passed: true,
+      matched: ["#crocobysquad"],
+    });
+    expect(check("instagram", "Team day with @crocosquad")).toEqual({
+      passed: true,
+      matched: ["@crocosquad"],
+    });
+    expect(check("instagram", "Team day")).toEqual({
+      passed: false,
+      matched: [],
+    });
+  });
+
+  it("says which half matched", () => {
+    expect(tagParts(["#crocobysquad"])).toEqual({
+      hashtag: true,
+      mention: false,
+    });
+    expect(tagParts(["Croco Squad"])).toEqual({
+      hashtag: false,
+      mention: true,
+    });
+  });
+
+  it("knows how to tag Croco Squad on each platform", () => {
+    expect(squadTag("instagram")).toBe("@croco.squad");
+    expect(squadTag("tiktok")).toBe("@Croco Squad");
+    expect(squadTag("linkedin")).toBe("@crocobet.com | Croco Squad");
+    expect(squadTag("facebook", {})).toBeNull();
+  });
+});
 
 describe("hashtag", () => {
   it.each([
@@ -31,7 +84,7 @@ describe("hashtag", () => {
     "#CrocoBySquad, #fun",
     "ჩვენი გუნდის ერთი დღე #CrocoBySquad 🐊",
   ])("matches %j", (caption) => {
-    expect(check("tiktok", caption)).toEqual({
+    expect(checkHashtag("tiktok", caption)).toEqual({
       passed: true,
       matched: ["#crocobysquad"],
     });
@@ -44,19 +97,21 @@ describe("hashtag", () => {
     "#Croco_BySquad",
     "",
   ])("doesn't match %j", (caption) => {
-    expect(check("tiktok", caption).passed).toBe(false);
+    expect(checkHashtag("tiktok", caption).passed).toBe(false);
   });
 
   it("normalizes Unicode (NFKC), e.g. full-width letters", () => {
-    expect(check("instagram", "＃ＣｒｏｃｏＢｙＳｑｕａｄ").passed).toBe(true);
+    expect(checkHashtag("instagram", "＃ＣｒｏｃｏＢｙＳｑｕａｄ").passed).toBe(
+      true,
+    );
   });
 
   it("reads the provider's structured hashtag list", () => {
     expect(
-      check("instagram", null, { hashtags: ["crocobysquad"] }).passed,
+      checkHashtag("instagram", null, { hashtags: ["crocobysquad"] }).passed,
     ).toBe(true);
     expect(
-      check("instagram", null, { hashtags: ["#CrocoBySquad"] }).passed,
+      checkHashtag("instagram", null, { hashtags: ["#CrocoBySquad"] }).passed,
     ).toBe(true);
   });
 
@@ -81,58 +136,48 @@ describe("hashtag", () => {
 
 describe("mentions", () => {
   it("matches an @handle in the caption", () => {
-    expect(check("instagram", "Shot with @CrocoSquad today")).toEqual({
-      passed: true,
-      matched: ["@crocosquad"],
-    });
-    expect(check("tiktok", "thanks @croco.squad.")).toEqual({
-      passed: true,
-      matched: ["@croco.squad"],
-    });
+    expect(check("instagram", "Shot with @CrocoSquad today").matched).toEqual([
+      "@crocosquad",
+    ]);
+    expect(check("tiktok", "thanks @croco.squad.").matched).toEqual([
+      "@croco.squad",
+    ]);
   });
 
   it("matches handles as whole tokens only", () => {
-    expect(check("instagram", "@crocosquadfans").passed).toBe(false);
+    expect(check("instagram", "@crocosquadfans").matched).toEqual([]);
   });
 
   it("matches the provider's mentions or tagged users", () => {
-    expect(check("instagram", null, { mentions: ["CrocoSquad"] }).passed).toBe(
-      true,
-    );
-    expect(check("instagram", null, { mentions: ["@crocosquad"] }).passed).toBe(
-      true,
-    );
+    expect(
+      check("instagram", null, { mentions: ["CrocoSquad"] }).matched,
+    ).toEqual(["@crocosquad"]);
+    expect(
+      check("instagram", null, { mentions: ["@crocosquad"] }).matched,
+    ).toEqual(["@crocosquad"]);
   });
 
   it("matches Facebook and LinkedIn page names as whole phrases", () => {
-    expect(check("linkedin", "Proud to be part of Croco  Squad!")).toEqual({
-      passed: true,
-      matched: ["Croco Squad"],
-    });
-    expect(check("facebook", "croco squad ❤")).toEqual({
-      passed: true,
-      matched: ["Croco Squad"],
-    });
-    expect(check("facebook", null, { mentions: ["Croco Squad"] }).passed).toBe(
-      true,
-    );
+    expect(
+      check("linkedin", "Proud to be part of Croco  Squad!").matched,
+    ).toEqual(["Croco Squad"]);
+    expect(check("facebook", "croco squad ❤").matched).toEqual(["Croco Squad"]);
+    expect(
+      check("facebook", null, { mentions: ["Croco Squad"] }).matched,
+    ).toEqual(["Croco Squad"]);
   });
 
   it("doesn't match a page name inside a longer word", () => {
-    expect(check("linkedin", "The Croco Squadron").passed).toBe(false);
+    expect(check("linkedin", "The Croco Squadron").matched).toEqual([]);
   });
 
   it("only uses the mentions configured for that platform", () => {
-    expect(check("tiktok", "Proud to be part of Croco Squad").passed).toBe(
-      false,
+    expect(check("tiktok", "Proud to be part of Croco Squad").matched).toEqual(
+      [],
     );
   });
 
   it("works with no mentions configured (hashtag only)", () => {
-    const hashtagOnly: CampaignTagConfig = {
-      hashtags: ["CrocoBySquad"],
-      mentions: {},
-    };
     expect(
       checkCampaignTag("instagram", { caption: "@crocosquad" }, hashtagOnly)
         .passed,
@@ -166,30 +211,39 @@ describe("config parsing", () => {
     expect(parseCampaignMentions(" none ")).toEqual({});
   });
 
-  it("recognizes @Croco Squad without any configured accounts", () => {
+  it("recognizes the real Croco Squad tags by default", () => {
     const defaults = {
       hashtags: ["CrocoBySquad"],
       mentions: parseCampaignMentions(undefined),
     };
     expect(parseCampaignMentions("")).toEqual(DEFAULT_MENTIONS);
     for (const [platform, caption] of [
-      ["instagram", "Office day with @CrocoSquad"],
-      ["tiktok", "thanks @croco.squad!"],
-      ["instagram", "@croco_squad 🐊"],
-      ["facebook", "Proud to be part of Croco Squad."],
-      ["linkedin", "Croco  Squad, thank you"],
+      ["instagram", "Office day with @croco.squad"],
+      ["tiktok", "thanks @Croco Squad!"],
+      ["facebook", "Proud to be part of @Croco Squad."],
+      ["linkedin", "Thank you crocobet.com | Croco  Squad"],
     ] as const)
       expect(checkCampaignTag(platform, { caption }, defaults).passed).toBe(
         true,
       );
+    // TikTok and Facebook report tagged accounts by display name.
     expect(
-      checkCampaignTag("instagram", { caption: "Croco Squad vibes" }, defaults)
-        .passed,
-    ).toBe(false);
-    expect(
-      checkCampaignTag("tiktok", { caption: "@crocosquadron" }, defaults)
-        .passed,
-    ).toBe(false);
+      checkCampaignTag(
+        "tiktok",
+        { caption: "Our day", mentions: ["crocosquad_ge", "Croco Squad"] },
+        defaults,
+      ).matched,
+    ).toEqual(["Croco Squad"]);
+    // Other accounts with similar handles don't count.
+    for (const [platform, caption] of [
+      ["instagram", "@crocosquad"],
+      ["instagram", "Croco Squad vibes"],
+      ["tiktok", "@crocosquadron"],
+      ["linkedin", "The Croco Squadron"],
+    ] as const)
+      expect(checkCampaignTag(platform, { caption }, defaults).passed).toBe(
+        false,
+      );
   });
 
   it("parses CAMPAIGN_HASHTAGS with a default", () => {

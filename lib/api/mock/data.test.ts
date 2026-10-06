@@ -82,7 +82,7 @@ describe("mock data", () => {
     );
   });
 
-  it("only approves a post whose check failed with an override and a note", () => {
+  it("audits approvals of posts whose check didn't pass", () => {
     for (const post of state.posts.filter(
       (candidate) =>
         candidate.status === "approved" && candidate.check.status !== "passed",
@@ -99,7 +99,6 @@ describe("mock data", () => {
         ).toBe(true);
       } else {
         expect(approval).toMatchObject({ action: "approve_override" });
-        expect(approval?.note).toBeTruthy();
       }
     }
   });

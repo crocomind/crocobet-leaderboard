@@ -17,10 +17,7 @@ export function providerFor(
   config: ServerConfig,
 ): PostDataProvider {
   const id = config.providers[platform];
-  if (id === "fixture")
-    return createFixtureProvider(
-      `#${config.tags.hashtags[0] ?? "CrocoBySquad"}`,
-    );
+  if (id === "fixture") return createFixtureProvider(config.tags);
   if (id === "manual") return manualProvider;
   if (id === "apify") {
     if (config.apify.token)

@@ -206,8 +206,11 @@ function DrawerContent({
           <ResponsiveDialogTitle className="truncate">
             {post.employee.name}
           </ResponsiveDialogTitle>
-          <ResponsiveDialogDescription className="truncate">
-            {post.employee.email} · {post.employee.department}
+          <ResponsiveDialogDescription>
+            <span className="block truncate">{post.employee.email}</span>
+            {post.employee.department && (
+              <span className="block truncate">{post.employee.department}</span>
+            )}
           </ResponsiveDialogDescription>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <StatusBadge status={post.status} />

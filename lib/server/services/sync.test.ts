@@ -50,7 +50,7 @@ const fetched = (overrides: Partial<FetchedPost> = {}): FetchOutcome => ({
     canonicalUrl: null,
     externalId: null,
     mediaKind: "video",
-    caption: "Our day #CrocoBySquad",
+    caption: "Our day #CrocoBySquad with @Croco Squad and @croco.squad",
     hashtags: [],
     mentions: [],
     authorHandle: "ana",

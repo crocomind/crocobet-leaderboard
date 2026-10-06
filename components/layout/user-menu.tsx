@@ -4,7 +4,7 @@ import { Languages, LoaderCircle, LogOut, Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import { flushSync } from "react-dom";
 import { EmployeeAvatar } from "@/components/common/employee-avatar";
-import { useThemeSwitch } from "@/components/layout/theme-toggle";
+import { useThemeSwitch } from "@/components/layout/use-theme-switch";
 import { useCurrentUser } from "@/components/providers/current-user-provider";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {

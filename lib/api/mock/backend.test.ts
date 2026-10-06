@@ -263,29 +263,16 @@ describe("moderation", () => {
     expect(events.slice(0, 3)).toEqual(["reinstate", "disqualify", "approve"]);
   });
 
-  it("needs an override and a note to approve when the check didn't pass", () => {
+  it("approves a post whose check didn't pass in one step, and audits it", () => {
     const post = findPost(
       (candidate) =>
         candidate.status === "pending" && candidate.check.status === "failed",
     );
-    expect(
-      errorOf(() => admin.moderatePost(post.id, "approve", {}, start)),
-    ).toMatchObject({ status: 422 });
-    expect(
-      errorOf(() =>
-        admin.moderatePost(post.id, "approve", { override: true }, start),
-      ),
-    ).toMatchObject({ status: 422 });
-    const detail = admin.moderatePost(
-      post.id,
-      "approve",
-      { override: true, note: "Tag is in the first comment" },
-      start,
-    );
+    const detail = admin.moderatePost(post.id, "approve", {}, start);
     expect(detail.status).toBe("approved");
     expect(detail.events[0]).toMatchObject({
       action: "approve_override",
-      note: "Tag is in the first comment",
+      note: null,
       actor: { id: MOCK_CURRENT_USER_ID },
     });
   });
@@ -313,13 +300,15 @@ describe("moderation", () => {
       (candidate) =>
         candidate.status === "pending" && candidate.check.status === "failed",
     );
+    const approved = findPost((candidate) => candidate.status === "approved");
     const result = admin.bulkModerate(
-      { ids: [passed.id, failed.id], action: "approve" },
+      { ids: [passed.id, failed.id, approved.id], action: "approve" },
       start,
     );
     expect(result.results).toEqual([
       { id: passed.id, ok: true, error: null },
-      { id: failed.id, ok: false, error: "validation_error" },
+      { id: failed.id, ok: true, error: null },
+      { id: approved.id, ok: false, error: "invalid_transition" },
     ]);
   });
 });

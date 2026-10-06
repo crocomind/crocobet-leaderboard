@@ -337,8 +337,6 @@ export interface AdminPostPatch {
 export interface ModerationPayload {
   reason?: ModerationReason;
   note?: string;
-  /** "Approve anyway" when the check didn't pass. Needs a note. */
-  override?: boolean;
 }
 
 export interface BulkModerationPayload extends ModerationPayload {

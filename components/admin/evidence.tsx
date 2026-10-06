@@ -1,58 +1,77 @@
 "use client";
 
 import {
+  AtSign,
   CalendarCheck,
   CalendarClock,
   CalendarX,
   CircleAlert,
   CircleCheck,
+  Hash,
   LoaderCircle,
   TriangleAlert,
   UserCheck,
   UserRound,
   UserX,
+  CircleX,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { Badge } from "@/components/ui/badge";
 import type { PostCheck, PostFlag } from "@/lib/api/types";
+import { tagParts } from "@/lib/campaign-tag";
 import { cn } from "@/lib/utils";
 
-/** The check result as a badge: tag found (with the token), missing, unreadable or running. */
-export function CheckBadge({ check }: { check: PostCheck }) {
+/** The check result as a badge: what matched, what's missing, unreadable or running. */
+export function CheckBadge({
+  check,
+  className,
+}: {
+  check: PostCheck;
+  className?: string;
+}) {
   const { t } = useI18n();
-  switch (check.status) {
-    case "passed":
-      return (
-        <Badge variant="success" title={check.matched.join(", ")}>
-          <CircleCheck aria-hidden="true" />
-          {check.matched[0] ?? t.admin.checkStatus.passed}
-        </Badge>
-      );
-    case "failed":
-      return (
-        <Badge variant="warning">
-          <TriangleAlert aria-hidden="true" />
-          {t.admin.checkStatus.failed}
-        </Badge>
-      );
-    case "error":
-      return (
-        <Badge variant="danger">
-          <CircleAlert aria-hidden="true" />
-          {check.error
-            ? t.admin.checkErrors[check.error]
-            : t.admin.checkStatus.error}
-        </Badge>
-      );
-    default:
-      return (
-        <Badge>
-          <LoaderCircle className="animate-spin" aria-hidden="true" />
-          {t.admin.checkStatus[check.status]}
-        </Badge>
-      );
-  }
+  const [variant, icon, label] =
+    check.status === "passed"
+      ? ([
+          "success",
+          <CircleCheck key="icon" aria-hidden="true" />,
+          t.admin.checkStatus.passed,
+        ] as const)
+      : check.status === "failed"
+        ? ([
+            "warning",
+            <TriangleAlert key="icon" aria-hidden="true" />,
+            t.admin.checkStatus.failed,
+          ] as const)
+        : check.status === "error"
+          ? ([
+              "danger",
+              <CircleAlert key="icon" aria-hidden="true" />,
+              check.error
+                ? t.admin.checkErrors[check.error]
+                : t.admin.checkStatus.error,
+            ] as const)
+          : ([
+              "neutral",
+              <LoaderCircle
+                key="icon"
+                className="animate-spin"
+                aria-hidden="true"
+              />,
+              t.admin.checkStatus[check.status],
+            ] as const);
+  return (
+    // Long labels truncate in narrow layouts; the full text is in the tooltip.
+    <Badge
+      variant={variant}
+      title={check.matched.length > 0 ? check.matched.join(" ") : label}
+      className={cn("max-w-full", className)}
+    >
+      {icon}
+      <span className="min-w-0 truncate">{label}</span>
+    </Badge>
+  );
 }
 
 function Line({
@@ -79,7 +98,7 @@ function Line({
   );
 }
 
-/** Owner and window evidence, one line each. */
+/** Hashtag, Croco Squad tag, owner and window evidence, one line each. */
 export function CheckEvidence({
   check,
   className,
@@ -89,8 +108,26 @@ export function CheckEvidence({
 }) {
   const { t } = useI18n();
   const { evidence } = t.admin;
+  // Only once the check has read the post.
+  const found = check.tagFound === null ? null : tagParts(check.matched);
   return (
     <span className={cn("flex flex-col gap-1", className)}>
+      {/* What was found (either one is enough), or that neither was. */}
+      {found?.hashtag && (
+        <Line icon={<Hash aria-hidden="true" />} tone="ok">
+          {evidence.hashtag}
+        </Line>
+      )}
+      {found?.mention && (
+        <Line icon={<AtSign aria-hidden="true" />} tone="ok">
+          {evidence.mention}
+        </Line>
+      )}
+      {found && !found.hashtag && !found.mention && (
+        <Line icon={<CircleX aria-hidden="true" />} tone="bad">
+          {evidence.none}
+        </Line>
+      )}
       {check.ownerMatch === true ? (
         <Line icon={<UserCheck aria-hidden="true" />} tone="ok">
           {evidence.owner}

@@ -178,30 +178,18 @@ describe("moderation", () => {
     ]);
   });
 
-  it("needs an override and a note when the check didn't pass", async () => {
+  it("approves a post whose check didn't pass in one step, and audits it", async () => {
     const admin = await makeEmployee(db, { role: "admin" });
     const ana = await makeEmployee(db);
     const post = await makePost(db, ana.id, "instagram_reel", {
       status: "pending",
       checkStatus: "failed",
     });
-    expect(
-      await failure(() => moderatePost(db, admin, post.id, "approve", {}, now)),
-    ).toEqual({
-      status: 422,
-      code: "validation_error",
-    });
-    const detail = await moderatePost(
-      db,
-      admin,
-      post.id,
-      "approve",
-      { override: true, note: "Tag in the first comment" },
-      now,
-    );
+    const detail = await moderatePost(db, admin, post.id, "approve", {}, now);
+    expect(detail.status).toBe("approved");
     expect(detail.events[0]).toMatchObject({
       action: "approve_override",
-      note: "Tag in the first comment",
+      note: null,
       actor: { id: admin.id },
     });
   });
@@ -259,18 +247,25 @@ describe("moderation", () => {
       status: "pending",
       checkStatus: "failed",
     });
+    const approved = await makePost(db, ana.id, "tiktok_video", {
+      status: "approved",
+    });
     const missing = "00000000-0000-4000-8000-000000000000";
     expect(
       await bulkModerate(
         db,
         admin,
-        { ids: [passed.id, failed.id, missing], action: "approve" },
+        {
+          ids: [passed.id, failed.id, approved.id, missing],
+          action: "approve",
+        },
         now,
       ),
     ).toEqual({
       results: [
         { id: passed.id, ok: true, error: null },
-        { id: failed.id, ok: false, error: "validation_error" },
+        { id: failed.id, ok: true, error: null },
+        { id: approved.id, ok: false, error: "invalid_transition" },
         { id: missing, ok: false, error: "not_found" },
       ],
     });

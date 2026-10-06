@@ -24,8 +24,6 @@ const en = {
   header: {
     submitPost: "Submit post",
     accountMenu: "Open account menu",
-    switchToLight: "Switch to light theme",
-    switchToDark: "Switch to dark theme",
     theme: "Theme",
     themeDark: "Dark",
     themeLight: "Light",
@@ -54,6 +52,7 @@ const en = {
   categories: {
     video: "Video content",
     static: "Static content",
+    short: { video: "Video", static: "Static" },
     videoBoard: "Video board",
     staticBoard: "Static board",
   },
@@ -189,8 +188,7 @@ const en = {
     check: {
       running: "Checking your post…",
       passed: "Tag found: {matched}",
-      failed:
-        "#CrocoBySquad not found: add it or tag @Croco Squad, then re-check.",
+      failed: "Add #CrocoBySquad or tag {squad}, then re-check.",
       error: "We couldn't read this post (is it private?).",
     },
     reason: "Reason: {reason}",
@@ -220,7 +218,7 @@ const en = {
     },
   },
   reasons: {
-    missing_tag: "The #CrocoBySquad tag or @Croco Squad mention is missing",
+    missing_tag: "The post has neither #CrocoBySquad nor a Croco Squad tag",
     not_owner: "It wasn't posted from your own account",
     outside_challenge: "It was published outside the challenge",
     duplicate: "It was already submitted",
@@ -233,7 +231,7 @@ const en = {
   submit: {
     title: "Submit a post",
     description: "Paste the link to your post on {platforms}.",
-    rule: "It must include #CrocoBySquad or tag @Croco Squad.",
+    rule: "It must include #CrocoBySquad or tag Croco Squad (@croco.squad on Instagram).",
     urlLabel: "Post link",
     urlPlaceholder: "Paste your post link",
     paste: "Paste",
@@ -392,8 +390,9 @@ const en = {
       actions: "Actions",
     },
     evidence: {
-      tag: "Tag",
-      tagMissing: "No tag",
+      hashtag: "#CrocoBySquad",
+      mention: "Croco Squad tagged",
+      none: "No hashtag or tag",
       owner: "Own account",
       ownerMismatch: "Other account",
       ownerUnknown: "Account not linked yet",
@@ -412,7 +411,6 @@ const en = {
     error: "Couldn't load the queue.",
     actions: {
       approve: "Approve",
-      approveAnyway: "Approve anyway",
       reject: "Reject",
       disqualify: "Disqualify",
       reinstate: "Reinstate",
@@ -425,7 +423,7 @@ const en = {
     bulk: {
       label: "Bulk actions",
       selected: "{count} selected",
-      approve: "Approve the ones that passed",
+      approve: "Approve",
       reject: "Reject…",
       clear: "Clear selection",
       selectAll: "Select all on this page",
@@ -492,9 +490,6 @@ const en = {
       other: "Other",
     },
     moderation: {
-      approveTitle: "Approve anyway",
-      approveHint:
-        "The check didn't pass. Explain why the post should count anyway.",
       rejectTitle: "Reject post",
       disqualifyTitle: "Disqualify post",
       reinstateTitle: "Reinstate post",
@@ -517,7 +512,7 @@ const en = {
       check_failed: "Check failed: tag missing",
       check_error: "Check couldn't read the post",
       approve: "Approved",
-      approve_override: "Approved anyway",
+      approve_override: "Approved (check didn't pass)",
       reject: "Rejected",
       disqualify: "Disqualified",
       reinstate: "Reinstated",
@@ -534,7 +529,7 @@ const en = {
     },
     sync: {
       title: "Metrics sync",
-      schedule: "Runs automatically at 08:00 and 20:00 Tbilisi time.",
+      schedule: "Runs automatically at 12:00 and 23:59 Tbilisi time.",
       lastRun: "Last run {time}",
       never: "No runs yet",
       running: "Running…",
@@ -599,20 +594,18 @@ export type Dictionary = Widen<typeof en>;
 const ka: Dictionary = {
   app: {
     name: "Croco Creators",
-    description: "Croco By Squad — Crocobet-ის გუნდის კონტენტის რეიტინგი.",
+    description: "Croco By Squad — Crocobet-ის გუნდის კონტენტის ლიდერბორდი.",
     skipToContent: "მთავარ შინაარსზე გადასვლა",
   },
   nav: {
     label: "განყოფილებები",
-    leaderboard: "რეიტინგი",
+    leaderboard: "ლიდერბორდი",
     myPosts: "ჩემი პოსტები",
     admin: "ადმინი",
   },
   header: {
     submitPost: "პოსტის დამატება",
     accountMenu: "ანგარიშის მენიუს გახსნა",
-    switchToLight: "ღია თემაზე გადართვა",
-    switchToDark: "მუქ თემაზე გადართვა",
     theme: "თემა",
     themeDark: "მუქი",
     themeLight: "ღია",
@@ -641,8 +634,9 @@ const ka: Dictionary = {
   categories: {
     video: "ვიდეო კონტენტი",
     static: "სტატიკური კონტენტი",
-    videoBoard: "ვიდეო რეიტინგი",
-    staticBoard: "სტატიკური რეიტინგი",
+    short: { video: "ვიდეო", static: "სტატიკური" },
+    videoBoard: "ვიდეო ლიდერბორდი",
+    staticBoard: "სტატიკური ლიდერბორდი",
   },
   contentTypes: {
     tiktok_video: "TikTok ვიდეო",
@@ -678,14 +672,14 @@ const ka: Dictionary = {
     now: "ახლა",
   },
   leaderboard: {
-    title: "რეიტინგი",
+    title: "ლიდერბორდი",
     subtitle:
-      "გამოაქვეყნეთ პოსტი #CrocoBySquad-ით ან მონიშნეთ @Croco Squad, დააგროვეთ ნახვები და რეაქციები და აიწიეთ რეიტინგში.",
+      "გამოაქვეყნეთ პოსტი #CrocoBySquad-ით ან მონიშნეთ @Croco Squad, დააგროვეთ ნახვები და რეაქციები და აიწიეთ ლიდერბორდში.",
     lastUpdated: "ბოლო განახლება: {time}",
     notSynced: "პირველი განახლების მოლოდინში",
     updating: "ახლდება…",
     dateRange: "თარიღები: {range}",
-    categoryLabel: "რეიტინგი",
+    categoryLabel: "ლიდერბორდი",
     platformLabel: "პლატფორმა",
     periodLabel: "პერიოდი",
     allPlatforms: "ყველა",
@@ -694,7 +688,7 @@ const ka: Dictionary = {
     searchPlaceholder: "ძებნა სახელით",
     clearSearch: "ძებნის გასუფთავება",
     podiumLabel: "საუკეთესო სამეული",
-    listLabel: "რეიტინგი",
+    listLabel: "ლიდერბორდი",
     columns: {
       rank: "ადგილი",
       employee: "თანამშრომელი",
@@ -729,19 +723,19 @@ const ka: Dictionary = {
       behind: "#{nextRank}-მდე გაკლიათ {gap}",
       tied: "#{nextRank}-ის ტოლი შედეგი",
       leading: "თქვენ ლიდერობთ. ასე გააგრძელეთ!",
-      notRanked: "ამ რეიტინგში ჯერ არ ხართ",
+      notRanked: "ამ ლიდერბორდში ჯერ არ ხართ",
       notRankedHint: "დაამატეთ პოსტი და შეუერთდით შეჯიბრს.",
       show: "ჩემს პოზიციაზე გადასვლა",
     },
     empty: {
       title: "აქ ჯერ პოსტები არ არის",
       description:
-        "ამ რეიტინგსა და პერიოდში დამტკიცებული პოსტი ჯერ არავის აქვს. იყავით პირველი!",
+        "ამ ლიდერბორდსა და პერიოდში დამტკიცებული პოსტი ჯერ არავის აქვს. იყავით პირველი!",
       searchTitle: "„{query}“ ვერ მოიძებნა",
       searchDescription: "შეამოწმეთ მართლწერა ან სცადეთ სხვა სახელი.",
     },
     error: {
-      title: "რეიტინგის ჩატვირთვა ვერ მოხერხდა",
+      title: "ლიდერბორდის ჩატვირთვა ვერ მოხერხდა",
       description: "შეამოწმეთ ინტერნეტთან კავშირი და სცადეთ თავიდან.",
     },
     announce: "{category}, {period}. მონაწილეები: {count}.",
@@ -751,7 +745,7 @@ const ka: Dictionary = {
   employee: {
     postsTitle: "დათვლილი პოსტები",
     counting: "{category} · {platform} · {period}",
-    empty: "ამ რეიტინგსა და პერიოდში დამტკიცებული პოსტები არ არის.",
+    empty: "ამ ლიდერბორდსა და პერიოდში დამტკიცებული პოსტები არ არის.",
     error: "პოსტების ჩატვირთვა ვერ მოხერხდა.",
     rank: "ადგილი #{rank}",
   },
@@ -760,11 +754,11 @@ const ka: Dictionary = {
     subtitle: "თქვენი პოსტები, მათი განხილვის სტატუსი და ქულები.",
     summary: {
       rankOf: "{total}-დან",
-      notRanked: "ჯერ არ ხართ რეიტინგში",
+      notRanked: "ჯერ არ ხართ ლიდერბორდში",
       period: "3-თვიანი გამოწვევა",
       approved: "დამტკიცებული",
       pending: "განხილვის მოლოდინში",
-      approvedHint: "ითვლება რეიტინგში",
+      approvedHint: "ითვლება ლიდერბორდში",
       pendingHint: "ადმინისტრატორი განიხილავს",
     },
     status: {
@@ -777,13 +771,13 @@ const ka: Dictionary = {
       running: "პოსტი მოწმდება…",
       passed: "ნიშნული ნაპოვნია: {matched}",
       failed:
-        "#CrocoBySquad ვერ მოიძებნა: დაამატეთ ან მონიშნეთ @Croco Squad და ხელახლა შეამოწმეთ.",
+        "დაამატეთ #CrocoBySquad ან მონიშნეთ {squad} და ხელახლა შეამოწმეთ.",
       error: "ამ პოსტის წაკითხვა ვერ მოხერხდა (ხომ არ არის დახურული?).",
     },
     reason: "მიზეზი: {reason}",
     reviewerNote: "განმხილველის შენიშვნა",
     countsAs: "ითვლება როგორც: {category}",
-    notCounted: "რეიტინგში არ ითვლება.",
+    notCounted: "ლიდერბორდში არ ითვლება.",
     statsPending: "სტატისტიკა პირველი შემოწმების შემდეგ გამოჩნდება.",
     recheck: "ხელახლა შემოწმება",
     recheckTooSoon: "ხელახლა შემოწმება შესაძლებელია 10 წუთში ერთხელ.",
@@ -798,7 +792,7 @@ const ka: Dictionary = {
     listLabel: "თქვენი პოსტები",
     empty: {
       title: "ჯერ პოსტი არ გაქვთ",
-      description: "გააზიარეთ პირველი პოსტი და დაიწყეთ რეიტინგში წინსვლა.",
+      description: "გააზიარეთ პირველი პოსტი და დაიწყეთ ლიდერბორდში წინსვლა.",
       cta: "პირველი პოსტის დამატება",
     },
     error: {
@@ -820,7 +814,7 @@ const ka: Dictionary = {
   submit: {
     title: "პოსტის დამატება",
     description: "ჩასვით თქვენი პოსტის ბმული ({platforms}).",
-    rule: "პოსტი უნდა შეიცავდეს #CrocoBySquad-ს ან მონიშნავდეს @Croco Squad-ს.",
+    rule: "პოსტი უნდა შეიცავდეს #CrocoBySquad-ს ან მონიშნავდეს Croco Squad-ს (Instagram-ზე @croco.squad).",
     urlLabel: "პოსტის ბმული",
     urlPlaceholder: "ჩასვით პოსტის ბმული",
     paste: "ჩასმა",
@@ -869,16 +863,16 @@ const ka: Dictionary = {
   admin: {
     title: "ადმინი",
     subtitle:
-      "განიხილეთ პოსტები, შეასწორეთ მონაცემები და დაიცავით რეიტინგის სამართლიანობა.",
+      "განიხილეთ პოსტები, შეასწორეთ მონაცემები და დაიცავით ლიდერბორდის სამართლიანობა.",
     sections: {
       label: "ადმინის განყოფილებები",
       queue: "განსახილველი რიგი",
-      leaderboards: "რეიტინგები",
+      leaderboards: "ლიდერბორდები",
     },
     leaderboards: {
       challenge: "3-თვიანი გამოწვევა",
       challengeHint:
-        "ამ თარიღების გარეთ გამოქვეყნებული პოსტები არცერთ რეიტინგში არ ითვლება.",
+        "ამ თარიღების გარეთ გამოქვეყნებული პოსტები არცერთ ლიდერბორდში არ ითვლება.",
       sourceAdmin: "მითითებულია აქ",
       sourceDefault: "სერვერის პარამეტრებიდან",
       editDates: "თარიღების შეცვლა",
@@ -924,7 +918,7 @@ const ka: Dictionary = {
     forbidden: {
       title: "მხოლოდ ადმინისტრატორებისთვის",
       description: "ამ გვერდზე წვდომა არ გაქვთ.",
-      back: "რეიტინგში დაბრუნება",
+      back: "ლიდერბორდში დაბრუნება",
     },
     tabsLabel: "რიგი",
     tabs: {
@@ -981,8 +975,9 @@ const ka: Dictionary = {
       actions: "მოქმედებები",
     },
     evidence: {
-      tag: "ნიშნული",
-      tagMissing: "ნიშნული არ არის",
+      hashtag: "#CrocoBySquad",
+      mention: "Croco Squad მონიშნულია",
+      none: "არც ჰეშთეგია და არც მონიშვნა",
       owner: "საკუთარი ანგარიში",
       ownerMismatch: "სხვა ანგარიში",
       ownerUnknown: "ანგარიში ჯერ არ არის მიბმული",
@@ -1001,7 +996,6 @@ const ka: Dictionary = {
     error: "რიგის ჩატვირთვა ვერ მოხერხდა.",
     actions: {
       approve: "დამტკიცება",
-      approveAnyway: "მაინც დამტკიცება",
       reject: "უარყოფა",
       disqualify: "დისკვალიფიკაცია",
       reinstate: "აღდგენა",
@@ -1014,7 +1008,7 @@ const ka: Dictionary = {
     bulk: {
       label: "ჯგუფური მოქმედებები",
       selected: "მონიშნულია {count}",
-      approve: "შემოწმებაგავლილების დამტკიცება",
+      approve: "დამტკიცება",
       reject: "უარყოფა…",
       clear: "მონიშვნის მოხსნა",
       selectAll: "ამ გვერდზე ყველას მონიშვნა",
@@ -1081,9 +1075,6 @@ const ka: Dictionary = {
       other: "სხვა",
     },
     moderation: {
-      approveTitle: "მაინც დამტკიცება",
-      approveHint:
-        "შემოწმება ვერ გაიარა. ახსენით, რატომ უნდა ჩაითვალოს პოსტი მაინც.",
       rejectTitle: "პოსტის უარყოფა",
       disqualifyTitle: "პოსტის დისკვალიფიკაცია",
       reinstateTitle: "პოსტის აღდგენა",
@@ -1096,7 +1087,7 @@ const ka: Dictionary = {
       reasonMissing: "აირჩიეთ მიზეზი.",
       confirmTitle: "დავადისკვალიფიციროთ ეს პოსტი?",
       confirmDescription:
-        "პოსტი მაშინვე ამოიშლება ყველა რეიტინგიდან. თანამშრომელი დაინახავს მიზეზს და თქვენს შენიშვნას.",
+        "პოსტი მაშინვე ამოიშლება ყველა ლიდერბორდიდან. თანამშრომელი დაინახავს მიზეზს და თქვენს შენიშვნას.",
       confirm: "დიახ, დისკვალიფიკაცია",
       continue: "გაგრძელება",
     },
@@ -1106,7 +1097,7 @@ const ka: Dictionary = {
       check_failed: "შემოწმება ვერ გაიარა: ნიშნული აკლია",
       check_error: "შემოწმებამ პოსტი ვერ წაიკითხა",
       approve: "დამტკიცდა",
-      approve_override: "მაინც დამტკიცდა",
+      approve_override: "დამტკიცდა (შემოწმება ვერ გაიარა)",
       reject: "უარყოფილია",
       disqualify: "დისკვალიფიცირებულია",
       reinstate: "აღდგენილია",
@@ -1118,12 +1109,12 @@ const ka: Dictionary = {
       edit_content_type: "კონტენტის ტიპი შეიცვალა",
       lock_metrics: "მონაცემები ჩაიკეტა",
       unlock_metrics: "მონაცემები გაიხსნა",
-      reclassified: "გადავიდა ვიდეო რეიტინგში",
+      reclassified: "გადავიდა ვიდეო ლიდერბორდში",
       flag: "მოინიშნა: {flag}",
     },
     sync: {
       title: "მეტრიკების სინქრონიზაცია",
-      schedule: "ავტომატურად ეშვება 08:00-სა და 20:00-ზე (თბილისის დროით).",
+      schedule: "ავტომატურად ეშვება 12:00-სა და 23:59-ზე (თბილისის დროით).",
       lastRun: "ბოლო გაშვება: {time}",
       never: "ჯერ არ გაშვებულა",
       running: "მიმდინარეობს…",
@@ -1137,10 +1128,10 @@ const ka: Dictionary = {
     },
     export: {
       button: "CSV ექსპორტი",
-      title: "რეიტინგის ექსპორტი",
+      title: "ლიდერბორდის ექსპორტი",
       description:
-        "ჩამოტვირთეთ ნებისმიერი კვირის ან თვის რეიტინგი, არჩეული მომენტის მდგომარეობით.",
-      category: "რეიტინგი",
+        "ჩამოტვირთეთ ნებისმიერი კვირის ან თვის ლიდერბორდი, არჩეული მომენტის მდგომარეობით.",
+      category: "ლიდერბორდი",
       period: "პერიოდი",
       week: "კვირა",
       month: "თვე",
@@ -1156,7 +1147,7 @@ const ka: Dictionary = {
     pageTitle: "შესვლა",
     title: "კეთილი იყოს თქვენი მობრძანება Croco Creators-ში",
     subtitle:
-      "შედით Crocobet-ის სამსახურებრივი ანგარიშით, რომ ნახოთ რეიტინგი და დაამატოთ თქვენი პოსტები.",
+      "შედით Crocobet-ის სამსახურებრივი ანგარიშით, რომ ნახოთ ლიდერბორდი და დაამატოთ თქვენი პოსტები.",
     signInWithMicrosoft: "შესვლა Microsoft-ით",
     redirecting: "გადამისამართება Microsoft-ზე…",
     onlyEmployees:

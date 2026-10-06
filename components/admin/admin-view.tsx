@@ -154,10 +154,7 @@ export default function AdminPanel() {
   };
 
   const handleAction: OnAdminAction = (action, post) => {
-    if (
-      action === "reopen" ||
-      (action === "approve" && post.check.status === "passed")
-    )
+    if (action === "approve" || action === "reopen")
       return runModeration(action, [post.id], {});
     setDialogError(null);
     setDialog({ action, postIds: [post.id] });
@@ -169,9 +166,7 @@ export default function AdminPanel() {
   };
 
   const selectedPosts = posts.filter((post) => selected.has(post.id));
-  const approvable = selectedPosts.filter(
-    (post) => post.check.status === "passed",
-  );
+  const approvable = selectedPosts.filter((post) => post.status === "pending");
 
   return (
     <div className="relative isolate">
@@ -204,7 +199,7 @@ export default function AdminPanel() {
           { value: "queue", label: t.admin.sections.queue },
           { value: "leaderboards", label: t.admin.sections.leaderboards },
         ]}
-        className="mt-6 w-full sm:w-auto"
+        className="mt-6 w-full sm:w-auto [&>button]:px-3 sm:[&>button]:px-4"
       />
 
       {section === "leaderboards" ? (
@@ -215,7 +210,7 @@ export default function AdminPanel() {
         <>
           <SyncPanel onMessage={show} className="mt-6" />
 
-          <div className="-mx-4 mt-6 no-scrollbar overflow-x-auto fade-x px-4 py-1 md:mx-0 md:overflow-visible md:[mask-image:none] md:px-0">
+          <div className="-mx-4 mt-6 no-scrollbar overflow-x-auto fade-x px-4 py-1 sm:-mx-6 sm:px-6 lg:mx-0 lg:overflow-visible lg:[mask-image:none] lg:px-0">
             <ChipGroup
               label={t.admin.tabsLabel}
               value={tab}

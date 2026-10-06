@@ -2,7 +2,6 @@
 
 import { Plus } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { ViewNav } from "@/components/layout/view-nav";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -37,14 +36,21 @@ export function Header() {
           <Logo label={t.app.name} />
         </a>
 
-        <ViewNav id="nav-desktop" className="ml-4 hidden md:block" />
+        {/* Tablets: no nav icons and an icon-only submit button, so it all fits. */}
+        <ViewNav
+          id="nav-desktop"
+          className="ml-4 hidden md:block [&_a>svg]:hidden lg:[&_a>svg]:block"
+        />
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          <MotionButton className="hidden md:inline-flex" onClick={openSubmit}>
+          <MotionButton
+            className="hidden px-3 md:inline-flex lg:px-5"
+            aria-label={t.header.submitPost}
+            onClick={openSubmit}
+          >
             <Plus strokeWidth={2.5} aria-hidden="true" />
-            {t.header.submitPost}
+            <span className="hidden lg:inline">{t.header.submitPost}</span>
           </MotionButton>
-          <ThemeToggle className="hidden sm:inline-flex" />
           <UserMenu />
         </div>
       </div>

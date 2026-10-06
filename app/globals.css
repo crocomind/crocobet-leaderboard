@@ -100,6 +100,18 @@
   html {
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
+    /* Always keep the scrollbar's space, so switching between a long and a
+       short view doesn't shift the centered layout sideways. */
+    scrollbar-gutter: stable;
+  }
+
+  /* Menus and dialogs lock scrolling (react-remove-scroll-bar) and add a
+     right margin as wide as the scrollbar they hide. The gutter above
+     already keeps that space, so the margin would push the page left. */
+  @supports (scrollbar-gutter: stable) {
+    html body[data-scroll-locked] {
+      margin-right: 0 !important;
+    }
   }
 
   body {

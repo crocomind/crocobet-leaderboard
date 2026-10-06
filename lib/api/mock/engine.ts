@@ -1,4 +1,4 @@
-import type { CampaignTagConfig } from "@/lib/campaign-tag";
+import { type CampaignTagConfig, DEFAULT_MENTIONS } from "@/lib/campaign-tag";
 import {
   applyModeration,
   type ModerationAction,
@@ -24,8 +24,8 @@ import type { MockPost, MockState, ProviderTruth } from "./types";
 
 export const DAY_MS = 86_400_000;
 export const HOUR_MS = 3_600_000;
-/** Vercel Cron runs at 04:00 and 16:00 UTC (08:00 and 20:00 in Tbilisi). */
-export const CRON_HOURS_UTC = [4, 16] as const;
+/** Vercel Cron runs at 08:00 and 19:59 UTC (12:00 and 23:59 in Tbilisi), in minutes. */
+export const CRON_MINUTES_UTC = [8 * 60, 19 * 60 + 59] as const;
 export const SUBMISSION_GRACE_DAYS = 3;
 export const METRICS_GRACE_DAYS = 3;
 export const MANUAL_SYNC_COOLDOWN_MS = 15 * 60_000;
@@ -33,15 +33,10 @@ export const SUBMISSIONS_PER_DAY = 20;
 /** How long a queued or re-run check takes in the mock. */
 export const CHECK_DELAY_MS = 2_500;
 
-/** Mock accounts, so mention matching can be tried. The real ones come from CAMPAIGN_MENTIONS. */
+/** The same tags as the server's defaults. */
 export const MOCK_TAGS: CampaignTagConfig = {
   hashtags: ["CrocoBySquad"],
-  mentions: {
-    instagram: ["crocosquad"],
-    tiktok: ["crocosquad"],
-    facebook: ["Croco Squad"],
-    linkedin: ["Croco Squad"],
-  },
+  mentions: DEFAULT_MENTIONS,
 };
 export const GROWTH_FLAG = { factor: 5, min: 1000 };
 
@@ -86,8 +81,8 @@ export function cronSlotsBetween(after: Date, until: Date): Date[] {
     after.getUTCDate(),
   );
   for (let day = firstDay; day <= until.getTime(); day += DAY_MS) {
-    for (const hour of CRON_HOURS_UTC) {
-      const slot = day + hour * HOUR_MS;
+    for (const minute of CRON_MINUTES_UTC) {
+      const slot = day + minute * 60_000;
       if (slot > after.getTime() && slot <= until.getTime())
         slots.push(new Date(slot));
     }
@@ -306,10 +301,8 @@ export function moderate(
     status: post.status,
     action,
     actor: "admin",
-    checkStatus: post.check.status,
     reason: payload.reason ?? null,
     note,
-    override: payload.override,
     now,
   });
   if (!result.ok) return result;

@@ -22,7 +22,8 @@ const DESKTOP_COLUMNS: Record<ContentCategory, string> = {
   static:
     "md:grid-cols-[3rem_minmax(0,1fr)_4rem_6rem_6.5rem_4.5rem_2.25rem] md:gap-4",
 };
-const MOBILE_COLUMNS = "grid-cols-[2.25rem_minmax(0,1fr)_auto_2.25rem] gap-3";
+const MOBILE_COLUMNS =
+  "grid-cols-[1.75rem_minmax(0,1fr)_auto_2rem] gap-2.5 sm:grid-cols-[2.25rem_minmax(0,1fr)_auto_2.25rem] sm:gap-3";
 
 export const MEDAL_CHIP: Record<number, string> = {
   1: "bg-gold",
@@ -205,22 +206,41 @@ function LeaderboardRow({
             className="md:size-10"
           />
           <span className="min-w-0">
+            {/* On phones the name gets the whole first line; the badge and
+                platforms move to the second. */}
             <span className="flex min-w-0 items-center gap-1.5">
               <span className="truncate font-medium">
                 {entry.employee.name}
               </span>
               {isMe && (
-                <Badge variant="brand" className="px-1.5 py-0">
+                <Badge
+                  variant="brand"
+                  className="hidden px-1.5 py-0 md:inline-flex"
+                >
                   {t.common.you}
                 </Badge>
               )}
-              <PlatformLogos platforms={entry.platforms} className="ml-0.5" />
+              <PlatformLogos
+                platforms={entry.platforms}
+                className="ml-0.5 hidden md:inline-flex"
+              />
             </span>
-            <span className="block truncate text-xs text-muted-foreground">
-              {entry.employee.department}
-              <span className="md:hidden">
-                {" "}
-                · {plural(t.common.posts, entry.postCount)}
+            <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+              {isMe && (
+                <Badge variant="brand" className="px-1.5 py-0 md:hidden">
+                  {t.common.you}
+                </Badge>
+              )}
+              <PlatformLogos
+                platforms={entry.platforms}
+                className="md:hidden"
+              />
+              <span className="truncate">
+                {entry.employee.department}
+                <span className="md:hidden">
+                  {" "}
+                  · {plural(t.common.posts, entry.postCount)}
+                </span>
               </span>
             </span>
           </span>

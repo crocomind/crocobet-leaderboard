@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { CategoryLabel } from "@/components/common/category-label";
 import { PlatformBadge } from "@/components/common/platform-badge";
 import { useRoundLabel } from "@/components/leaderboard/use-round-label";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -71,12 +72,12 @@ export function LeaderboardToolbar({
   const categoryOptions: SegmentedOption<ContentCategory>[] = [
     {
       value: "video",
-      label: t.categories.video,
+      label: <CategoryLabel category="video" />,
       icon: <Clapperboard className="size-4" aria-hidden="true" />,
     },
     {
       value: "static",
-      label: t.categories.static,
+      label: <CategoryLabel category="static" />,
       icon: <ImageIcon className="size-4" aria-hidden="true" />,
     },
   ];
@@ -107,7 +108,8 @@ export function LeaderboardToolbar({
           round={round}
           rounds={rounds}
           onPeriodChange={onPeriodChange}
-          className="hidden md:inline-flex"
+          // As tall as the search field next to it.
+          className="hidden md:inline-flex md:h-11"
         />
         <SearchField
           value={search}

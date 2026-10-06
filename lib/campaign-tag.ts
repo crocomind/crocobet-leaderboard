@@ -1,30 +1,29 @@
 import { isPlatform, type Platform } from "@/lib/platforms";
 
 /**
- * The campaign rule: a post counts only if it uses one of the campaign
- * hashtags (#CrocoBySquad) or mentions the Croco Squad account. The result is
- * evidence for the admin who approves posts; nothing is approved automatically.
+ * The campaign rule: a post needs the campaign hashtag (#CrocoBySquad) or a
+ * tag of the Croco Squad account on its platform; either one is enough. The
+ * result is evidence for the admin who approves posts; nothing is approved
+ * automatically.
  */
 
 export const DEFAULT_HASHTAGS = ["CrocoBySquad"];
 
 /**
- * How "@Croco Squad" is recognized when no accounts are configured: the
- * usual handle spellings, plus the name as a phrase on Facebook and LinkedIn.
- * No real accounts are needed; CAMPAIGN_MENTIONS replaces these when set.
+ * The Croco Squad accounts as they appear when tagged: a handle on Instagram,
+ * the account or page name elsewhere. CAMPAIGN_MENTIONS replaces these.
  */
-const CROCO_SQUAD_HANDLES = ["crocosquad", "croco.squad", "croco_squad"];
 export const DEFAULT_MENTIONS: Record<Platform, readonly string[]> = {
-  instagram: CROCO_SQUAD_HANDLES,
-  tiktok: CROCO_SQUAD_HANDLES,
-  facebook: ["Croco Squad", ...CROCO_SQUAD_HANDLES],
-  linkedin: ["Croco Squad", ...CROCO_SQUAD_HANDLES],
+  instagram: ["croco.squad"],
+  tiktok: ["Croco Squad"],
+  facebook: ["Croco Squad"],
+  linkedin: ["crocobet.com | Croco Squad"],
 };
 
 export interface CampaignTagConfig {
   /** Without "#". */
   hashtags: readonly string[];
-  /** Handles (Instagram, TikTok) or page names (Facebook, LinkedIn), per platform. */
+  /** Handles ("croco.squad") or account names ("Croco Squad"), per platform. */
   mentions: Partial<Record<Platform, readonly string[]>>;
 }
 
@@ -37,9 +36,27 @@ export interface TagEvidence {
 }
 
 export interface TagCheckResult {
+  /** The hashtag or a Croco Squad tag was found (either is enough). */
   passed: boolean;
-  /** What matched, normalized, e.g. ["#crocobysquad", "@crocosquad"]. */
+  /** What matched, normalized, e.g. ["#crocobysquad", "@croco.squad"]. */
   matched: string[];
+}
+
+/** Which halves of the rule a check's matches cover (hashtags start with "#"). */
+export function tagParts(matched: readonly string[]) {
+  return {
+    hashtag: matched.some((token) => token.startsWith("#")),
+    mention: matched.some((token) => !token.startsWith("#")),
+  };
+}
+
+/** How to tag Croco Squad on a platform, e.g. "@croco.squad" or "@Croco Squad". */
+export function squadTag(
+  platform: Platform,
+  mentions: CampaignTagConfig["mentions"] = DEFAULT_MENTIONS,
+): string | null {
+  const account = mentions[platform]?.[0]?.trim();
+  return account ? `@${stripPrefix(account, "@")}` : null;
 }
 
 const normalize = (value: string) => value.normalize("NFKC").toLowerCase();
@@ -50,6 +67,8 @@ const stripPrefix = (value: string, prefix: string) =>
 
 const HASHTAG = /#([\p{L}\p{M}\p{N}_]+)/gu;
 const MENTION = /@([\p{L}\p{M}\p{N}_.]+)/gu;
+/** A handle, as opposed to a name with spaces or punctuation. */
+const HANDLE = /^[\p{L}\p{M}\p{N}_.]+$/u;
 
 function captionHashtags(caption: string): string[] {
   return [...normalize(caption).matchAll(HASHTAG)].map((m) => m[1] ?? "");
@@ -101,17 +120,23 @@ export function checkCampaignTag(
       normalize(stripPrefix(handle.trim(), "@")),
     ),
   ]);
-  const foundNames = new Set((evidence.mentions ?? []).map(collapse));
+  const foundNames = new Set(
+    (evidence.mentions ?? []).map((name) =>
+      collapse(stripPrefix(name.trim(), "@")),
+    ),
+  );
 
   for (const account of accounts) {
     const handle = normalize(stripPrefix(account.trim(), "@"));
     if (!handle) continue;
-    if (foundHandles.has(handle)) {
+    const isHandle = HANDLE.test(handle);
+    if (isHandle && foundHandles.has(handle)) {
       matched.add(`@${handle}`);
       continue;
     }
-    // Facebook and LinkedIn pages are mentioned by name ("Croco Squad").
-    if (platform === "facebook" || platform === "linkedin") {
+    // Names ("Croco Squad") are matched as a phrase, on any platform; so are
+    // handles on Facebook and LinkedIn, where pages are mentioned by name.
+    if (!isHandle || platform === "facebook" || platform === "linkedin") {
       const name = collapse(account);
       if (foundNames.has(name) || containsPhrase(caption, account))
         matched.add(account.trim());

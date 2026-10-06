@@ -1,6 +1,7 @@
 import "server-only";
 import { eq, inArray, sql } from "drizzle-orm";
 import type { Employee, Me } from "@/lib/api/types";
+import { englishName, romanize } from "@/lib/names";
 import type { ServerConfig } from "@/lib/server/config";
 import type { Db } from "@/lib/server/db/client";
 import {
@@ -75,12 +76,28 @@ export function isAdmin(employee: EmployeeRow, config: ServerConfig): boolean {
   );
 }
 
-export function displayName(
-  employee: Pick<EmployeeRow, "givenName" | "familyName" | "displayName">,
-): string {
-  return employee.givenName && employee.familyName
-    ? `${employee.givenName} ${employee.familyName}`
-    : employee.displayName;
+type NameFields = Pick<EmployeeRow, "givenName" | "familyName" | "displayName">;
+
+/**
+ * The name shown everywhere, always in English: the directory's first and
+ * last name, else the sign-in name; a Georgian one is replaced by the other
+ * or romanized (lib/names.ts).
+ */
+export function displayName(employee: NameFields): string {
+  return englishName(fullName(employee), employee.displayName);
+}
+
+const fullName = ({ givenName, familyName }: NameFields) =>
+  givenName && familyName ? `${givenName} ${familyName}` : null;
+
+/** First and last name, matching displayName(). */
+function nameParts(employee: NameFields) {
+  const name = displayName(employee);
+  const { givenName, familyName } = employee;
+  if (givenName && familyName && romanize(fullName(employee)!) === name)
+    return { firstName: romanize(givenName), lastName: romanize(familyName) };
+  const [firstName = "", ...rest] = name.split(/\s+/);
+  return { firstName: firstName || null, lastName: rest.join(" ") || null };
 }
 
 export function photoUrl(
@@ -100,8 +117,7 @@ export function toEmployee(
   return {
     id: employee.id,
     name: displayName(employee),
-    firstName: employee.givenName,
-    lastName: employee.familyName,
+    ...nameParts(employee),
     department: employee.department,
     avatarUrl: photoUrl(employee.id, photoEtag),
   };

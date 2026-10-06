@@ -121,6 +121,30 @@ describe("admins and public profiles", () => {
     });
     expect(JSON.stringify([...map.values()])).not.toContain("@");
   });
+
+  it("shows names in English when the directory has them in Georgian", async () => {
+    const tamar = await makeEmployee(db, {
+      displayName: "Tamar Lomidze",
+      givenName: "თამარ",
+      familyName: "ლომიძე",
+    });
+    const giorgi = await makeEmployee(db, {
+      displayName: "გიორგი ბერიძე",
+      givenName: "გიორგი",
+      familyName: "ბერიძე",
+    });
+    const map = await loadEmployees(db, [tamar.id, giorgi.id]);
+    expect(map.get(tamar.id)).toMatchObject({
+      name: "Tamar Lomidze",
+      firstName: "Tamar",
+      lastName: "Lomidze",
+    });
+    expect(map.get(giorgi.id)).toMatchObject({
+      name: "Giorgi Beridze",
+      firstName: "Giorgi",
+      lastName: "Beridze",
+    });
+  });
 });
 
 describe("syncProfile", () => {

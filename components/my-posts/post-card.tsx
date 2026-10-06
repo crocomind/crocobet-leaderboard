@@ -28,7 +28,8 @@ import {
   useWithdrawPostMutation,
 } from "@/lib/api/queries";
 import type { Post, PostCheck, PostStatus } from "@/lib/api/types";
-import { safeExternalUrl } from "@/lib/platforms";
+import { squadTag } from "@/lib/campaign-tag";
+import { type Platform, safeExternalUrl } from "@/lib/platforms";
 import { trackSpotlight } from "@/lib/spotlight";
 import { cn } from "@/lib/utils";
 
@@ -51,8 +52,16 @@ export function StatusBadge({ status }: { status: PostStatus }) {
 }
 
 /** What the automated check found, in the owner's words. */
-function CheckNotice({ check }: { check: PostCheck }) {
+function CheckNotice({
+  check,
+  platform,
+}: {
+  check: PostCheck;
+  platform: Platform;
+}) {
   const { t, format } = useI18n();
+  // How to tag Croco Squad on this platform, e.g. @croco.squad on Instagram.
+  const squad = squadTag(platform) ?? "@Croco Squad";
   const notice = {
     queued: {
       icon: LoaderCircle,
@@ -76,7 +85,7 @@ function CheckNotice({ check }: { check: PostCheck }) {
     },
     failed: {
       icon: TriangleAlert,
-      text: t.myPosts.check.failed,
+      text: format(t.myPosts.check.failed, { squad }),
       tone: "border-warning/25 bg-warning/10 text-warning-text",
       spin: false,
     },
@@ -167,7 +176,7 @@ export function PostCard({ post }: { post: Post }) {
           </p>
         </div>
 
-        {pending && <CheckNotice check={post.check} />}
+        {pending && <CheckNotice check={post.check} platform={post.platform} />}
 
         {(post.status === "rejected" || post.status === "disqualified") && (
           <div className="rounded-xl border border-danger/25 bg-danger/10 px-3 py-2 text-xs">
@@ -244,7 +253,7 @@ export function PostCard({ post }: { post: Post }) {
         </div>
 
         {pending && (
-          <div className="flex gap-2 border-t border-border pt-3">
+          <div className="flex flex-wrap gap-2 border-t border-border pt-3">
             <MotionButton
               variant="secondary"
               size="sm"
