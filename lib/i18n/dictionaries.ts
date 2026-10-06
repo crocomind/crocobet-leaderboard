@@ -276,7 +276,6 @@ const en = {
   },
   admin: {
     title: "Admin",
-    subtitle: "Review submissions, fix numbers and keep the boards fair.",
     sections: {
       label: "Admin sections",
       queue: "Review queue",
@@ -855,8 +854,6 @@ const ka: Dictionary = {
   },
   admin: {
     title: "ადმინი",
-    subtitle:
-      "განიხილეთ პოსტები, შეასწორეთ მონაცემები და დაიცავით ლიდერბორდის სამართლიანობა.",
     sections: {
       label: "ადმინის განყოფილებები",
       queue: "განსახილველი რიგი",

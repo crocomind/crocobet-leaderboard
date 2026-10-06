@@ -177,9 +177,6 @@ export default function AdminPanel() {
           <h1 className="text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
             {t.admin.title}
           </h1>
-          <p className="mt-1.5 max-w-xl text-pretty text-muted-foreground">
-            {t.admin.subtitle}
-          </p>
         </div>
         <MotionButton
           variant="secondary"
