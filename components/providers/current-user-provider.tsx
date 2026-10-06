@@ -3,6 +3,7 @@
 import { createContext, type ReactNode, useContext, useMemo } from "react";
 import type { EmployeeRole } from "@/lib/api/types";
 import { useCurrentUserQuery } from "@/lib/api/queries";
+import { englishName } from "@/lib/names";
 import type { SessionUser } from "@/lib/auth/types";
 
 /** The signed-in user: identity from the session, plus the employee record from GET /me. */
@@ -47,7 +48,8 @@ export function CurrentUserProvider({
       status: "signed-in",
       user: {
         id: employee?.id ?? sessionUser.id,
-        name: sessionUser.name,
+        // In English, like every name in the app.
+        name: employee?.name ?? englishName(sessionUser.name),
         email: sessionUser.email,
         department: employee?.department ?? "",
         avatarUrl: employee?.avatarUrl ?? sessionUser.image,
