@@ -314,8 +314,8 @@ export function AdminQueue({
                   {post.employee.email}
                 </p>
               </div>
-              <CheckBadge check={post.check} />
             </div>
+            <CheckBadge check={post.check} className="mt-3" />
             <div className="mt-3 grid grid-cols-2 gap-3">
               <PostCell post={post} />
               <PublishedCell post={post} />

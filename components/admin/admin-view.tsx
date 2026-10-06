@@ -210,7 +210,7 @@ export default function AdminPanel() {
         <>
           <SyncPanel onMessage={show} className="mt-6" />
 
-          <div className="-mx-4 mt-6 no-scrollbar overflow-x-auto fade-x px-4 py-1 md:mx-0 md:overflow-visible md:[mask-image:none] md:px-0">
+          <div className="-mx-4 mt-6 no-scrollbar overflow-x-auto fade-x px-4 py-1 sm:-mx-6 sm:px-6 lg:mx-0 lg:overflow-visible lg:[mask-image:none] lg:px-0">
             <ChipGroup
               label={t.admin.tabsLabel}
               value={tab}

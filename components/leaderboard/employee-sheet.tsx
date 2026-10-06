@@ -258,8 +258,8 @@ function PostRow({ post, index }: { post: Post; index: number }) {
             {post.publishedAt && <> · {formatDate(post.publishedAt)}</>}
           </span>
         </p>
-        <p className="mt-1 flex items-center gap-3">
-          <span className="text-xs font-bold tabular-nums">
+        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+          <span className="text-xs font-bold whitespace-nowrap tabular-nums">
             {plural(t.metrics.units.score, post.score)}
           </span>
           <span className="sr-only">
