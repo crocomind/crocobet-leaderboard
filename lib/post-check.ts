@@ -227,8 +227,10 @@ export function evaluateFetch(
           : mine.length > 0
             ? false
             : null;
-  setFlag(flags, "handle_claimed_by_other", claimedByOther);
-  setFlag(flags, "author_mismatch", !claimedByOther && ownerMatch === false);
+  // Ownership isn't flagged automatically: admins judge it when they approve.
+  // Clear the old flags so they disappear on the next refresh.
+  setFlag(flags, "handle_claimed_by_other", false);
+  setFlag(flags, "author_mismatch", false);
 
   // Static content never counts views, whatever the provider reports.
   const reportedViews = category === "video" ? fetched.views : null;

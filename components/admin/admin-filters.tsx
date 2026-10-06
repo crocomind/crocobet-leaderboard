@@ -16,6 +16,7 @@ import {
   type AdminPostsQuery,
   type CheckStatus,
   POST_FLAGS,
+  RETIRED_FLAGS,
 } from "@/lib/api/types";
 import { CATEGORY_PLATFORMS, PLATFORM_IDS, PLATFORMS } from "@/lib/platforms";
 import { platformForCategory } from "@/lib/url-state";
@@ -178,7 +179,9 @@ export function AdminFilters({
           label={copy.flag}
           allLabel={copy.allFlags}
           value={filters.flag}
-          options={POST_FLAGS.map((flag) => ({
+          options={POST_FLAGS.filter(
+            (flag) => !RETIRED_FLAGS.includes(flag),
+          ).map((flag) => ({
             value: flag,
             label: t.admin.flags[flag],
           }))}
