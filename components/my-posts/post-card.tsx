@@ -244,7 +244,7 @@ export function PostCard({ post }: { post: Post }) {
         </div>
 
         {pending && (
-          <div className="flex gap-2 border-t border-border pt-3">
+          <div className="flex flex-wrap gap-2 border-t border-border pt-3">
             <MotionButton
               variant="secondary"
               size="sm"

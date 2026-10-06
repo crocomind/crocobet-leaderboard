@@ -434,7 +434,7 @@ app/                      layout, the single page, error boundary
   api/cron/               the twice-daily refresh
 components/
   app-shell.tsx           header + current view + submit dialog
-  layout/                 header, logo slot, view nav, user menu, theme toggle, mobile FAB
+  layout/                 header, logo slot, view nav, user menu (with the theme), mobile FAB
   leaderboard/            toolbar, podium, ranked list, side sheet, pinned "my position" bar
   my-posts/               summary cards, post cards, empty state
   submit/                 submit dialog, form, URL field, preview, success + confetti

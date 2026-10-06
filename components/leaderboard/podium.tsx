@@ -61,6 +61,8 @@ const MEDALS = {
 type PodiumRank = keyof typeof MEDALS;
 
 interface PodiumProps {
+  /** Identifies the board shown; cards re-enter when it changes, even for the same person. */
+  boardKey: string;
   entries: LeaderboardEntry[];
   currentUserId: string | undefined;
   onSelect: (entry: LeaderboardEntry) => void;
@@ -69,6 +71,7 @@ interface PodiumProps {
 }
 
 export const Podium = memo(function Podium({
+  boardKey,
   entries,
   currentUserId,
   onSelect,
@@ -91,7 +94,7 @@ export const Podium = memo(function Podium({
                 {entry && (
                   // Cards rise in with springGentle, #3 first and #1 last.
                   <motion.div
-                    key={entry.employee.id}
+                    key={`${boardKey}:${entry.employee.id}`}
                     initial={
                       reduceMotion
                         ? { opacity: 0 }

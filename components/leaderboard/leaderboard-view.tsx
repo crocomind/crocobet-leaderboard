@@ -263,6 +263,8 @@ export function LeaderboardView() {
           <div className="flex flex-col gap-8">
             {podiumEntries.length > 0 && (
               <Podium
+                // A new board (category, platform or period) brings its cards in fresh.
+                boardKey={`${shown.category}|${shown.platform}|${shown.period}|${data.period.start}`}
                 entries={podiumEntries}
                 currentUserId={userId}
                 onSelect={openEntry}

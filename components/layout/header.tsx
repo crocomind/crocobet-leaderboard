@@ -2,7 +2,6 @@
 
 import { Plus } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { ViewNav } from "@/components/layout/view-nav";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -44,7 +43,6 @@ export function Header() {
             <Plus strokeWidth={2.5} aria-hidden="true" />
             {t.header.submitPost}
           </MotionButton>
-          <ThemeToggle className="hidden sm:inline-flex" />
           <UserMenu />
         </div>
       </div>

@@ -199,7 +199,7 @@ export default function AdminPanel() {
           { value: "queue", label: t.admin.sections.queue },
           { value: "leaderboards", label: t.admin.sections.leaderboards },
         ]}
-        className="mt-6 w-full sm:w-auto"
+        className="mt-6 w-full sm:w-auto [&>button]:px-3 sm:[&>button]:px-4"
       />
 
       {section === "leaderboards" ? (

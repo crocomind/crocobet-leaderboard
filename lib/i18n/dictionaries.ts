@@ -24,8 +24,6 @@ const en = {
   header: {
     submitPost: "Submit post",
     accountMenu: "Open account menu",
-    switchToLight: "Switch to light theme",
-    switchToDark: "Switch to dark theme",
     theme: "Theme",
     themeDark: "Dark",
     themeLight: "Light",
@@ -54,6 +52,7 @@ const en = {
   categories: {
     video: "Video content",
     static: "Static content",
+    short: { video: "Video", static: "Static" },
     videoBoard: "Video board",
     staticBoard: "Static board",
   },
@@ -595,20 +594,18 @@ export type Dictionary = Widen<typeof en>;
 const ka: Dictionary = {
   app: {
     name: "Croco Creators",
-    description: "Croco By Squad — Crocobet-ის გუნდის კონტენტის რეიტინგი.",
+    description: "Croco By Squad — Crocobet-ის გუნდის კონტენტის ლიდერბორდი.",
     skipToContent: "მთავარ შინაარსზე გადასვლა",
   },
   nav: {
     label: "განყოფილებები",
-    leaderboard: "რეიტინგი",
+    leaderboard: "ლიდერბორდი",
     myPosts: "ჩემი პოსტები",
     admin: "ადმინი",
   },
   header: {
     submitPost: "პოსტის დამატება",
     accountMenu: "ანგარიშის მენიუს გახსნა",
-    switchToLight: "ღია თემაზე გადართვა",
-    switchToDark: "მუქ თემაზე გადართვა",
     theme: "თემა",
     themeDark: "მუქი",
     themeLight: "ღია",
@@ -637,8 +634,9 @@ const ka: Dictionary = {
   categories: {
     video: "ვიდეო კონტენტი",
     static: "სტატიკური კონტენტი",
-    videoBoard: "ვიდეო რეიტინგი",
-    staticBoard: "სტატიკური რეიტინგი",
+    short: { video: "ვიდეო", static: "სტატიკური" },
+    videoBoard: "ვიდეო ლიდერბორდი",
+    staticBoard: "სტატიკური ლიდერბორდი",
   },
   contentTypes: {
     tiktok_video: "TikTok ვიდეო",
@@ -674,14 +672,14 @@ const ka: Dictionary = {
     now: "ახლა",
   },
   leaderboard: {
-    title: "რეიტინგი",
+    title: "ლიდერბორდი",
     subtitle:
-      "გამოაქვეყნეთ პოსტი #CrocoBySquad-ით ან მონიშნეთ @Croco Squad, დააგროვეთ ნახვები და რეაქციები და აიწიეთ რეიტინგში.",
+      "გამოაქვეყნეთ პოსტი #CrocoBySquad-ით ან მონიშნეთ @Croco Squad, დააგროვეთ ნახვები და რეაქციები და აიწიეთ ლიდერბორდში.",
     lastUpdated: "ბოლო განახლება: {time}",
     notSynced: "პირველი განახლების მოლოდინში",
     updating: "ახლდება…",
     dateRange: "თარიღები: {range}",
-    categoryLabel: "რეიტინგი",
+    categoryLabel: "ლიდერბორდი",
     platformLabel: "პლატფორმა",
     periodLabel: "პერიოდი",
     allPlatforms: "ყველა",
@@ -690,7 +688,7 @@ const ka: Dictionary = {
     searchPlaceholder: "ძებნა სახელით",
     clearSearch: "ძებნის გასუფთავება",
     podiumLabel: "საუკეთესო სამეული",
-    listLabel: "რეიტინგი",
+    listLabel: "ლიდერბორდი",
     columns: {
       rank: "ადგილი",
       employee: "თანამშრომელი",
@@ -725,19 +723,19 @@ const ka: Dictionary = {
       behind: "#{nextRank}-მდე გაკლიათ {gap}",
       tied: "#{nextRank}-ის ტოლი შედეგი",
       leading: "თქვენ ლიდერობთ. ასე გააგრძელეთ!",
-      notRanked: "ამ რეიტინგში ჯერ არ ხართ",
+      notRanked: "ამ ლიდერბორდში ჯერ არ ხართ",
       notRankedHint: "დაამატეთ პოსტი და შეუერთდით შეჯიბრს.",
       show: "ჩემს პოზიციაზე გადასვლა",
     },
     empty: {
       title: "აქ ჯერ პოსტები არ არის",
       description:
-        "ამ რეიტინგსა და პერიოდში დამტკიცებული პოსტი ჯერ არავის აქვს. იყავით პირველი!",
+        "ამ ლიდერბორდსა და პერიოდში დამტკიცებული პოსტი ჯერ არავის აქვს. იყავით პირველი!",
       searchTitle: "„{query}“ ვერ მოიძებნა",
       searchDescription: "შეამოწმეთ მართლწერა ან სცადეთ სხვა სახელი.",
     },
     error: {
-      title: "რეიტინგის ჩატვირთვა ვერ მოხერხდა",
+      title: "ლიდერბორდის ჩატვირთვა ვერ მოხერხდა",
       description: "შეამოწმეთ ინტერნეტთან კავშირი და სცადეთ თავიდან.",
     },
     announce: "{category}, {period}. მონაწილეები: {count}.",
@@ -747,7 +745,7 @@ const ka: Dictionary = {
   employee: {
     postsTitle: "დათვლილი პოსტები",
     counting: "{category} · {platform} · {period}",
-    empty: "ამ რეიტინგსა და პერიოდში დამტკიცებული პოსტები არ არის.",
+    empty: "ამ ლიდერბორდსა და პერიოდში დამტკიცებული პოსტები არ არის.",
     error: "პოსტების ჩატვირთვა ვერ მოხერხდა.",
     rank: "ადგილი #{rank}",
   },
@@ -756,11 +754,11 @@ const ka: Dictionary = {
     subtitle: "თქვენი პოსტები, მათი განხილვის სტატუსი და ქულები.",
     summary: {
       rankOf: "{total}-დან",
-      notRanked: "ჯერ არ ხართ რეიტინგში",
+      notRanked: "ჯერ არ ხართ ლიდერბორდში",
       period: "3-თვიანი გამოწვევა",
       approved: "დამტკიცებული",
       pending: "განხილვის მოლოდინში",
-      approvedHint: "ითვლება რეიტინგში",
+      approvedHint: "ითვლება ლიდერბორდში",
       pendingHint: "ადმინისტრატორი განიხილავს",
     },
     status: {
@@ -779,7 +777,7 @@ const ka: Dictionary = {
     reason: "მიზეზი: {reason}",
     reviewerNote: "განმხილველის შენიშვნა",
     countsAs: "ითვლება როგორც: {category}",
-    notCounted: "რეიტინგში არ ითვლება.",
+    notCounted: "ლიდერბორდში არ ითვლება.",
     statsPending: "სტატისტიკა პირველი შემოწმების შემდეგ გამოჩნდება.",
     recheck: "ხელახლა შემოწმება",
     recheckTooSoon: "ხელახლა შემოწმება შესაძლებელია 10 წუთში ერთხელ.",
@@ -794,7 +792,7 @@ const ka: Dictionary = {
     listLabel: "თქვენი პოსტები",
     empty: {
       title: "ჯერ პოსტი არ გაქვთ",
-      description: "გააზიარეთ პირველი პოსტი და დაიწყეთ რეიტინგში წინსვლა.",
+      description: "გააზიარეთ პირველი პოსტი და დაიწყეთ ლიდერბორდში წინსვლა.",
       cta: "პირველი პოსტის დამატება",
     },
     error: {
@@ -865,16 +863,16 @@ const ka: Dictionary = {
   admin: {
     title: "ადმინი",
     subtitle:
-      "განიხილეთ პოსტები, შეასწორეთ მონაცემები და დაიცავით რეიტინგის სამართლიანობა.",
+      "განიხილეთ პოსტები, შეასწორეთ მონაცემები და დაიცავით ლიდერბორდის სამართლიანობა.",
     sections: {
       label: "ადმინის განყოფილებები",
       queue: "განსახილველი რიგი",
-      leaderboards: "რეიტინგები",
+      leaderboards: "ლიდერბორდები",
     },
     leaderboards: {
       challenge: "3-თვიანი გამოწვევა",
       challengeHint:
-        "ამ თარიღების გარეთ გამოქვეყნებული პოსტები არცერთ რეიტინგში არ ითვლება.",
+        "ამ თარიღების გარეთ გამოქვეყნებული პოსტები არცერთ ლიდერბორდში არ ითვლება.",
       sourceAdmin: "მითითებულია აქ",
       sourceDefault: "სერვერის პარამეტრებიდან",
       editDates: "თარიღების შეცვლა",
@@ -920,7 +918,7 @@ const ka: Dictionary = {
     forbidden: {
       title: "მხოლოდ ადმინისტრატორებისთვის",
       description: "ამ გვერდზე წვდომა არ გაქვთ.",
-      back: "რეიტინგში დაბრუნება",
+      back: "ლიდერბორდში დაბრუნება",
     },
     tabsLabel: "რიგი",
     tabs: {
@@ -1088,7 +1086,7 @@ const ka: Dictionary = {
       reasonMissing: "აირჩიეთ მიზეზი.",
       confirmTitle: "დავადისკვალიფიციროთ ეს პოსტი?",
       confirmDescription:
-        "პოსტი მაშინვე ამოიშლება ყველა რეიტინგიდან. თანამშრომელი დაინახავს მიზეზს და თქვენს შენიშვნას.",
+        "პოსტი მაშინვე ამოიშლება ყველა ლიდერბორდიდან. თანამშრომელი დაინახავს მიზეზს და თქვენს შენიშვნას.",
       confirm: "დიახ, დისკვალიფიკაცია",
       continue: "გაგრძელება",
     },
@@ -1110,7 +1108,7 @@ const ka: Dictionary = {
       edit_content_type: "კონტენტის ტიპი შეიცვალა",
       lock_metrics: "მონაცემები ჩაიკეტა",
       unlock_metrics: "მონაცემები გაიხსნა",
-      reclassified: "გადავიდა ვიდეო რეიტინგში",
+      reclassified: "გადავიდა ვიდეო ლიდერბორდში",
       flag: "მოინიშნა: {flag}",
     },
     sync: {
@@ -1129,10 +1127,10 @@ const ka: Dictionary = {
     },
     export: {
       button: "CSV ექსპორტი",
-      title: "რეიტინგის ექსპორტი",
+      title: "ლიდერბორდის ექსპორტი",
       description:
-        "ჩამოტვირთეთ ნებისმიერი კვირის ან თვის რეიტინგი, არჩეული მომენტის მდგომარეობით.",
-      category: "რეიტინგი",
+        "ჩამოტვირთეთ ნებისმიერი კვირის ან თვის ლიდერბორდი, არჩეული მომენტის მდგომარეობით.",
+      category: "ლიდერბორდი",
       period: "პერიოდი",
       week: "კვირა",
       month: "თვე",
@@ -1148,7 +1146,7 @@ const ka: Dictionary = {
     pageTitle: "შესვლა",
     title: "კეთილი იყოს თქვენი მობრძანება Croco Creators-ში",
     subtitle:
-      "შედით Crocobet-ის სამსახურებრივი ანგარიშით, რომ ნახოთ რეიტინგი და დაამატოთ თქვენი პოსტები.",
+      "შედით Crocobet-ის სამსახურებრივი ანგარიშით, რომ ნახოთ ლიდერბორდი და დაამატოთ თქვენი პოსტები.",
     signInWithMicrosoft: "შესვლა Microsoft-ით",
     redirecting: "გადამისამართება Microsoft-ზე…",
     onlyEmployees:

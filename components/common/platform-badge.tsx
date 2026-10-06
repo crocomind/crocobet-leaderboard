@@ -1,3 +1,6 @@
+import Image, { type StaticImageData } from "next/image";
+import facebookTile from "@/components/icons/facebook.png";
+import tiktokTile from "@/components/icons/tiktok.png";
 import { PLATFORMS, type Platform } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +11,12 @@ const sizes = {
   md: "size-8 rounded-[10px] [&_svg]:size-[18px]",
   lg: "size-10 rounded-xl [&_svg]:size-5",
 } as const;
+
+/** Platforms drawn from their official app icon instead of a glyph on a tile. */
+const TILES: Partial<Record<Platform, StaticImageData>> = {
+  facebook: facebookTile,
+  tiktok: tiktokTile,
+};
 
 interface PlatformBadgeProps {
   platform: Platform;
@@ -21,6 +30,28 @@ export function PlatformBadge({
   size = "md",
   className,
 }: PlatformBadgeProps) {
+  const tile = TILES[platform];
+  if (tile)
+    return (
+      <span
+        aria-hidden="true"
+        className={cn(
+          "inline-flex shrink-0 overflow-hidden shadow-sm",
+          sizes[size],
+          className,
+        )}
+      >
+        {/* 128 px files; resizing them per request isn't worth it. */}
+        <Image
+          src={tile}
+          alt=""
+          unoptimized
+          draggable={false}
+          className="size-full"
+        />
+      </span>
+    );
+
   const definition = PLATFORMS[platform];
   const Icon = definition.icon;
   return (
