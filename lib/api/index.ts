@@ -49,6 +49,7 @@ export const getAdminLeaderboards = forward("getAdminLeaderboards");
 export const getAdminLeaderboard = forward("getAdminLeaderboard");
 export const removeFromLeaderboard = forward("removeFromLeaderboard");
 export const restoreToLeaderboard = forward("restoreToLeaderboard");
+export const getParticipants = forward("getParticipants");
 export const getProfile = forward("getProfile");
 
 export * from "./types";

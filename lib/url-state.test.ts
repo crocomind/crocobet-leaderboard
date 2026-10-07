@@ -74,6 +74,15 @@ describe("serializeUrlState", () => {
   });
 });
 
+describe("participants in the URL", () => {
+  it("opens the participants view", () => {
+    expect(parse("view=participants").view).toBe("participants");
+    expect(
+      serializeUrlState({ ...DEFAULT_URL_STATE, view: "participants" }),
+    ).toBe("?view=participants");
+  });
+});
+
 describe("profiles in the URL", () => {
   it("keeps whose profile only on the profile view", () => {
     expect(parse("view=profile&employee=e-12")).toMatchObject({

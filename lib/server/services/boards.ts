@@ -7,6 +7,7 @@ import type {
   AdminLeaderboardsResponse,
   ContentCategory,
   EmployeeWithEmail,
+  ParticipantsResponse,
   ProfileResponse,
 } from "@/lib/api/types";
 import {
@@ -15,6 +16,7 @@ import {
   exclusionKey,
   frozenEnd,
   leaderboardInfo,
+  participantSummaries,
   profileLeaderboard,
   rankLeaderboard,
 } from "@/lib/leaderboards";
@@ -34,6 +36,7 @@ import { displayName, loadEmployees } from "@/lib/server/services/employees";
 import {
   boardCondition,
   loadAllExcluded,
+  loadExcluded,
 } from "@/lib/server/services/exclusions";
 import { frozenPosts } from "@/lib/server/services/leaderboard";
 import { toRankable } from "@/lib/server/services/mappers";
@@ -129,6 +132,40 @@ export async function listLeaderboards(
         rows,
         excluded.get(exclusionKey(board.id) ?? "") ?? NONE,
       ),
+    ),
+  };
+}
+
+/** Everyone who has submitted a post, with their 3-Month Challenge standing (admin). */
+export async function listParticipants(
+  db: Db,
+  config: ServerConfig,
+  now: Date,
+): Promise<ParticipantsResponse> {
+  const { campaign, boards } = await loadBoards(db, config, now);
+  const [submissions, rows, excluded] = await Promise.all([
+    db
+      .select({
+        employeeId: posts.employeeId,
+        status: posts.status,
+        platform: posts.platform,
+        submittedAt: posts.submittedAt,
+      })
+      .from(posts),
+    challengePosts(db, { start: campaign.startsAt, end: campaign.endsAt }),
+    loadExcluded(db, null),
+  ]);
+  const people = await loadWithEmails(
+    db,
+    submissions.map((submission) => submission.employeeId),
+  );
+  return {
+    participants: participantSummaries(
+      submissions,
+      rows,
+      people,
+      boards[0]!,
+      excluded,
     ),
   };
 }

@@ -10,7 +10,13 @@ import {
   type PlatformFilter,
 } from "@/lib/api/types";
 
-export const VIEWS = ["leaderboard", "my-posts", "admin", "profile"] as const;
+export const VIEWS = [
+  "leaderboard",
+  "my-posts",
+  "participants",
+  "admin",
+  "profile",
+] as const;
 export type AppView = (typeof VIEWS)[number];
 
 /** Everything shareable lives in the URL: ?view=&category=&platform=&period=&round=&q=&employee= */

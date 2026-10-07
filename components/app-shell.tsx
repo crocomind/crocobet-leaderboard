@@ -22,6 +22,10 @@ import { DURATION, exitTween, REDUCED_FADE, tween } from "@/lib/motion";
 const AdminView = dynamic(() => import("@/components/admin/admin-view"), {
   loading: () => <ListSkeleton />,
 });
+const ParticipantsView = dynamic(
+  () => import("@/components/admin/participants-view"),
+  { loading: () => <ListSkeleton /> },
+);
 
 export function AppShell() {
   const { t } = useI18n();
@@ -35,7 +39,10 @@ export function AppShell() {
   useEffect(() => {
     const timer = setTimeout(() => {
       preload("my-posts");
-      if (isAdmin) preload("admin");
+      if (isAdmin) {
+        preload("admin");
+        preload("participants");
+      }
     }, 1500);
     return () => clearTimeout(timer);
   }, [preload, isAdmin]);
@@ -85,6 +92,10 @@ export function AppShell() {
               ) : state.view === "admin" ? (
                 <AdminGate>
                   <AdminView />
+                </AdminGate>
+              ) : state.view === "participants" ? (
+                <AdminGate>
+                  <ParticipantsView />
                 </AdminGate>
               ) : state.view === "profile" ? (
                 <ProfileView />
