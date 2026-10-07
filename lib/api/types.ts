@@ -478,6 +478,33 @@ export interface ProfileResponse {
   rounds: ProfileLeaderboard[];
 }
 
+export interface PostCounts {
+  /** Every post they still have, in any status. */
+  total: number;
+  approved: number;
+  pending: number;
+  rejected: number;
+  disqualified: number;
+}
+
+/** Someone who has submitted at least one post (admin). */
+export interface ParticipantSummary {
+  employee: EmployeeWithEmail;
+  posts: PostCounts;
+  /** Platforms they've submitted to. */
+  platforms: Platform[];
+  /** Their standing on the 3-Month Challenge, per board. */
+  challenge: Record<ContentCategory, BoardResult>;
+  /** An admin took them off the 3-Month Challenge. */
+  removedFromChallenge: boolean;
+  lastSubmittedAt: IsoDateTime;
+}
+
+export interface ParticipantsResponse {
+  /** Most recent submission first. */
+  participants: ParticipantSummary[];
+}
+
 export interface RequestOptions {
   signal?: AbortSignal;
 }
@@ -570,6 +597,8 @@ export interface ApiAdapter {
     employeeId: string,
     options?: RequestOptions,
   ): Promise<void>;
+  /** Everyone who has submitted a post (admin). */
+  getParticipants(options?: RequestOptions): Promise<ParticipantsResponse>;
   /** Yourself, or anyone for an admin. */
   getProfile(
     employeeId: string,

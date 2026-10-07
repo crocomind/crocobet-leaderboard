@@ -31,6 +31,7 @@ import {
   deleteAdminPost,
   getAdminLeaderboard,
   getAdminLeaderboards,
+  getParticipants,
   getProfile,
   removeFromLeaderboard,
   restoreToLeaderboard,
@@ -72,6 +73,7 @@ export const queryKeys = {
   adminPost: (postId: string) => ["admin", "post", postId] as const,
   syncStatus: ["admin", "sync"] as const,
   adminLeaderboards: ["admin", "leaderboards"] as const,
+  participants: ["admin", "participants"] as const,
   adminLeaderboard: (boardId: string, category: ContentCategory) =>
     ["admin", "leaderboards", boardId, category] as const,
   rounds: ["rounds"] as const,
@@ -506,6 +508,30 @@ export function useRemoveFromLeaderboardMutation() {
 export function useRestoreToLeaderboardMutation() {
   return useExclusionMutation(({ boardId, employeeId }) =>
     restoreToLeaderboard(boardId, employeeId),
+  );
+}
+
+/** Everyone who has submitted a post (admin). */
+export function useParticipantsQuery() {
+  return useQuery({
+    queryKey: queryKeys.participants,
+    queryFn: ({ signal }) => getParticipants({ signal }),
+    staleTime: STATS_STALE_MS,
+    gcTime: STATS_GC_MS,
+  });
+}
+
+/** Starts loading the participants list before the page opens. */
+export function usePrefetchParticipants() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    () =>
+      void queryClient.prefetchQuery({
+        queryKey: queryKeys.participants,
+        queryFn: ({ signal }) => getParticipants({ signal }),
+        staleTime: STATS_STALE_MS,
+      }),
+    [queryClient],
   );
 }
 

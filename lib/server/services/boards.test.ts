@@ -8,6 +8,7 @@ import {
   getLeaderboardDetail,
   getProfile,
   listLeaderboards,
+  listParticipants,
   removeFromLeaderboard,
   restoreToLeaderboard,
 } from "@/lib/server/services/boards";
@@ -387,5 +388,58 @@ describe("frozen results", () => {
       .trim()
       .split("\r\n");
     expect(lines[1]).toMatch(/^1,Beka,.*,300,/);
+  });
+});
+
+describe("participants (admin)", () => {
+  it("lists everyone who submitted a post, with counts and challenge standing", async () => {
+    const { admin, ana, beka } = await setup();
+    const nino = await makeEmployee(db, { displayName: "Nino" });
+    // Someone who only has a pending post, submitted last.
+    await makePost(db, nino.id, "instagram_reel", {
+      status: "pending",
+      submittedAt: new Date("2026-10-14T12:00:00+04:00"),
+    });
+    await makePost(db, ana.id, "tiktok_video", {
+      status: "rejected",
+      submittedAt: new Date("2026-10-02T12:00:00+04:00"),
+    });
+    // The admin never submitted anything, so isn't listed.
+    await removeFromLeaderboard(
+      db,
+      testConfig,
+      admin,
+      "challenge",
+      beka.id,
+      now,
+    );
+
+    const { participants } = await listParticipants(db, testConfig, now);
+    expect(participants.map((p) => p.employee.id)).toEqual([
+      nino.id,
+      ana.id,
+      beka.id,
+    ]);
+    const [ninoRow, anaRow, bekaRow] = participants;
+    expect(ninoRow).toMatchObject({
+      employee: { email: nino.email },
+      posts: { total: 1, approved: 0, pending: 1 },
+      platforms: ["instagram"],
+      challenge: { video: { rank: null }, static: { rank: null } },
+    });
+    expect(anaRow).toMatchObject({
+      posts: { total: 3, approved: 2, rejected: 1 },
+      platforms: ["tiktok", "linkedin"],
+      challenge: {
+        video: { rank: 1, totalParticipants: 1, score: 500 },
+        static: { rank: 1, totalParticipants: 1, score: 40 },
+      },
+      removedFromChallenge: false,
+    });
+    expect(bekaRow).toMatchObject({
+      posts: { total: 2, approved: 2 },
+      challenge: { video: { rank: null } },
+      removedFromChallenge: true,
+    });
   });
 });

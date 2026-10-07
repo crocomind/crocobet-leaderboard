@@ -43,6 +43,7 @@ import {
   exclusionKey,
   frozenEnd,
   leaderboardInfo,
+  participantSummaries,
   profileLeaderboard,
   rankLeaderboard,
 } from "@/lib/leaderboards";
@@ -75,6 +76,7 @@ import type {
   Me,
   ModerationPayload,
   MyPostsResponse,
+  ParticipantsResponse,
   Post,
   ProfileResponse,
   Round,
@@ -1222,6 +1224,30 @@ export class MockBackend {
       (exclusion) =>
         !(exclusion.roundId === key && exclusion.employeeId === employeeId),
     );
+  }
+
+  getParticipants(now: Date): ParticipantsResponse {
+    this.requireAdmin();
+    const people = new Map(
+      MOCK_EMPLOYEES.map((employee) => [
+        employee.id,
+        this.withEmail(employee.id)!,
+      ]),
+    );
+    return {
+      participants: participantSummaries(
+        this.state.posts.map((post) => ({
+          employeeId: post.employeeId,
+          status: post.status,
+          platform: post.platform,
+          submittedAt: new Date(post.submittedAt),
+        })),
+        this.rankables(),
+        people,
+        this.boards(now)[0]!,
+        this.excludedFrom(null),
+      ),
+    };
   }
 
   getProfile(employeeId: string, now: Date): ProfileResponse {

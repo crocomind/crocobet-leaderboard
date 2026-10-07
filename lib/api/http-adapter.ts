@@ -10,6 +10,7 @@ import type {
   LeaderboardResponse,
   Me,
   MyPostsResponse,
+  ParticipantsResponse,
   Post,
   ProfileResponse,
   Round,
@@ -186,6 +187,9 @@ export const httpAdapter: ApiAdapter = {
       `${adminBoardPath(boardId)}/removed/${encodeURIComponent(employeeId)}`,
       { method: "DELETE", signal },
     ),
+
+  getParticipants: ({ signal } = {}) =>
+    request<ParticipantsResponse>("/admin/participants", { signal }),
 
   getProfile: (employeeId, { signal } = {}) =>
     request<ProfileResponse>(

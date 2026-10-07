@@ -5,6 +5,7 @@ import {
   type LucideIcon,
   ShieldCheck,
   Trophy,
+  Users,
 } from "lucide-react";
 import { LayoutGroup, motion } from "motion/react";
 import type { MouseEvent } from "react";
@@ -26,6 +27,7 @@ const ITEMS: ReadonlyArray<{
 }> = [
   { view: "leaderboard", icon: Trophy },
   { view: "my-posts", icon: Clapperboard },
+  { view: "participants", icon: Users, adminOnly: true },
   { view: "admin", icon: ShieldCheck, adminOnly: true },
 ];
 
@@ -54,6 +56,7 @@ export function ViewNav({ id, className }: { id: string; className?: string }) {
   const labels: Record<NavView, string> = {
     leaderboard: t.nav.leaderboard,
     "my-posts": t.nav.myPosts,
+    participants: t.nav.participants,
     admin: t.nav.admin,
   };
 

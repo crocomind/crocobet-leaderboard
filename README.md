@@ -140,6 +140,10 @@ and regenerated after three days; clear that key to start over.
   leaderboards; the challenge and every started round open a participants panel (rank, email,
   score, profile), where an admin can **remove** someone from that one leaderboard or put them
   back. Their posts still count everywhere else. See [`leaderboards`](lib/leaderboards.ts).
+- **Participants** (`?view=participants`, admins only, in the navbar): everyone who has submitted
+  a post, with email and department, post counts by status, platforms, their 3-Month Challenge
+  rank on both boards and their latest post. Search and sort; each row opens the person's
+  profile.
 - **Profiles** (`?view=profile`, from the account menu): your results on the challenge and every
   weekly and monthly round you took part in, per board. Admins can open anyone's (from the
   participants panel or a leaderboard entry). A finished weekly or monthly round's results are

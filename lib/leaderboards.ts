@@ -2,18 +2,23 @@ import {
   type BoardResult,
   CHALLENGE_BOARD_ID,
   type ContentCategory,
+  type EmployeeWithEmail,
   type LeaderboardInfo,
   type LeaderboardStatus,
+  type ParticipantSummary,
+  type Platform,
+  type PostStatus,
   type ProfileLeaderboard,
   type Round,
 } from "@/lib/api/types";
 import type { CampaignWindow } from "@/lib/periods";
-import { CONTENT_CATEGORIES } from "@/lib/platforms";
+import { CONTENT_CATEGORIES, PLATFORM_IDS } from "@/lib/platforms";
 import {
   type BoardFilter,
   countsOnBoard,
   type RankableEmployee,
   type RankablePost,
+  type RankedEntry,
   rankBoard,
 } from "@/lib/ranking";
 import { roundBoardRange, type RoundRange } from "@/lib/rounds";
@@ -136,6 +141,22 @@ export function rankLeaderboard<E extends RankableEmployee>(
   });
 }
 
+/** Someone's result on a ranked board; an unranked person gets zeros. */
+function boardResult(
+  category: ContentCategory,
+  entry: RankedEntry<RankableEmployee> | undefined,
+  totalParticipants: number,
+): BoardResult {
+  return {
+    rank: entry?.rank ?? null,
+    totalParticipants,
+    score: entry?.score ?? 0,
+    postCount: entry?.postCount ?? 0,
+    totalViews: category === "video" ? (entry?.totalViews ?? 0) : null,
+    totalReactions: entry?.totalReactions ?? 0,
+  };
+}
+
 /** One person's results on a leaderboard (both categories). */
 export function profileLeaderboard<E extends RankableEmployee>(
   board: BoardDef,
@@ -154,17 +175,13 @@ export function profileLeaderboard<E extends RankableEmployee>(
         excluded,
         employeeId,
       );
-      const entry = ranked.myStanding?.entry;
       return [
         category,
-        {
-          rank: entry?.rank ?? null,
-          totalParticipants: ranked.totalParticipants,
-          score: entry?.score ?? 0,
-          postCount: entry?.postCount ?? 0,
-          totalViews: category === "video" ? (entry?.totalViews ?? 0) : null,
-          totalReactions: entry?.totalReactions ?? 0,
-        },
+        boardResult(
+          category,
+          ranked.myStanding?.entry,
+          ranked.totalParticipants,
+        ),
       ];
     }),
   ) as Record<ContentCategory, BoardResult>;
@@ -177,4 +194,82 @@ export function profileLeaderboard<E extends RankableEmployee>(
     removed: excluded.has(employeeId),
     results,
   };
+}
+
+/** What the participants list needs from each submitted post (any status). */
+export interface Submission {
+  employeeId: string;
+  status: PostStatus;
+  platform: Platform;
+  submittedAt: Date;
+}
+
+/**
+ * Everyone who has submitted a post: their post counts, platforms, last
+ * submission and 3-Month Challenge standing. Most recent submission first.
+ */
+export function participantSummaries(
+  submissions: readonly Submission[],
+  posts: readonly RankablePost[],
+  people: ReadonlyMap<string, EmployeeWithEmail>,
+  challenge: BoardDef,
+  excluded: ReadonlySet<string>,
+): ParticipantSummary[] {
+  const boards = CONTENT_CATEGORIES.map((category) => {
+    const ranked = rankLeaderboard(
+      challenge,
+      category,
+      posts,
+      people,
+      excluded,
+    );
+    return {
+      category,
+      total: ranked.totalParticipants,
+      byEmployee: new Map(
+        ranked.entries.map((entry) => [entry.employee.id, entry]),
+      ),
+    };
+  });
+  const byEmployee = new Map<string, Submission[]>();
+  for (const submission of submissions) {
+    const list = byEmployee.get(submission.employeeId) ?? [];
+    list.push(submission);
+    byEmployee.set(submission.employeeId, list);
+  }
+  return [...byEmployee]
+    .flatMap(([employeeId, list]) => {
+      const employee = people.get(employeeId);
+      if (!employee) return [];
+      const count = (status: PostStatus) =>
+        list.filter((submission) => submission.status === status).length;
+      const used = new Set(list.map((submission) => submission.platform));
+      const last = Math.max(
+        ...list.map((submission) => submission.submittedAt.getTime()),
+      );
+      return [
+        {
+          employee,
+          posts: {
+            total: list.length,
+            approved: count("approved"),
+            pending: count("pending"),
+            rejected: count("rejected"),
+            disqualified: count("disqualified"),
+          },
+          platforms: PLATFORM_IDS.filter((platform) => used.has(platform)),
+          challenge: Object.fromEntries(
+            boards.map(({ category, total, byEmployee: entries }) => [
+              category,
+              boardResult(category, entries.get(employeeId), total),
+            ]),
+          ) as Record<ContentCategory, BoardResult>,
+          removedFromChallenge: excluded.has(employeeId),
+          lastSubmittedAt: new Date(last).toISOString(),
+        },
+      ];
+    })
+    .sort(
+      (a, b) => Date.parse(b.lastSubmittedAt) - Date.parse(a.lastSubmittedAt),
+    );
 }

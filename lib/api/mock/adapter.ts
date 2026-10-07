@@ -198,6 +198,8 @@ export const mockAdapter: ApiAdapter = {
       options,
       { mutates: true },
     ),
+  getParticipants: (options) =>
+    respond((mock, now) => mock.getParticipants(now), options),
   getProfile: (employeeId, options) =>
     respond((mock, now) => mock.getProfile(employeeId, now), options),
 };

@@ -603,6 +603,18 @@ describe("leaderboards and profiles", () => {
     expect(top.topPost.views).toBe(views(top.topPost.id));
   });
 
+  it("lists participants for admins only", () => {
+    const { participants } = admin.getParticipants(start);
+    const submitters = new Set(state.posts.map((post) => post.employeeId));
+    expect(participants.map((p) => p.employee.id).sort()).toEqual(
+      [...submitters].sort(),
+    );
+    expect(participants[0]?.employee.email).toMatch(/@crocobet\.com$/);
+    const times = participants.map((p) => p.lastSubmittedAt);
+    expect(times).toEqual([...times].sort().reverse());
+    expect(errorOf(() => employee.getParticipants(start)).status).toBe(403);
+  });
+
   it("shows the challenge when no round of the asked kind is running", () => {
     state.rounds = state.rounds.filter((round) => round.kind !== "month");
     const response = admin.getLeaderboard(board({ period: "month" }), start);
