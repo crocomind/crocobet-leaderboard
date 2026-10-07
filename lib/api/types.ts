@@ -259,8 +259,6 @@ export interface EmployeePostsQuery {
 export interface SubmitPostPayload {
   url: string;
   title?: string;
-  /** Fallback publish date, used only if the platform doesn't report one. */
-  postedAt?: IsoDate;
 }
 
 // ---------------------------------------------------------------- admin

@@ -215,7 +215,6 @@ const en = {
     countsAs: "Counts as {category}",
     titleLabel: "Title or caption",
     titlePlaceholder: "What's your post about?",
-    postedAtLabel: "Posted on",
     optional: "Optional",
     characterCount: "{count}/{max}",
     previewLabel: "Preview",
@@ -238,8 +237,6 @@ const en = {
       "Stories, profiles, feeds and TikTok photo posts don't count. Paste the link to a single post or video.",
     duplicate: "This post has already been submitted.",
     titleTooLong: "Keep the title under {max} characters.",
-    dateInvalid: "Enter a valid date.",
-    dateInFuture: "The posted date can't be in the future.",
   },
   admin: {
     title: "Admin",

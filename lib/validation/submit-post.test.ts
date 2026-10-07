@@ -5,13 +5,11 @@ import {
   TITLE_MAX_LENGTH,
 } from "@/lib/validation/submit-post";
 
-const TODAY = "2026-10-01";
-const schema = createSubmitPostSchema({ today: () => TODAY });
+const schema = createSubmitPostSchema();
 
 const base: SubmitPostFormValues = {
   url: "https://www.tiktok.com/@nino.beridze/video/7412345678901234567",
   title: "",
-  postedAt: "",
 };
 
 /** The error code for one field, or undefined if it passes. */
@@ -75,7 +73,6 @@ describe("submit post schema: url", () => {
       "https://tiktok.com/@nino.beridze/video/7412345678901234567",
     ]);
     const withHistory = createSubmitPostSchema({
-      today: () => TODAY,
       isDuplicate: (url) => submitted.has(url),
     });
 
@@ -102,8 +99,8 @@ describe("submit post schema: url", () => {
   });
 });
 
-describe("submit post schema: optional fields", () => {
-  it("accepts empty optional fields", () => {
+describe("submit post schema: title", () => {
+  it("is optional", () => {
     expect(schema.safeParse(base).success).toBe(true);
   });
 
@@ -121,22 +118,4 @@ describe("submit post schema: optional fields", () => {
       "Team day",
     );
   });
-
-  it("accepts past dates and today", () => {
-    expect(errorFor({ postedAt: "2026-09-15" }, "postedAt")).toBeUndefined();
-    expect(errorFor({ postedAt: TODAY }, "postedAt")).toBeUndefined();
-  });
-
-  it("rejects future dates", () => {
-    expect(errorFor({ postedAt: "2026-10-02" }, "postedAt")).toBe(
-      "dateInFuture",
-    );
-  });
-
-  it.each(["2026-02-30", "2026-13-01", "01/10/2026", "yesterday"])(
-    "rejects invalid dates: %s",
-    (postedAt) => {
-      expect(errorFor({ postedAt }, "postedAt")).toBe("dateInvalid");
-    },
-  );
 });

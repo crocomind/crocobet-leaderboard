@@ -4,12 +4,7 @@ import {
   type ModerationError,
   NOTE_MAX_LENGTH,
 } from "@/lib/moderation";
-import {
-  isWithin,
-  postedDateToInstant,
-  submissionsOpen,
-  zonedToday,
-} from "@/lib/periods";
+import { isWithin, postedDateToInstant, submissionsOpen } from "@/lib/periods";
 import {
   analyzePostUrl,
   CATEGORY_PLATFORMS,
@@ -435,13 +430,6 @@ export class MockBackend {
     const title = payload.title?.trim() || null;
     if (title && title.length > TITLE_MAX_LENGTH)
       fail(422, "validation_error", "Title too long");
-    const postedAt = payload.postedAt?.trim() || null;
-    if (
-      postedAt &&
-      (!postedDateToInstant(postedAt, campaign.timeZone) ||
-        postedAt > zonedToday(now, campaign.timeZone))
-    )
-      fail(422, "validation_error", "Invalid posted date");
 
     const recent = this.state.posts.filter(
       (post) =>
@@ -517,7 +505,7 @@ export class MockBackend {
       authorName: null,
       publishedAt: null,
       publishedAtSource: null,
-      submittedPostedAt: postedAt,
+      submittedPostedAt: null,
       submittedAt: now.toISOString(),
       status: "pending",
       statusReason: null,

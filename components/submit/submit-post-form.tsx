@@ -22,7 +22,7 @@ import { useMyPostsQuery, useSubmitPostMutation } from "@/lib/api/queries";
 import type { SubmitPostPayload, Post } from "@/lib/api/types";
 import { analyzePostUrl, PLATFORM_LIST, PLATFORMS } from "@/lib/platforms";
 import { DURATION, exitTween, tween } from "@/lib/motion";
-import { cn, toIsoDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   createSubmitPostSchema,
   isSubmitPostErrorCode,
@@ -101,12 +101,12 @@ export function SubmitPostForm({
   const form = useForm<SubmitPostFormValues>({
     resolver: zodResolver(schema),
     mode: "onTouched",
-    defaultValues: { url: "", title: "", postedAt: "" },
+    defaultValues: { url: "", title: "" },
   });
   const { errors } = form.formState;
-  const [url = "", title = "", postedAt = ""] = useWatch({
+  const [url = "", title = ""] = useWatch({
     control: form.control,
-    name: ["url", "title", "postedAt"],
+    name: ["url", "title"],
   });
 
   useEffect(() => {
@@ -149,7 +149,6 @@ export function SubmitPostForm({
   };
   const urlError = messageFor(errors.url?.message);
   const titleError = messageFor(errors.title?.message);
-  const postedAtError = messageFor(errors.postedAt?.message);
 
   const onSubmit = form.handleSubmit((values) => {
     if (mutation.isPending) return;
@@ -160,7 +159,6 @@ export function SubmitPostForm({
     const payload: SubmitPostPayload = {
       url: result.normalizedUrl,
       ...(values.title ? { title: values.title } : {}),
-      ...(values.postedAt ? { postedAt: values.postedAt } : {}),
     };
 
     mutation.mutate(payload, {
@@ -244,88 +242,52 @@ export function SubmitPostForm({
                 contentType={analysis.contentType}
                 url={analysis.normalizedUrl}
                 title={title.trim()}
-                postedAt={postedAt}
               />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_11rem]">
-        <div className="group/field">
-          <div className="mb-2 flex items-baseline justify-between gap-2">
-            <Label htmlFor={`${ids}-title`} className={floatingLabel}>
-              {t.submit.titleLabel}{" "}
-              <span className="font-normal text-muted-foreground">
-                ({t.submit.optional})
-              </span>
-            </Label>
-            <span
-              className="text-xs text-muted-foreground tabular-nums"
-              aria-hidden="true"
-            >
-              {format(t.submit.characterCount, {
-                count: title.length,
-                max: TITLE_MAX_LENGTH,
-              })}
-            </span>
-          </div>
-          <Input
-            id={`${ids}-title`}
-            placeholder={t.submit.titlePlaceholder}
-            maxLength={TITLE_MAX_LENGTH}
-            enterKeyHint="go"
-            aria-invalid={Boolean(titleError) || undefined}
-            aria-describedby={titleError ? `${ids}-title-error` : undefined}
-            {...form.register("title")}
-          />
-          <AnimatePresence initial={false}>
-            {titleError && (
-              <motion.p
-                key="title-error"
-                {...message}
-                id={`${ids}-title-error`}
-                role="alert"
-                className="mt-1.5 text-sm text-danger-text"
-              >
-                {titleError}
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <div className="group/field">
-          <Label
-            htmlFor={`${ids}-posted`}
-            className={cn("mb-2 block", floatingLabel)}
-          >
-            {t.submit.postedAtLabel}{" "}
+      <div className="group/field">
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <Label htmlFor={`${ids}-title`} className={floatingLabel}>
+            {t.submit.titleLabel}{" "}
             <span className="font-normal text-muted-foreground">
               ({t.submit.optional})
             </span>
           </Label>
-          <Input
-            id={`${ids}-posted`}
-            type="date"
-            max={toIsoDate(new Date())}
-            aria-invalid={Boolean(postedAtError) || undefined}
-            aria-describedby={postedAtError ? `${ids}-posted-error` : undefined}
-            {...form.register("postedAt")}
-          />
-          <AnimatePresence initial={false}>
-            {postedAtError && (
-              <motion.p
-                key="posted-error"
-                {...message}
-                id={`${ids}-posted-error`}
-                role="alert"
-                className="mt-1.5 text-sm text-danger-text"
-              >
-                {postedAtError}
-              </motion.p>
-            )}
-          </AnimatePresence>
+          <span
+            className="text-xs text-muted-foreground tabular-nums"
+            aria-hidden="true"
+          >
+            {format(t.submit.characterCount, {
+              count: title.length,
+              max: TITLE_MAX_LENGTH,
+            })}
+          </span>
         </div>
+        <Input
+          id={`${ids}-title`}
+          placeholder={t.submit.titlePlaceholder}
+          maxLength={TITLE_MAX_LENGTH}
+          enterKeyHint="go"
+          aria-invalid={Boolean(titleError) || undefined}
+          aria-describedby={titleError ? `${ids}-title-error` : undefined}
+          {...form.register("title")}
+        />
+        <AnimatePresence initial={false}>
+          {titleError && (
+            <motion.p
+              key="title-error"
+              {...message}
+              id={`${ids}-title-error`}
+              role="alert"
+              className="mt-1.5 text-sm text-danger-text"
+            >
+              {titleError}
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
 
       <AnimatePresence initial={false}>

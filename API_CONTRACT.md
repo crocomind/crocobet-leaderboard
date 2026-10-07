@@ -89,8 +89,9 @@ There are two independent leaderboards:
   `period.isCurrent`) and which round it is (`period.round`, `null` for calendar periods and
   `all`).
 - `publishedAt` comes from, in order: the data provider; the post ID (TikTok and LinkedIn encode
-  the time); the submitter's optional `postedAt` (read as 12:00 in the campaign time zone, flag
-  `published_date_uncertain`); an admin edit. The source is stored.
+  the time); the date the submitter typed in, on older posts only (the form no longer asks; read
+  as 12:00 in the campaign time zone, flag `published_date_uncertain`); an admin edit. The source
+  is stored.
 
 ### Ranking
 
@@ -362,7 +363,7 @@ All paths are under `/api/v1` unless noted.
 | `GET /me/posts`                                                                                     | employee        | `MyPostsResponse`                                                                                                                                                                  |
 | `GET /employees/{id}/posts?category=&platform=&period=&round=`                                      | employee        | `Post[]`: the posts counted in that entry, highest score first                                                                                                                     |
 | `GET /employees/{id}/photo`                                                                         | employee        | Image bytes, `Cache-Control: private, max-age=86400`, with an ETag                                                                                                                 |
-| `POST /posts` `{url, title?, postedAt?}`                                                            | employee        | `201 Post` (`pending`, check `queued`). Errors: `409 duplicate_post`; `422 invalid_url \| unsupported_platform \| unsupported_content`; `403 challenge_closed`; `429 rate_limited` |
+| `POST /posts` `{url, title?}`                                                                       | employee        | `201 Post` (`pending`, check `queued`). Errors: `409 duplicate_post`; `422 invalid_url \| unsupported_platform \| unsupported_content`; `403 challenge_closed`; `429 rate_limited` |
 | `POST /posts/{id}/recheck`                                                                          | owner (pending) | `202`, or `429` within 10 minutes                                                                                                                                                  |
 | `DELETE /posts/{id}`                                                                                | owner           | `204` (any status; removes it everywhere)                                                                                                                                          |
 | `GET /admin/posts?status=&check=&flag=&category=&platform=&q=&cursor=`                              | admin           | `AdminPostsResponse`, oldest pending first                                                                                                                                         |
