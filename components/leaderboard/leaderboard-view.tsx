@@ -37,8 +37,10 @@ import {
 } from "@/lib/api/types";
 import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { useNow } from "@/lib/hooks/use-now";
 import { useViewportPosition } from "@/lib/hooks/use-viewport-position";
 import { CATEGORY_PLATFORMS, CONTENT_CATEGORIES } from "@/lib/platforms";
+import { runningApiRound, shownPeriod } from "@/lib/rounds";
 import { platformForCategory } from "@/lib/url-state";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +88,24 @@ export function LeaderboardView() {
   const searching = shown.search !== "";
   const userId = currentUser.user?.id;
 
+  // Weekly and monthly leaderboards exist only as rounds: the menu marks what
+  // the board shows (the challenge when there's no round to show) and offers
+  // "This week" / "This month" only while a round of that kind is running.
+  const now = useNow();
+  const roundList = rounds.data?.rounds;
+  const known = roundList !== undefined && now > 0;
+  const selection = known
+    ? shownPeriod(state.period, state.round, roundList, now)
+    : data && !leaderboard.isPlaceholderData
+      ? { period: data.query.period, round: data.query.round ?? "" }
+      : { period: state.period, round: state.round };
+  const selectionPeriod = selection.period;
+  const runningKinds = known
+    ? (["week", "month"] as const)
+        .filter((kind) => runningApiRound(kind, roundList, now))
+        .join(",")
+    : null;
+
   // Once a board is on screen, load the ones a click away (its platforms,
   // the other category, the other periods) so switching to them is instant.
   const prefetchBoards = usePrefetchBoards();
@@ -95,7 +115,12 @@ export function LeaderboardView() {
     // Stop when the board changes; the next one starts its own queue.
     const stop = new AbortController();
     const timer = setTimeout(() => {
-      const { category, platform, period, search } = query;
+      const { category, platform, search } = query;
+      const periods = LEADERBOARD_PERIODS.filter(
+        (other) =>
+          other !== selectionPeriod &&
+          (other === "all" || runningKinds?.split(",").includes(other)),
+      );
       const neighbours: LeaderboardQuery[] = [
         ...(["all", ...CATEGORY_PLATFORMS[category]] as const).map(
           (option) => ({ ...query, platform: option }),
@@ -103,15 +128,13 @@ export function LeaderboardView() {
         ...CONTENT_CATEGORIES.filter((other) => other !== category).map(
           (other) => ({ ...query, category: other, platform: "all" as const }),
         ),
-        ...LEADERBOARD_PERIODS.filter((other) => other !== period).map(
-          (other) => ({
-            category,
-            platform,
-            period: other,
-            round: null,
-            search,
-          }),
-        ),
+        ...periods.map((other) => ({
+          category,
+          platform,
+          period: other,
+          round: null,
+          search,
+        })),
       ];
       prefetchBoards(neighbours, stop.signal);
     }, 400);
@@ -119,7 +142,7 @@ export function LeaderboardView() {
       clearTimeout(timer);
       stop.abort();
     };
-  }, [loaded, query, prefetchBoards]);
+  }, [loaded, query, prefetchBoards, selectionPeriod, runningKinds]);
 
   // An employee's posts start loading on hover, so their sheet opens filled.
   const prefetchEmployeePosts = usePrefetchEmployeePosts();
@@ -242,8 +265,8 @@ export function LeaderboardView() {
         <LeaderboardToolbar
           category={state.category}
           platform={state.platform}
-          period={state.period}
-          round={state.round}
+          period={selection.period}
+          round={selection.round}
           rounds={rounds.data}
           search={searchText}
           onCategoryChange={(category) =>

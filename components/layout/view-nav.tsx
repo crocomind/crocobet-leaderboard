@@ -16,8 +16,11 @@ import type { AppView } from "@/lib/url-state";
 import { springLayout } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
+/** The profile view opens from the account menu, not the nav. */
+type NavView = Exclude<AppView, "profile">;
+
 const ITEMS: ReadonlyArray<{
-  view: AppView;
+  view: NavView;
   icon: LucideIcon;
   adminOnly?: boolean;
 }> = [
@@ -48,7 +51,7 @@ export function ViewNav({ id, className }: { id: string; className?: string }) {
   const currentUser = useCurrentUser();
   // Only admins see the admin item. It's a convenience: the server enforces access.
   const isAdmin = currentUser.user?.role === "admin";
-  const labels: Record<AppView, string> = {
+  const labels: Record<NavView, string> = {
     leaderboard: t.nav.leaderboard,
     "my-posts": t.nav.myPosts,
     admin: t.nav.admin,

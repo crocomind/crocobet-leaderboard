@@ -144,7 +144,7 @@ describe("rounds", () => {
     );
   });
 
-  it("shows the current round, a chosen past round, or the calendar week without rounds", async () => {
+  it("shows the running round, a chosen past round, or the challenge without one", async () => {
     const admin = await makeEmployee(db, { role: "admin" });
     const ana = await makeEmployee(db);
     await makePost(db, ana.id, "tiktok_video", {
@@ -158,13 +158,15 @@ describe("rounds", () => {
       reactions: 0,
     });
 
-    // Without rounds: the ISO week of 12–18 October.
-    const calendar = await getLeaderboard(db, testConfig, board(), ana.id, now);
-    expect(calendar.period).toMatchObject({
+    // Without weekly rounds there's no weekly leaderboard: the challenge shows.
+    const none = await getLeaderboard(db, testConfig, board(), ana.id, now);
+    expect(none.query.period).toBe("all");
+    expect(none.period).toMatchObject({
       round: null,
-      start: "2026-10-11T20:00:00.000Z",
+      start: "2026-09-30T20:00:00.000Z",
+      end: "2026-12-31T20:00:00.000Z",
     });
-    expect(calendar.entries[0]?.score).toBe(20);
+    expect(none.entries[0]?.score).toBe(120);
 
     // A Thursday-to-Wednesday round covering today, and the one before it.
     const earlier = await createRound(db, testConfig, admin, {
@@ -191,8 +193,25 @@ describe("rounds", () => {
         kind: "week",
       },
     });
-    expect(shown.query.round).toBeNull();
+    expect(shown.query).toMatchObject({ period: "week", round: null });
     expect(shown.entries[0]?.score).toBe(120);
+
+    // A round that hasn't started can't be picked: the running one shows.
+    const upcoming = await createRound(db, testConfig, admin, {
+      kind: "week",
+      name: null,
+      startDate: "2026-10-22",
+      endDate: "2026-10-28",
+    });
+    const early = await getLeaderboard(
+      db,
+      testConfig,
+      board({ round: upcoming.id }),
+      ana.id,
+      now,
+    );
+    expect(early.period.round?.id).toBe(current.id);
+    expect(early.query.round).toBeNull();
 
     const past = await getLeaderboard(
       db,

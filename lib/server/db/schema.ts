@@ -12,6 +12,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -310,9 +311,38 @@ export const challengeSettings = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * People an admin took off one leaderboard: a weekly or monthly round, or the
+ * whole challenge (round_id null). Their posts still count on every other
+ * leaderboard. Deleting the row puts them back.
+ */
+export const leaderboardExclusions = pgTable(
+  "leaderboard_exclusions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** null: the 3-Month Challenge. */
+    roundId: uuid("round_id").references(() => leaderboardRounds.id, {
+      onDelete: "cascade",
+    }),
+    employeeId: uuid("employee_id")
+      .notNull()
+      .references(() => employees.id, { onDelete: "cascade" }),
+    createdBy: uuid("created_by").references(() => employees.id, {
+      onDelete: "set null",
+    }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    unique("leaderboard_exclusions_board_employee")
+      .on(table.roundId, table.employeeId)
+      .nullsNotDistinct(),
+  ],
+).enableRLS();
+
 export type EmployeeRow = typeof employees.$inferSelect;
 export type PostRow = typeof posts.$inferSelect;
 export type SnapshotRow = typeof postMetricSnapshots.$inferSelect;
 export type EventRow = typeof moderationEvents.$inferSelect;
 export type SyncRunRow = typeof syncRuns.$inferSelect;
 export type RoundRow = typeof leaderboardRounds.$inferSelect;
+export type ExclusionRow = typeof leaderboardExclusions.$inferSelect;

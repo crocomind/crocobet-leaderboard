@@ -38,6 +38,7 @@ import {
 } from "@/lib/api/types";
 import { useNow } from "@/lib/hooks/use-now";
 import { DURATION, exitTween, tween } from "@/lib/motion";
+import { runningApiRound } from "@/lib/rounds";
 import { CATEGORY_PLATFORMS, PLATFORMS } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
 
@@ -172,6 +173,15 @@ function PeriodMenu({
   const label = chosen
     ? roundLabel(chosen, chosen.startsAt, timeZone)
     : t.periods[period];
+  // "This week" / "This month" only while a round of that kind is running;
+  // the 3-Month Challenge always.
+  const options = LEADERBOARD_PERIODS.filter(
+    (option) =>
+      option === "all" ||
+      (rounds && now > 0
+        ? runningApiRound(option, rounds.rounds, now) !== undefined
+        : option === period),
+  );
 
   const group = (kind: RoundKind, title: string) => {
     const items = started(kind);
@@ -229,7 +239,7 @@ function PeriodMenu({
             if (next) onPeriodChange(next, id);
           }}
         >
-          {LEADERBOARD_PERIODS.map((option) => (
+          {options.map((option) => (
             <DropdownMenuRadioItem key={option} value={option}>
               {t.periods[option]}
             </DropdownMenuRadioItem>

@@ -25,6 +25,7 @@ describe("parseUrlState", () => {
       period: "all",
       round: "",
       q: "nino",
+      employee: "",
     });
   });
 
@@ -70,5 +71,25 @@ describe("serializeUrlState", () => {
     const query = serializeUrlState(state);
     expect(query).toBe("?category=static&platform=instagram&q=ana");
     expect(parse(query.slice(1))).toEqual({ ...state, q: "ana" });
+  });
+});
+
+describe("profiles in the URL", () => {
+  it("keeps whose profile only on the profile view", () => {
+    expect(parse("view=profile&employee=e-12")).toMatchObject({
+      view: "profile",
+      employee: "e-12",
+    });
+    expect(parse("view=profile&employee=<b>").employee).toBe("");
+    expect(
+      serializeUrlState({
+        ...DEFAULT_URL_STATE,
+        view: "profile",
+        employee: "e-12",
+      }),
+    ).toBe("?view=profile&employee=e-12");
+    expect(serializeUrlState({ ...DEFAULT_URL_STATE, employee: "e-12" })).toBe(
+      "",
+    );
   });
 });

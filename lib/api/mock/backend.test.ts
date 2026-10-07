@@ -525,3 +525,88 @@ describe("rounds", () => {
     expect(challenge).toMatchObject({ source: "admin", endDate: "2027-02-28" });
   });
 });
+
+describe("leaderboards and profiles", () => {
+  it("lists the running leaderboards and takes someone off one, then back", () => {
+    const { leaderboards } = admin.getAdminLeaderboards(start);
+    expect(leaderboards[0]).toMatchObject({ id: "challenge", round: null });
+    expect(
+      leaderboards.filter((item) => item.status === "running").length,
+    ).toBeGreaterThan(0);
+    const week = leaderboards.find(
+      (item) => item.round?.kind === "week" && item.participants.video > 1,
+    )!;
+    const before = admin.getAdminLeaderboard(week.id, "video", start);
+    const leader = before.participants[0]!;
+
+    admin.removeFromLeaderboard(week.id, leader.employee.id, start);
+    const after = admin.getAdminLeaderboard(week.id, "video", start);
+    expect(after.participants.map((p) => p.employee.id)).not.toContain(
+      leader.employee.id,
+    );
+    expect(after.removed[0]?.employee.id).toBe(leader.employee.id);
+    expect(
+      admin
+        .getLeaderboard(board({ period: "week", round: week.id }), start)
+        .entries.map((entry) => entry.employee.id),
+    ).not.toContain(leader.employee.id);
+
+    admin.restoreToLeaderboard(week.id, leader.employee.id, start);
+    expect(
+      admin.getAdminLeaderboard(week.id, "video", start).participants[0]
+        ?.employee.id,
+    ).toBe(leader.employee.id);
+    expect(
+      errorOf(() =>
+        employee.removeFromLeaderboard(week.id, leader.employee.id, start),
+      ).status,
+    ).toBe(403);
+  });
+
+  it("shows only your own profile, unless you're an admin", () => {
+    const mine = employee.getProfile(MOCK_CURRENT_USER_ID, start);
+    expect(mine.employee.id).toBe(MOCK_CURRENT_USER_ID);
+    expect(mine.rounds.length).toBeGreaterThan(0);
+    expect(
+      mine.rounds.every((round) => Date.parse(round.startsAt) <= +start),
+    ).toBe(true);
+    const other = state.posts.find(
+      (post) => post.employeeId !== MOCK_CURRENT_USER_ID,
+    )!.employeeId;
+    expect(errorOf(() => employee.getProfile(other, start)).status).toBe(403);
+    expect(admin.getProfile(other, start).employee.id).toBe(other);
+  });
+
+  it("freezes a finished round's results at its end", () => {
+    const finished = admin
+      .getAdminLeaderboards(start)
+      .leaderboards.find(
+        (item) => item.status === "finished" && item.participants.video > 1,
+      )!;
+    const shown = admin.getLeaderboard(
+      board({ period: "week", round: finished.id }),
+      start,
+    );
+    expect(shown.entries.length).toBeGreaterThan(1);
+    expect(
+      shown.entries.every((entry) => entry.previousRank === entry.rank),
+    ).toBe(true);
+    const end = Date.parse(finished.endsAt);
+    const views = (postId: string) => {
+      const post = state.posts.find((candidate) => candidate.id === postId)!;
+      const held = post.snapshots
+        .filter((snapshot) => Date.parse(snapshot.fetchedAt) <= end)
+        .at(-1);
+      return held?.views ?? post.views;
+    };
+    const top = shown.entries[0]!;
+    expect(top.topPost.views).toBe(views(top.topPost.id));
+  });
+
+  it("shows the challenge when no round of the asked kind is running", () => {
+    state.rounds = state.rounds.filter((round) => round.kind !== "month");
+    const response = admin.getLeaderboard(board({ period: "month" }), start);
+    expect(response.query.period).toBe("all");
+    expect(response.period.round).toBeNull();
+  });
+});

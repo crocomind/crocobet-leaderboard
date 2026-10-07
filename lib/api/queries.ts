@@ -29,6 +29,11 @@ import {
   recheckPost,
   refreshPost,
   deleteAdminPost,
+  getAdminLeaderboard,
+  getAdminLeaderboards,
+  getProfile,
+  removeFromLeaderboard,
+  restoreToLeaderboard,
   startSync,
   submitPost,
   updateAdminPost,
@@ -40,6 +45,7 @@ import type {
   AdminPostPatch,
   AdminPostsQuery,
   BulkModerationPayload,
+  ContentCategory,
   EmployeePostsQuery,
   ExportQuery,
   LeaderboardQuery,
@@ -65,7 +71,12 @@ export const queryKeys = {
   adminPosts: (query: AdminPostsQuery) => ["admin", "posts", query] as const,
   adminPost: (postId: string) => ["admin", "post", postId] as const,
   syncStatus: ["admin", "sync"] as const,
+  adminLeaderboards: ["admin", "leaderboards"] as const,
+  adminLeaderboard: (boardId: string, category: ContentCategory) =>
+    ["admin", "leaderboards", boardId, category] as const,
   rounds: ["rounds"] as const,
+  profile: (employeeId: string) =>
+    ["employees", employeeId, "profile"] as const,
 };
 
 /**
@@ -443,4 +454,68 @@ export function useGenerateRoundsMutation() {
 
 export function useUpdateChallengeMutation() {
   return useRoundsMutation((input: ChallengeInput) => updateChallenge(input));
+}
+
+// ------------------------------------------------- leaderboards and profiles
+
+/** Every leaderboard with participant counts (admin). */
+export function useAdminLeaderboardsQuery(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.adminLeaderboards,
+    queryFn: ({ signal }) => getAdminLeaderboards({ signal }),
+    staleTime: STATS_STALE_MS,
+    enabled,
+  });
+}
+
+/** One leaderboard's participants and the people taken off it (admin). */
+export function useAdminLeaderboardQuery(
+  boardId: string | null,
+  category: ContentCategory,
+) {
+  return useQuery({
+    queryKey: queryKeys.adminLeaderboard(boardId ?? "", category),
+    queryFn: ({ signal }) =>
+      getAdminLeaderboard(boardId!, category, { signal }),
+    staleTime: STATS_STALE_MS,
+    enabled: boardId !== null,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Taking someone off a leaderboard (or back on) changes every board and summary it shows in. */
+function useExclusionMutation(
+  mutationFn: (variables: {
+    boardId: string;
+    employeeId: string;
+  }) => Promise<void>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => invalidateAfterChange(queryClient),
+  });
+}
+
+export function useRemoveFromLeaderboardMutation() {
+  return useExclusionMutation(({ boardId, employeeId }) =>
+    removeFromLeaderboard(boardId, employeeId),
+  );
+}
+
+export function useRestoreToLeaderboardMutation() {
+  return useExclusionMutation(({ boardId, employeeId }) =>
+    restoreToLeaderboard(boardId, employeeId),
+  );
+}
+
+/** A person's leaderboard history: your own, or anyone's for an admin. */
+export function useProfileQuery(employeeId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.profile(employeeId ?? ""),
+    queryFn: ({ signal }) => getProfile(employeeId!, { signal }),
+    staleTime: STATS_STALE_MS,
+    gcTime: STATS_GC_MS,
+    enabled: employeeId !== undefined,
+  });
 }

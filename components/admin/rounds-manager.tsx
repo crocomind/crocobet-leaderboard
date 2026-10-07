@@ -1,7 +1,23 @@
 "use client";
 
-import { CalendarRange, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import {
+  CalendarRange,
+  Pencil,
+  Plus,
+  Radio,
+  Sparkles,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { type FormEvent, useId, useState } from "react";
+import {
+  ParticipantCounts,
+  ParticipantsDialog,
+} from "@/components/admin/leaderboard-participants";
+import {
+  StatusBadge,
+  useBoardLabel,
+} from "@/components/leaderboard/board-label";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { useRoundLabel } from "@/components/leaderboard/use-round-label";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -17,6 +33,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { isApiError } from "@/lib/api/errors";
 import {
+  useAdminLeaderboardsQuery,
   useCreateRoundMutation,
   useDeleteRoundMutation,
   useGenerateRoundsMutation,
@@ -24,11 +41,14 @@ import {
   useUpdateChallengeMutation,
   useUpdateRoundMutation,
 } from "@/lib/api/queries";
-import type {
-  ChallengeWindow,
-  Round,
-  RoundKind,
-  RoundsResponse,
+import {
+  type AdminLeaderboardsResponse,
+  CHALLENGE_BOARD_ID,
+  type ChallengeWindow,
+  type LeaderboardInfo,
+  type Round,
+  type RoundKind,
+  type RoundsResponse,
 } from "@/lib/api/types";
 import { useNow } from "@/lib/hooks/use-now";
 import { addDays } from "@/lib/rounds";
@@ -46,9 +66,14 @@ function useErrorText() {
       : errors.generic;
 }
 
-/** Challenge dates and the weekly and monthly rounds admins define. */
+/**
+ * The leaderboards: what's running now, the challenge dates and the weekly
+ * and monthly rounds admins define, each with its participants.
+ */
 export function RoundsManager({ onMessage }: { onMessage: OnMessage }) {
   const rounds = useRoundsQuery();
+  const boards = useAdminLeaderboardsQuery();
+  const [participantsOf, setParticipantsOf] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{
     kind: RoundKind;
     round: Round | null;
@@ -66,22 +91,46 @@ export function RoundsManager({ onMessage }: { onMessage: OnMessage }) {
       </div>
     );
 
+  const boardInfo = new Map(
+    (boards.data?.leaderboards ?? []).map((board) => [board.id, board]),
+  );
+  const timeZone = rounds.data.challenge.timeZone;
+
   return (
     <div className="flex flex-col gap-5">
-      <ChallengeCard challenge={rounds.data.challenge} onMessage={onMessage} />
+      <RunningNow
+        data={boards.data}
+        timeZone={timeZone}
+        onOpen={setParticipantsOf}
+      />
+      <ChallengeCard
+        challenge={rounds.data.challenge}
+        info={boardInfo.get(CHALLENGE_BOARD_ID)}
+        onParticipants={() => setParticipantsOf(CHALLENGE_BOARD_ID)}
+        onMessage={onMessage}
+      />
       <div className="grid gap-5 lg:grid-cols-2">
         {(["week", "month"] as const).map((kind) => (
           <RoundList
             key={kind}
             kind={kind}
             data={rounds.data}
+            boardInfo={boardInfo}
             onAdd={() => setDialog({ kind, round: null })}
             onEdit={(round) => setDialog({ kind, round })}
             onDelete={setDeleting}
+            onParticipants={(round) => setParticipantsOf(round.id)}
             onMessage={onMessage}
           />
         ))}
       </div>
+
+      <ParticipantsDialog
+        boardId={participantsOf}
+        timeZone={timeZone}
+        onClose={() => setParticipantsOf(null)}
+        onMessage={onMessage}
+      />
 
       <RoundDialog
         state={dialog}
@@ -138,11 +187,91 @@ function Card({
   );
 }
 
+/** The leaderboards running right now: the challenge and the current rounds. */
+function RunningNow({
+  data,
+  timeZone,
+  onOpen,
+}: {
+  data: AdminLeaderboardsResponse | undefined;
+  timeZone: string;
+  onOpen: (boardId: string) => void;
+}) {
+  const { t, formatDateRange } = useI18n();
+  const copy = t.admin.leaderboards;
+  const boardLabel = useBoardLabel();
+  const running = (data?.leaderboards ?? []).filter(
+    (board) => board.status === "running",
+  );
+
+  return (
+    <Card title={copy.running} icon={<Radio />}>
+      {!data ? (
+        <div aria-busy="true" className="grid gap-3 sm:grid-cols-3">
+          <Skeleton className="h-24 rounded-control" />
+          <Skeleton className="h-24 rounded-control" />
+        </div>
+      ) : running.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{copy.noneRunning}</p>
+      ) : (
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {running.map((board) => {
+            const label = boardLabel(board, timeZone);
+            return (
+              <li key={board.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpen(board.id)}
+                  aria-label={`${copy.participants}: ${label}`}
+                  className="flex h-full w-full flex-col items-start gap-1.5 rounded-control border border-border bg-surface/60 p-3.5 text-left motion-colors hover:border-brand/30 hover:bg-hover/60"
+                >
+                  <span className="flex w-full min-w-0 items-center gap-2 font-semibold">
+                    <span className="truncate">{label}</span>
+                    <StatusBadge status={board.status} />
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDateRange(board.startsAt, board.endsAt, timeZone)}
+                  </span>
+                  <ParticipantCounts info={board} className="mt-1" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+function ParticipantsButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <MotionButton
+      variant="icon"
+      size="icon-sm"
+      aria-label={`${t.admin.leaderboards.participants}: ${label}`}
+      onClick={onClick}
+    >
+      <Users aria-hidden="true" />
+    </MotionButton>
+  );
+}
+
 function ChallengeCard({
   challenge,
+  info,
+  onParticipants,
   onMessage,
 }: {
   challenge: ChallengeWindow;
+  info: LeaderboardInfo | undefined;
+  onParticipants: () => void;
   onMessage: OnMessage;
 }) {
   const { t, formatDateRange } = useI18n();
@@ -173,19 +302,29 @@ function ChallengeCard({
       icon={<CalendarRange />}
       action={
         !editing && (
-          <MotionButton
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              setStartDate(challenge.startDate);
-              setEndDate(challenge.endDate);
-              update.reset();
-              setEditing(true);
-            }}
-          >
-            <Pencil aria-hidden="true" />
-            {copy.editDates}
-          </MotionButton>
+          <div className="flex flex-wrap gap-2">
+            <MotionButton
+              variant="secondary"
+              size="sm"
+              onClick={onParticipants}
+            >
+              <Users aria-hidden="true" />
+              {copy.participants}
+            </MotionButton>
+            <MotionButton
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setStartDate(challenge.startDate);
+                setEndDate(challenge.endDate);
+                update.reset();
+                setEditing(true);
+              }}
+            >
+              <Pencil aria-hidden="true" />
+              {copy.editDates}
+            </MotionButton>
+          </div>
         )
       }
     >
@@ -251,6 +390,7 @@ function ChallengeCard({
                 ? copy.sourceAdmin
                 : copy.sourceDefault}
             </Badge>
+            {info && <ParticipantCounts info={info} />}
           </p>
         </div>
       )}
@@ -261,16 +401,20 @@ function ChallengeCard({
 function RoundList({
   kind,
   data,
+  boardInfo,
   onAdd,
   onEdit,
   onDelete,
+  onParticipants,
   onMessage,
 }: {
   kind: RoundKind;
   data: RoundsResponse;
+  boardInfo: ReadonlyMap<string, LeaderboardInfo>;
   onAdd: () => void;
   onEdit: (round: Round) => void;
   onDelete: (round: Round) => void;
+  onParticipants: (round: Round) => void;
   onMessage: OnMessage;
 }) {
   const { t, formatDateRange } = useI18n();
@@ -340,7 +484,22 @@ function RoundList({
                   <p className="text-xs text-muted-foreground">
                     {formatDateRange(round.startsAt, round.endsAt, timeZone)}
                   </p>
+                  {status !== "upcoming" && boardInfo.get(round.id) && (
+                    <ParticipantCounts
+                      info={boardInfo.get(round.id)!}
+                      className="mt-1"
+                    />
+                  )}
                 </div>
+                {status === "upcoming" ? (
+                  // Keeps the edit and delete buttons in line with the other rows.
+                  <span aria-hidden="true" className="size-9 shrink-0" />
+                ) : (
+                  <ParticipantsButton
+                    label={label}
+                    onClick={() => onParticipants(round)}
+                  />
+                )}
                 <MotionButton
                   variant="icon"
                   size="icon-sm"

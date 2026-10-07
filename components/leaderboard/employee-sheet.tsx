@@ -1,6 +1,13 @@
 "use client";
 
-import { ArrowUpRight, Eye, Film, Heart, Sparkles } from "lucide-react";
+import {
+  ArrowUpRight,
+  Eye,
+  Film,
+  Heart,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
 import { ScoreBreakdown } from "@/components/leaderboard/score-breakdown";
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
@@ -10,9 +17,10 @@ import { EmployeeAvatar } from "@/components/common/employee-avatar";
 import { PlatformBadge } from "@/components/common/platform-badge";
 import { ErrorState } from "@/components/common/state-panel";
 import { PostThumbnail } from "@/components/common/post-thumbnail";
+import { useCurrentUser } from "@/components/providers/current-user-provider";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { Badge } from "@/components/ui/badge";
-import { MotionLinkButton } from "@/components/ui/motion-button";
+import { MotionButton, MotionLinkButton } from "@/components/ui/motion-button";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
@@ -28,6 +36,7 @@ import type {
   PlatformFilter,
   Post,
 } from "@/lib/api/types";
+import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
 import { enterUp, STAGGER } from "@/lib/motion";
 import { PLATFORMS, safeExternalUrl } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
@@ -58,6 +67,10 @@ export function EmployeeSheet({
   isMe,
 }: EmployeeSheetProps) {
   const { t, format, formatNumber } = useI18n();
+  const { openProfile } = useAppUrlState();
+  // Profiles are for the person themselves and admins (the server checks too).
+  const isAdmin = useCurrentUser().user?.role === "admin";
+  const canSeeProfile = isMe || isAdmin;
   // Keyed on the entry rather than `open`, so content stays during the close animation.
   const posts = useEmployeePostsQuery(entry?.employee.id ?? null, {
     category,
@@ -92,6 +105,20 @@ export function EmployeeSheet({
                 {entry.employee.department} ·{" "}
                 {format(t.employee.rank, { rank: entry.rank })}
               </ResponsiveDialogDescription>
+              {canSeeProfile && (
+                <MotionButton
+                  variant="secondary"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => {
+                    onOpenChange(false);
+                    openProfile(isMe ? "" : entry.employee.id);
+                  }}
+                >
+                  <UserRound aria-hidden="true" />
+                  {t.admin.leaderboards.viewProfile}
+                </MotionButton>
+              )}
             </div>
             <ResponsiveDialogClose
               label={t.common.close}

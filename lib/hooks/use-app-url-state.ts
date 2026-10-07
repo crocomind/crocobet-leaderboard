@@ -51,7 +51,16 @@ export function useAppUrlState() {
     window.scrollTo({ top: 0 });
   }, [update]);
 
-  return { state, update, setView, reset };
+  /** Someone's profile; yours without an id. */
+  const openProfile = useCallback(
+    (employee = "") => {
+      update({ view: "profile", employee }, "push");
+      window.scrollTo({ top: 0 });
+    },
+    [update],
+  );
+
+  return { state, update, setView, reset, openProfile };
 }
 
 /** href for a view link, keeping the current filters. */

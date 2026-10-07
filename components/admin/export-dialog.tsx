@@ -22,6 +22,7 @@ import {
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useExportStandingsMutation, useRoundsQuery } from "@/lib/api/queries";
 import type { ContentCategory, ExportQuery } from "@/lib/api/types";
+import { runningApiRound } from "@/lib/rounds";
 import { standingsFilename } from "@/lib/standings-csv";
 import {
   fromLocalDateTimeInput,
@@ -29,7 +30,7 @@ import {
   toLocalDateTimeInput,
 } from "@/lib/utils";
 
-/** CSV standings for any week or month, as they stood at a chosen time. */
+/** CSV standings for a leaderboard (a round or the challenge), as they stood at a chosen time. */
 export function ExportDialog({
   open,
   onOpenChange,
@@ -56,36 +57,38 @@ function ExportForm({ onDone }: { onDone: () => void }) {
   const roundLabel = useRoundLabel();
   const [roundId, setRoundId] = useState<string | null>(null);
   const [category, setCategory] = useState<ContentCategory>("video");
-  const [period, setPeriod] = useState<ExportQuery["period"]>("week");
-  const [day, setDay] = useState(() => toIsoDate(new Date()));
+  const [period, setPeriod] = useState<ExportQuery["period"]>("all");
   const [asOf, setAsOf] = useState(() => toLocalDateTimeInput(new Date()));
   const exportStandings = useExportStandingsMutation();
 
-  // With rounds of that kind, pick a round; otherwise any day in the week or month.
+  // Weekly and monthly leaderboards exist only as rounds: offer the kinds
+  // with a round that has started, and pick one of them (the running one first).
   const timeZone = roundsQuery.data?.challenge.timeZone ?? "Asia/Tbilisi";
+  const [openedAt] = useState(() => Date.now());
+  const started = (roundsQuery.data?.rounds ?? []).filter(
+    (round) => Date.parse(round.startsAt) <= openedAt,
+  );
   const kindRounds =
-    period === "all"
-      ? []
-      : (roundsQuery.data?.rounds ?? []).filter(
-          (round) => round.kind === period,
-        );
+    period === "all" ? [] : started.filter((round) => round.kind === period);
   const selectedRound =
     kindRounds.find((round) => round.id === roundId) ??
-    kindRounds.find(
-      (round) => round.startDate <= day && day <= round.endDate,
-    ) ??
+    runningApiRound(period === "all" ? "week" : period, kindRounds, openedAt) ??
     kindRounds.at(-1);
+  const periodOptions = (
+    [
+      ["week", copy.week],
+      ["month", copy.month],
+    ] as const
+  )
+    .filter(([kind]) => started.some((round) => round.kind === kind))
+    .map(([value, label]) => ({ value, label }));
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     const query: ExportQuery = {
       category,
       period,
-      ...(selectedRound
-        ? { round: selectedRound.id }
-        : period !== "all" && day
-          ? { periodStart: day }
-          : {}),
+      ...(selectedRound ? { round: selectedRound.id } : {}),
       ...(fromLocalDateTimeInput(asOf)
         ? { asOf: fromLocalDateTimeInput(asOf)! }
         : {}),
@@ -98,9 +101,7 @@ function ExportForm({ onDone }: { onDone: () => void }) {
         link.download = standingsFilename(
           category,
           period,
-          period === "all"
-            ? toIsoDate(new Date())
-            : (selectedRound?.startDate ?? day),
+          selectedRound?.startDate ?? toIsoDate(new Date()),
         );
         document.body.append(link);
         link.click();
@@ -144,11 +145,7 @@ function ExportForm({ onDone }: { onDone: () => void }) {
             label={copy.period}
             value={period}
             onValueChange={setPeriod}
-            options={[
-              { value: "week", label: copy.week },
-              { value: "month", label: copy.month },
-              { value: "all", label: copy.all },
-            ]}
+            options={[...periodOptions, { value: "all", label: copy.all }]}
             className="w-full"
           />
         </div>
@@ -206,22 +203,8 @@ function ExportForm({ onDone }: { onDone: () => void }) {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-          ) : (
-            period !== "all" && (
-              <div>
-                <Label htmlFor={`${ids}-day`} className="mb-2 block">
-                  {copy.periodDate}
-                </Label>
-                <Input
-                  id={`${ids}-day`}
-                  type="date"
-                  value={day}
-                  onChange={(event) => setDay(event.target.value)}
-                />
-              </div>
-            )
-          )}
-          <div className={period === "all" ? "sm:col-span-2" : ""}>
+          ) : null}
+          <div className={selectedRound ? "" : "sm:col-span-2"}>
             <Label htmlFor={`${ids}-as-of`} className="mb-2 block">
               {copy.asOf}
             </Label>

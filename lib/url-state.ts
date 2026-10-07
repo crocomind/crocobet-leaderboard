@@ -10,10 +10,10 @@ import {
   type PlatformFilter,
 } from "@/lib/api/types";
 
-export const VIEWS = ["leaderboard", "my-posts", "admin"] as const;
+export const VIEWS = ["leaderboard", "my-posts", "admin", "profile"] as const;
 export type AppView = (typeof VIEWS)[number];
 
-/** Everything shareable lives in the URL: ?view=&category=&platform=&period=&round=&q= */
+/** Everything shareable lives in the URL: ?view=&category=&platform=&period=&round=&q=&employee= */
 export interface AppUrlState {
   view: AppView;
   category: ContentCategory;
@@ -22,6 +22,8 @@ export interface AppUrlState {
   /** A past weekly or monthly round; empty means the current one. */
   round: string;
   q: string;
+  /** Whose profile (view=profile); empty means your own. Admins can open anyone's. */
+  employee: string;
 }
 
 export const DEFAULT_URL_STATE: AppUrlState = {
@@ -31,6 +33,7 @@ export const DEFAULT_URL_STATE: AppUrlState = {
   period: "month",
   round: "",
   q: "",
+  employee: "",
 };
 
 const ROUND_ID = /^[\w-]{1,64}$/;
@@ -96,6 +99,9 @@ export function parseUrlState(params: ReadableParams): AppUrlState {
         ? params.get("round")!
         : "",
     q: (params.get("q") ?? "").slice(0, 100),
+    employee: ROUND_ID.test(params.get("employee") ?? "")
+      ? params.get("employee")!
+      : "",
   };
 }
 
@@ -104,6 +110,8 @@ export function serializeUrlState(state: AppUrlState): string {
   const params = new URLSearchParams();
   (Object.keys(DEFAULT_URL_STATE) as (keyof AppUrlState)[]).forEach((key) => {
     const value = key === "q" ? state.q.trim() : state[key];
+    // Whose profile only matters on the profile view.
+    if (key === "employee" && state.view !== "profile") return;
     if (value && value !== DEFAULT_URL_STATE[key]) params.set(key, value);
   });
   const query = params.toString();

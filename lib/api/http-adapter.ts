@@ -1,5 +1,7 @@
 import { request } from "./http-client";
 import type {
+  AdminLeaderboardDetail,
+  AdminLeaderboardsResponse,
   AdminPostDetail,
   AdminPostsResponse,
   ApiAdapter,
@@ -9,6 +11,7 @@ import type {
   Me,
   MyPostsResponse,
   Post,
+  ProfileResponse,
   Round,
   RoundsResponse,
   SyncRun,
@@ -18,6 +21,8 @@ import type {
 const postPath = (postId: string) => `/posts/${encodeURIComponent(postId)}`;
 const adminPostPath = (postId: string) =>
   `/admin/posts/${encodeURIComponent(postId)}`;
+const adminBoardPath = (boardId: string) =>
+  `/admin/leaderboards/${encodeURIComponent(boardId)}`;
 
 /** "all" means no filter, so it's left out of the query string. */
 const filter = (value: string) => (value === "all" ? undefined : value);
@@ -159,4 +164,32 @@ export const httpAdapter: ApiAdapter = {
       body: input,
       signal,
     }),
+
+  getAdminLeaderboards: ({ signal } = {}) =>
+    request<AdminLeaderboardsResponse>("/admin/leaderboards", { signal }),
+
+  getAdminLeaderboard: (boardId, category, { signal } = {}) =>
+    request<AdminLeaderboardDetail>(adminBoardPath(boardId), {
+      query: { category },
+      signal,
+    }),
+
+  removeFromLeaderboard: (boardId, employeeId, { signal } = {}) =>
+    request<void>(`${adminBoardPath(boardId)}/removed`, {
+      method: "POST",
+      body: { employeeId },
+      signal,
+    }),
+
+  restoreToLeaderboard: (boardId, employeeId, { signal } = {}) =>
+    request<void>(
+      `${adminBoardPath(boardId)}/removed/${encodeURIComponent(employeeId)}`,
+      { method: "DELETE", signal },
+    ),
+
+  getProfile: (employeeId, { signal } = {}) =>
+    request<ProfileResponse>(
+      `/employees/${encodeURIComponent(employeeId)}/profile`,
+      { signal },
+    ),
 };

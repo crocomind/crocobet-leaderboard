@@ -20,7 +20,7 @@ import {
 import type { MockEmployee, MockPost, MockState, ProviderTruth } from "./types";
 
 /** Bump when the shape or the generator changes; stored mock state is then regenerated. */
-export const MOCK_STATE_VERSION = 6;
+export const MOCK_STATE_VERSION = 7;
 
 /** The employee the mock backend treats as signed in. */
 export const MOCK_CURRENT_USER_ID = "emp-tamar-lomidze";
@@ -622,6 +622,7 @@ export function createInitialState(now: Date): MockState {
     },
     campaignSource: "default",
     rounds: [],
+    exclusions: [],
     posts: [],
     socialAccounts: [],
     syncRuns: [],

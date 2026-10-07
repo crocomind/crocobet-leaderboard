@@ -10,9 +10,9 @@ import {
 
 /**
  * Leaderboard rounds: weekly and monthly date ranges that admins define.
- * "This week" and "This month" show the round covering today; without
- * rounds of that kind, calendar weeks and months are used. Pure, so the mock
- * API and the server resolve them the same way.
+ * Weekly and monthly leaderboards exist only as rounds: "This week" and
+ * "This month" show the round running now, and there are none without one.
+ * Pure, so the mock API and the server resolve them the same way.
  */
 
 export const ROUND_KINDS = ["week", "month"] as const;
@@ -104,28 +104,73 @@ export function roundNumbers(
   return numbers;
 }
 
-/**
- * The round a "This week" / "This month" board shows at `reference`: the
- * one covering it, else the first one (before the rounds start) or the last
- * one that has started (between or after rounds).
- */
-export function currentRound(
+/** The round of that kind running at `at` ("This week" / "This month"), or null. */
+export function runningRound(
   kind: RoundKind,
   rounds: readonly RoundRange[],
-  reference: Date,
+  at: Date,
 ): RoundRange | null {
-  const ofKind = rounds.filter((round) => round.kind === kind).sort(byStart);
-  if (ofKind.length === 0) return null;
   return (
-    ofKind.find(
-      (round) => round.startsAt <= reference && reference < round.endsAt,
-    ) ??
-    ofKind.filter((round) => round.startsAt <= reference).at(-1) ??
-    ofKind[0]!
+    rounds.find(
+      (round) =>
+        round.kind === kind && round.startsAt <= at && at < round.endsAt,
+    ) ?? null
   );
 }
 
+/** Rounds that have started by `now`: the ones employees can look at. */
+export function startedRounds<R extends Pick<RoundRange, "startsAt">>(
+  rounds: readonly R[],
+  now: Date,
+): R[] {
+  return rounds.filter((round) => round.startsAt <= now);
+}
+
+type ApiRoundTimes = Pick<Round, "id" | "kind" | "startsAt" | "endsAt">;
+
+/** The client's copy of runningRound, on API rounds (ISO dates). */
+export function runningApiRound<R extends ApiRoundTimes>(
+  kind: RoundKind,
+  rounds: readonly R[],
+  now: number,
+): R | undefined {
+  return rounds.find(
+    (round) =>
+      round.kind === kind &&
+      Date.parse(round.startsAt) <= now &&
+      now < Date.parse(round.endsAt),
+  );
+}
+
+/**
+ * What a leaderboard request shows, worked out the same way as
+ * resolveBoardRange: a started round chosen by id, the running round, or the
+ * whole challenge. Lets the UI mark the right option before the board loads.
+ */
+export function shownPeriod(
+  period: Period,
+  roundId: string,
+  rounds: readonly ApiRoundTimes[],
+  now: number,
+): { period: Period; round: string } {
+  if (period === "all") return { period, round: "" };
+  const chosen = roundId
+    ? rounds.find(
+        (round) =>
+          round.id === roundId &&
+          round.kind === period &&
+          Date.parse(round.startsAt) <= now,
+      )
+    : undefined;
+  if (chosen) return { period, round: chosen.id };
+  return runningApiRound(period, rounds, now)
+    ? { period, round: "" }
+    : { period: "all", round: "" };
+}
+
 export interface BoardRange {
+  /** The period actually shown: "all" when no round of the asked kind applies. */
+  period: Period;
   start: Date;
   /** Exclusive. */
   end: Date;
@@ -134,9 +179,45 @@ export interface BoardRange {
 }
 
 /**
- * The dates a board covers. A chosen round (by id) wins; otherwise the
- * current round of that kind; otherwise the calendar week or month.
- * Everything is intersected with the challenge window.
+ * When a board's results froze: a weekly or monthly round's end, once it has
+ * ended. null while it runs, and always for the challenge (whose metrics keep
+ * refreshing for the grace days after it ends).
+ */
+export function frozenAt(
+  range: Pick<BoardRange, "round" | "end">,
+  now: Date,
+): Date | null {
+  return range.round && now >= range.end ? range.end : null;
+}
+
+/** A round's board dates: the round, inside the challenge window. */
+export function roundBoardRange(
+  round: RoundRange,
+  campaign: CampaignWindow,
+  now: Date,
+): BoardRange {
+  const start = new Date(
+    Math.max(round.startsAt.getTime(), campaign.startsAt.getTime()),
+  );
+  const end = new Date(
+    Math.max(
+      start.getTime(),
+      Math.min(round.endsAt.getTime(), campaign.endsAt.getTime()),
+    ),
+  );
+  return {
+    period: round.kind,
+    start,
+    end,
+    isCurrent: now >= start && now < end,
+    round,
+  };
+}
+
+/**
+ * What a board shows. A chosen round wins if it has started; otherwise the
+ * round of that kind running at `reference`. With neither (no rounds yet, a
+ * gap between rounds, or an unknown id), the board is the whole challenge.
  */
 export function resolveBoardRange(
   period: Period,
@@ -158,31 +239,20 @@ export function resolveBoardRange(
     period === "all"
       ? null
       : ((roundId
-          ? rounds.find(
+          ? startedRounds(rounds, now).find(
               (candidate) =>
                 candidate.id === roundId && candidate.kind === period,
             )
-          : undefined) ?? currentRound(period, rounds, reference));
-
-  if (!round) {
-    const range = resolvePeriod(period, reference, campaign);
-    return {
-      start: range.start,
-      end: range.end,
-      isCurrent: now >= range.start && now < range.end,
-      round: null,
-    };
-  }
-  const start = new Date(
-    Math.max(round.startsAt.getTime(), campaign.startsAt.getTime()),
-  );
-  const end = new Date(
-    Math.max(
-      start.getTime(),
-      Math.min(round.endsAt.getTime(), campaign.endsAt.getTime()),
-    ),
-  );
-  return { start, end, isCurrent: now >= start && now < end, round };
+          : undefined) ?? runningRound(period, rounds, reference));
+  if (round) return roundBoardRange(round, campaign, now);
+  const range = resolvePeriod("all", reference, campaign);
+  return {
+    period: "all",
+    start: range.start,
+    end: range.end,
+    isCurrent: now >= range.start && now < range.end,
+    round: null,
+  };
 }
 
 export type RoundProblem = "invalid_dates" | "outside_challenge" | "overlap";

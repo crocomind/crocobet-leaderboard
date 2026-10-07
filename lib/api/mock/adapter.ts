@@ -178,4 +178,26 @@ export const mockAdapter: ApiAdapter = {
     respond((mock) => mock.generateRounds(kind), options, { mutates: true }),
   updateChallenge: (input, options) =>
     respond((mock) => mock.updateChallenge(input), options, { mutates: true }),
+
+  getAdminLeaderboards: (options) =>
+    respond((mock, now) => mock.getAdminLeaderboards(now), options),
+  getAdminLeaderboard: (boardId, category, options) =>
+    respond(
+      (mock, now) => mock.getAdminLeaderboard(boardId, category, now),
+      options,
+    ),
+  removeFromLeaderboard: (boardId, employeeId, options) =>
+    respond(
+      (mock, now) => mock.removeFromLeaderboard(boardId, employeeId, now),
+      options,
+      { mutates: true },
+    ),
+  restoreToLeaderboard: (boardId, employeeId, options) =>
+    respond(
+      (mock, now) => mock.restoreToLeaderboard(boardId, employeeId, now),
+      options,
+      { mutates: true },
+    ),
+  getProfile: (employeeId, options) =>
+    respond((mock, now) => mock.getProfile(employeeId, now), options),
 };

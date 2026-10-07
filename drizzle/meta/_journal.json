@@ -15,6 +15,13 @@
       "when": 1791206822493,
       "tag": "0001_rounds_and_challenge",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791375138088,
+      "tag": "0002_leaderboard_exclusions",
+      "breakpoints": true
     }
   ]
 }
