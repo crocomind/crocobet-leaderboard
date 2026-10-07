@@ -150,11 +150,25 @@
     background: color-mix(in oklab, var(--brand-primary) 35%, transparent);
   }
 
+  /* Everything clickable shows the pointer (Tailwind v4 leaves buttons on
+     the arrow); disabled things keep the default cursor. */
+  a[href],
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
-  [role="radio"],
-  [role="menuitemradio"],
-  label[for] {
+  [role="radio"]:not([data-disabled]),
+  [role="checkbox"]:not([data-disabled]),
+  [role="switch"]:not([data-disabled]),
+  [role="tab"]:not([data-disabled]),
+  [role="option"]:not([data-disabled]),
+  [role="menuitem"]:not([data-disabled]),
+  [role="menuitemradio"]:not([data-disabled]),
+  [role="menuitemcheckbox"]:not([data-disabled]),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  select:not(:disabled),
+  summary,
+  label[for],
+  label:has(> input[type="checkbox"]:not(:disabled)) {
     cursor: pointer;
   }
 }
