@@ -9,7 +9,6 @@ import { MotionButton } from "@/components/ui/motion-button";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
-  ResponsiveDialogDescription,
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,7 +34,11 @@ export function ModerationDialog({
   ...props
 }: ModerationDialogProps) {
   return (
-    <ResponsiveDialog open={action !== null} onOpenChange={onOpenChange}>
+    <ResponsiveDialog
+      open={action !== null}
+      onOpenChange={onOpenChange}
+      aria-describedby={undefined}
+    >
       {action && (
         <ModerationForm
           action={action}
@@ -110,9 +113,6 @@ function ModerationForm({
           </span>
           <div>
             <ResponsiveDialogTitle>{copy.confirmTitle}</ResponsiveDialogTitle>
-            <ResponsiveDialogDescription className="mt-1.5">
-              {copy.confirmDescription}
-            </ResponsiveDialogDescription>
           </div>
         </div>
         {error && <FormError message={error} />}
@@ -141,9 +141,6 @@ function ModerationForm({
       <div className="flex items-start gap-3 px-5 pt-2 pb-4 md:px-7 md:pt-7">
         <div className="min-w-0 flex-1">
           <ResponsiveDialogTitle>{title}</ResponsiveDialogTitle>
-          <ResponsiveDialogDescription className="mt-1">
-            {visibleToEmployee ? copy.noteVisible : t.admin.drawer.editNote}
-          </ResponsiveDialogDescription>
         </div>
         <ResponsiveDialogClose label={t.common.close} className="-mt-1 -mr-2" />
       </div>

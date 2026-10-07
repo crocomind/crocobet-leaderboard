@@ -26,18 +26,10 @@ export function SummaryCards({
         label={t.categories.staticBoard}
         board={summary.boards.static}
       />
-      <SummaryCard
-        icon={<CircleCheck />}
-        label={t.myPosts.summary.approved}
-        hint={t.myPosts.summary.approvedHint}
-      >
+      <SummaryCard icon={<CircleCheck />} label={t.myPosts.summary.approved}>
         <AnimatedNumber value={summary.approvedCount} format={formatNumber} />
       </SummaryCard>
-      <SummaryCard
-        icon={<Hourglass />}
-        label={t.myPosts.summary.pending}
-        hint={t.myPosts.summary.pendingHint}
-      >
+      <SummaryCard icon={<Hourglass />} label={t.myPosts.summary.pending}>
         <AnimatedNumber value={summary.pendingCount} format={formatNumber} />
       </SummaryCard>
     </dl>

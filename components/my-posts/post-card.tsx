@@ -211,7 +211,6 @@ export function PostCard({ post }: { post: Post }) {
                 {post.statusNote}
               </p>
             )}
-            <p className="mt-1 text-muted-foreground">{t.myPosts.notCounted}</p>
           </div>
         )}
 
@@ -242,10 +241,6 @@ export function PostCard({ post }: { post: Post }) {
               <span aria-hidden="true">
                 <ScoreBreakdown views={post.views} reactions={post.reactions} />
               </span>
-            </p>
-          ) : counted ? (
-            <p className="text-xs text-muted-foreground">
-              {t.myPosts.statsPending}
             </p>
           ) : (
             <span />
@@ -290,14 +285,11 @@ export function PostCard({ post }: { post: Post }) {
         onOpenChange={setConfirmOpen}
         title={t.myPosts.deleteTitle}
         description={
-          <>
-            {t.myPosts.deleteDescription}
-            {withdraw.isError && (
-              <span role="alert" className="mt-2 block text-danger-text">
-                {t.myPosts.actionError}
-              </span>
-            )}
-          </>
+          withdraw.isError && (
+            <span role="alert" className="text-danger-text">
+              {t.myPosts.actionError}
+            </span>
+          )
         }
         confirmLabel={t.myPosts.deleteConfirm}
         destructive

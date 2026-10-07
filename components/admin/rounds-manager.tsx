@@ -12,7 +12,6 @@ import { MotionButton } from "@/components/ui/motion-button";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
-  ResponsiveDialogDescription,
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -96,7 +95,6 @@ export function RoundsManager({ onMessage }: { onMessage: OnMessage }) {
           if (!open) setDeleting(null);
         }}
         title={t.admin.leaderboards.deleteTitle}
-        description={t.admin.leaderboards.deleteDescription}
         confirmLabel={t.admin.leaderboards.deleteConfirm}
         destructive
         pending={remove.isPending}
@@ -253,7 +251,6 @@ function ChallengeCard({
                 ? copy.sourceAdmin
                 : copy.sourceDefault}
             </Badge>
-            {copy.challengeHint}
           </p>
         </div>
       )}
@@ -405,6 +402,7 @@ function RoundDialog({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
+      aria-describedby={undefined}
     >
       {state && (
         <RoundForm
@@ -492,9 +490,6 @@ function RoundForm({
                 ? copy.addWeekTitle
                 : copy.addMonthTitle}
           </ResponsiveDialogTitle>
-          <ResponsiveDialogDescription className="mt-1">
-            {copy.challengeHint}
-          </ResponsiveDialogDescription>
         </div>
         <ResponsiveDialogClose label={t.common.close} className="-mt-1 -mr-2" />
       </div>

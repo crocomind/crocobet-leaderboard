@@ -104,7 +104,6 @@ export function PostReviewDrawer({
             </ResponsiveDialogDescription>
             <ErrorState
               title={t.admin.error}
-              description={t.leaderboard.error.description}
               retryLabel={t.common.retry}
               onRetry={() => void detail.refetch()}
               retrying={detail.isFetching}
@@ -341,14 +340,11 @@ function DrawerContent({
           onOpenChange={setConfirmDelete}
           title={t.admin.drawer.deleteTitle}
           description={
-            <>
-              {t.admin.drawer.deleteDescription}
-              {remove.isError && (
-                <span role="alert" className="mt-2 block text-danger-text">
-                  {t.admin.toasts.error}
-                </span>
-              )}
-            </>
+            remove.isError && (
+              <span role="alert" className="text-danger-text">
+                {t.admin.toasts.error}
+              </span>
+            )
           }
           confirmLabel={t.admin.actions.delete}
           destructive

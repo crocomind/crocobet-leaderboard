@@ -24,7 +24,7 @@ export function SubmitSuccess({
   onSubmitAnother,
   onViewMyPosts,
 }: SubmitSuccessProps) {
-  const { t, format } = useI18n();
+  const { t } = useI18n();
   const reduceMotion = useReducedMotion() ?? false;
   const animateIn = !reduceMotion;
 
@@ -88,17 +88,6 @@ export function SubmitSuccess({
       >
         {t.submit.successTitle}
       </motion.h3>
-      <motion.p
-        className="mt-2 max-w-sm text-sm text-pretty text-muted-foreground"
-        {...fadeUp(0.42)}
-      >
-        {format(t.submit.successDescription, {
-          board:
-            post.category === "video"
-              ? t.categories.videoBoard
-              : t.categories.staticBoard,
-        })}
-      </motion.p>
 
       <motion.p
         className="mt-4 inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-surface/80 py-1.5 pr-3.5 pl-1.5 text-sm"

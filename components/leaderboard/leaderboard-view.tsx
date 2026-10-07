@@ -217,9 +217,6 @@ export function LeaderboardView() {
           <h1 className="text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
             {t.leaderboard.title}
           </h1>
-          <p className="mt-1.5 max-w-xl text-pretty text-muted-foreground">
-            {t.leaderboard.subtitle}
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start sm:justify-end sm:self-auto">
           <BoardDates period={data?.period} />
@@ -275,7 +272,6 @@ export function LeaderboardView() {
         ) : !data ? (
           <ErrorState
             title={t.leaderboard.error.title}
-            description={t.leaderboard.error.description}
             retryLabel={t.common.retry}
             onRetry={() => void leaderboard.refetch()}
             retrying={leaderboard.isFetching}
@@ -289,7 +285,6 @@ export function LeaderboardView() {
               title={format(t.leaderboard.empty.searchTitle, {
                 query: shown.search,
               })}
-              description={t.leaderboard.empty.searchDescription}
               action={
                 <MotionButton
                   variant="secondary"
@@ -306,7 +301,6 @@ export function LeaderboardView() {
                 shown.category === "video" ? <Clapperboard /> : <ImageIcon />
               }
               title={t.leaderboard.empty.title}
-              description={t.leaderboard.empty.description}
               action={
                 <MotionButton onClick={openSubmit}>
                   <Plus aria-hidden="true" />

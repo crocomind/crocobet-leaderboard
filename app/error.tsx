@@ -26,7 +26,6 @@ export default function Error({
         tone="danger"
         icon={<TriangleAlert />}
         title={t.errors.pageTitle}
-        description={t.errors.pageDescription}
         className="w-full"
         action={
           <MotionButton onClick={retry}>

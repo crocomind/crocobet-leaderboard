@@ -36,7 +36,6 @@ export function AdminGate({ children }: { children: ReactNode }) {
       <StatePanel
         icon={<ShieldX />}
         title={t.admin.forbidden.title}
-        description={t.admin.forbidden.description}
         action={
           <MotionButton
             variant="secondary"

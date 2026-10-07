@@ -71,9 +71,6 @@ export function EmptyPosts({ onSubmit }: { onSubmit: () => void }) {
       <h2 className="mt-6 text-xl font-bold text-balance">
         {t.myPosts.empty.title}
       </h2>
-      <p className="mt-2 max-w-sm text-sm text-pretty text-muted-foreground">
-        {t.myPosts.empty.description}
-      </p>
       <MotionButton size="lg" className="mt-7" onClick={onSubmit}>
         <Plus strokeWidth={2.5} aria-hidden="true" />
         {t.myPosts.empty.cta}

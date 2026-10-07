@@ -17,7 +17,6 @@ import { MotionButton } from "@/components/ui/motion-button";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
-  ResponsiveDialogDescription,
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -39,7 +38,11 @@ export function ExportDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   return (
-    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      aria-describedby={undefined}
+    >
       {open && <ExportForm onDone={() => onOpenChange(false)} />}
     </ResponsiveDialog>
   );
@@ -113,9 +116,6 @@ function ExportForm({ onDone }: { onDone: () => void }) {
       <div className="flex items-start gap-3 px-5 pt-2 pb-4 md:px-7 md:pt-7">
         <div className="min-w-0 flex-1">
           <ResponsiveDialogTitle>{copy.title}</ResponsiveDialogTitle>
-          <ResponsiveDialogDescription className="mt-1">
-            {copy.description}
-          </ResponsiveDialogDescription>
         </div>
         <ResponsiveDialogClose label={t.common.close} className="-mt-1 -mr-2" />
       </div>
