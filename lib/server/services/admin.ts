@@ -33,6 +33,7 @@ import {
   NOTE_MAX_LENGTH,
 } from "@/lib/moderation";
 import { isWithin, postedDateToInstant, zonedToday } from "@/lib/periods";
+import { frozenAt } from "@/lib/rounds";
 import {
   CONTENT_CATEGORIES,
   CONTENT_TYPE_INFO,
@@ -63,7 +64,11 @@ import {
   loadEmployees,
   toEmployee,
 } from "@/lib/server/services/employees";
-import { resolveBoard, rowsAsOf } from "@/lib/server/services/leaderboard";
+import {
+  frozenPosts,
+  resolveBoard,
+  rowsAsOf,
+} from "@/lib/server/services/leaderboard";
 import { toPost } from "@/lib/server/services/mappers";
 import { claimRun, executeRun } from "@/lib/server/services/sync";
 
@@ -697,7 +702,7 @@ export async function exportStandings(
     query.period !== "all" && query.periodStart
       ? (postedDateToInstant(query.periodStart, timeZone) ?? now)
       : now;
-  const { filter } = await resolveBoard(
+  const { filter, range: shown } = await resolveBoard(
     db,
     config,
     {
@@ -711,7 +716,12 @@ export async function exportStandings(
   );
   const range = filter.range;
   const asOf = query.asOf ? new Date(query.asOf) : now;
-  const rows = await rowsAsOf(db, filter, asOf);
+  // After a round ends, its standings are the frozen ones.
+  const end = frozenAt(shown, now);
+  const rows =
+    end && asOf >= end
+      ? await frozenPosts(db, range, end)
+      : await rowsAsOf(db, filter, asOf);
   const ids = [...new Set(rows.map((row) => row.employeeId))];
   const [profiles, emails] = await Promise.all([
     loadEmployees(db, ids),
@@ -727,7 +737,7 @@ export async function exportStandings(
   return {
     filename: standingsFilename(
       query.category,
-      query.period,
+      shown.period,
       zonedToday(range.start, timeZone),
     ),
     csv: standingsCsv(

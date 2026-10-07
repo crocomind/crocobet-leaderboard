@@ -9,6 +9,7 @@ import type {
 } from "@/lib/api/types";
 import { applyModeration } from "@/lib/moderation";
 import { submissionsOpen } from "@/lib/periods";
+import { frozenAt } from "@/lib/rounds";
 import { analyzePostUrl, type PostUrlAnalysis } from "@/lib/platforms";
 import { countedPosts } from "@/lib/ranking";
 import type { ServerConfig } from "@/lib/server/config";
@@ -22,7 +23,11 @@ import {
 import { HttpError } from "@/lib/server/http";
 import { resolveShortLink } from "@/lib/server/link-resolver";
 import { runCheck } from "@/lib/server/services/checks";
-import { boardSummary, resolveBoard } from "@/lib/server/services/leaderboard";
+import {
+  boardSummary,
+  frozenPosts,
+  resolveBoard,
+} from "@/lib/server/services/leaderboard";
 import { toPost, toRankable } from "@/lib/server/services/mappers";
 import { TITLE_MAX_LENGTH } from "@/lib/validation/submit-post";
 
@@ -58,7 +63,7 @@ export async function getMyPosts(
     boardSummary(db, config, "static", employee.id, now),
   ]);
   return {
-    posts: rows.map(toPost),
+    posts: rows.map((row) => toPost(row)),
     summary: {
       postCount: rows.length,
       approvedCount: rows.filter((row) => row.status === "approved").length,
@@ -74,14 +79,21 @@ export async function getEmployeePosts(
   employeeId: string,
   query: EmployeePostsQuery,
 ): Promise<Post[]> {
-  const { filter } = await resolveBoard(db, config, query, now);
+  const { filter, range } = await resolveBoard(db, config, query, now);
+  const end = frozenAt(range, now);
   const rows = await db
     .select()
     .from(posts)
     .where(and(eq(posts.employeeId, employeeId), eq(posts.status, "approved")));
   const byId = new Map(rows.map((row) => [row.id, row]));
-  return countedPosts(rows.map(toRankable), employeeId, filter).map((post) =>
-    toPost(byId.get(post.id)!),
+  // A finished round shows each post's numbers as they were at its end.
+  const rankables = end
+    ? (await frozenPosts(db, filter.range, end)).filter(
+        (post) => post.employeeId === employeeId,
+      )
+    : rows.map(toRankable);
+  return countedPosts(rankables, employeeId, filter).map((post) =>
+    toPost(byId.get(post.id)!, end ? post : undefined),
   );
 }
 

@@ -5,6 +5,7 @@ import {
   type BoardFilter,
   countedPosts,
   postsAsOf,
+  postsFrozenAt,
   rankBoard,
   rankMap,
   type RankablePost,
@@ -287,5 +288,79 @@ describe("postsAsOf", () => {
       asOf,
     );
     expect(asItWas).toMatchObject({ views: null, reactions: 0 });
+  });
+});
+
+describe("postsFrozenAt", () => {
+  const end = new Date("2026-10-20T00:00:00Z");
+  const at = (iso: string) => new Date(iso);
+  const snaps = (
+    rows: [string, number | null, number, ("provider" | "manual")?][],
+  ) =>
+    rows.map(([iso, views, reactions, source]) => ({
+      fetchedAt: at(iso),
+      views,
+      reactions,
+      source: source ?? ("provider" as const),
+    }));
+
+  it("keeps the numbers that held at the end, whenever the post was approved", () => {
+    const [frozen] = postsFrozenAt(
+      [
+        {
+          ...post("ana", "tiktok_video", 9000, 900),
+          // Approved after the round ended; checked while it ran.
+          approvedAt: at("2026-10-21T09:00:00Z"),
+          snapshots: snaps([
+            ["2026-10-18T10:00:00Z", 500, 50],
+            ["2026-10-19T22:00:00Z", 800, 80],
+            ["2026-10-25T10:00:00Z", 9000, 900],
+          ]),
+        },
+      ],
+      end,
+    );
+    expect(frozen).toMatchObject({ views: 800, reactions: 80 });
+  });
+
+  it("uses a post's first snapshot after the end if it had none before", () => {
+    const [frozen] = postsFrozenAt(
+      [
+        {
+          ...post("beka", "tiktok_video", 9000, 900),
+          approvedAt: at("2026-10-22T09:00:00Z"),
+          snapshots: snaps([
+            ["2026-10-23T10:00:00Z", 2000, 20],
+            ["2026-10-22T10:00:00Z", 1500, 15],
+          ]),
+        },
+      ],
+      end,
+    );
+    expect(frozen).toMatchObject({ views: 1500, reactions: 15 });
+  });
+
+  it("keeps an admin's locked numbers, and a never-fetched post's own", () => {
+    const [locked, never] = postsFrozenAt(
+      [
+        {
+          ...post("nino", "tiktok_video", 300, 3),
+          approvedAt: at("2026-10-10T00:00:00Z"),
+          metricsLocked: true,
+          snapshots: snaps([
+            ["2026-10-15T00:00:00Z", 300, 3, "manual"],
+            ["2026-10-19T00:00:00Z", 5000, 50],
+          ]),
+        },
+        {
+          ...post("zura", "linkedin_post", null, 70),
+          approvedAt: at("2026-10-10T00:00:00Z"),
+          snapshots: [],
+        },
+      ],
+      end,
+    );
+    expect(locked).toMatchObject({ views: 300, reactions: 3 });
+    expect(never).toMatchObject({ views: null, reactions: 70 });
   });
 });

@@ -10,6 +10,7 @@ import { ViewNav } from "@/components/layout/view-nav";
 import { ListSkeleton } from "@/components/leaderboard/leaderboard-skeleton";
 import { LeaderboardView } from "@/components/leaderboard/leaderboard-view";
 import { MyPostsView } from "@/components/my-posts/my-posts-view";
+import { ProfileView } from "@/components/profile/profile-view";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { SubmitPostDialog } from "@/components/submit/submit-post-dialog";
 import { useViewPreload } from "@/components/layout/use-view-preload";
@@ -61,7 +62,12 @@ export function AppShell() {
         <div className="relative">
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
-              key={state.view}
+              // A different person's profile fades in like a new view.
+              key={
+                state.view === "profile"
+                  ? `profile:${state.employee}`
+                  : state.view
+              }
               initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
               animate={{
                 opacity: 1,
@@ -80,6 +86,8 @@ export function AppShell() {
                 <AdminGate>
                   <AdminView />
                 </AdminGate>
+              ) : state.view === "profile" ? (
+                <ProfileView />
               ) : (
                 <MyPostsView />
               )}

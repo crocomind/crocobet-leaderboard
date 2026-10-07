@@ -7,8 +7,13 @@ import { displayedViews, postScore } from "@/lib/scoring";
 const iso = (date: Date | null) => date?.toISOString() ?? null;
 
 /** A post as the API returns it (contract v1). */
-export function toPost(row: PostRow): Post {
+/** `metrics` replaces the post's own numbers (a finished round's frozen ones). */
+export function toPost(
+  row: PostRow,
+  metrics?: { views: number | null; reactions: number },
+): Post {
   const details = row.checkDetails;
+  const { views, reactions } = metrics ?? row;
   return {
     id: row.id,
     employeeId: row.employeeId,
@@ -32,9 +37,9 @@ export function toPost(row: PostRow): Post {
       error: details?.error ?? null,
       checkedAt: iso(row.checkedAt),
     },
-    views: displayedViews(row.category, row.views),
-    reactions: row.reactions,
-    score: postScore(row.category, row.views, row.reactions),
+    views: displayedViews(row.category, views),
+    reactions,
+    score: postScore(row.category, views, reactions),
     metricsUpdatedAt: iso(row.metricsFetchedAt),
     thumbnailUrl: row.thumbnailUrl,
   };

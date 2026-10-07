@@ -385,6 +385,99 @@ export interface ExportQuery {
   asOf?: IsoDateTime;
 }
 
+// ------------------------------------------------- leaderboards and profiles
+
+/** The id of the 3-Month Challenge leaderboard; rounds use their own id. */
+export const CHALLENGE_BOARD_ID = "challenge";
+
+export type LeaderboardStatus = "upcoming" | "running" | "finished";
+
+/** A leaderboard: the 3-Month Challenge or one weekly or monthly round. */
+export interface LeaderboardInfo {
+  /** CHALLENGE_BOARD_ID, or the round's id. */
+  id: string;
+  /** null for the challenge. */
+  round: Round | null;
+  /** The dates it counts (a round is clipped to the challenge). */
+  startsAt: IsoDateTime;
+  /** Exclusive. */
+  endsAt: IsoDateTime;
+  status: LeaderboardStatus;
+  /** Ranked people per category, without the removed. */
+  participants: Record<ContentCategory, number>;
+  /** People an admin took off this leaderboard. */
+  removedCount: number;
+}
+
+export interface AdminLeaderboardsResponse {
+  challenge: ChallengeWindow;
+  /** The challenge, then weekly rounds, then monthly, each by start. */
+  leaderboards: LeaderboardInfo[];
+}
+
+export type EmployeeWithEmail = Employee & { email: string };
+
+export interface BoardParticipant {
+  rank: number;
+  employee: EmployeeWithEmail;
+  postCount: number;
+  /** null on the static board. */
+  totalViews: number | null;
+  totalReactions: number;
+  score: number;
+  platforms: Platform[];
+}
+
+export interface RemovedParticipant {
+  employee: EmployeeWithEmail;
+  removedAt: IsoDateTime;
+  /** null if that admin's account is gone. */
+  removedBy: EmployeeRef | null;
+}
+
+export interface AdminLeaderboardDetail {
+  leaderboard: LeaderboardInfo;
+  category: ContentCategory;
+  /** By rank; the removed aren't ranked. */
+  participants: BoardParticipant[];
+  /** Newest first. */
+  removed: RemovedParticipant[];
+}
+
+/** Someone's result on one board of a leaderboard. */
+export interface BoardResult {
+  /** null: no counted posts there. */
+  rank: number | null;
+  totalParticipants: number;
+  score: number;
+  postCount: number;
+  /** null on the static board. */
+  totalViews: number | null;
+  totalReactions: number;
+}
+
+export interface ProfileLeaderboard {
+  /** CHALLENGE_BOARD_ID, or the round's id. */
+  id: string;
+  round: Round | null;
+  startsAt: IsoDateTime;
+  /** Exclusive. */
+  endsAt: IsoDateTime;
+  status: Exclude<LeaderboardStatus, "upcoming">;
+  /** An admin took this person off the leaderboard. */
+  removed: boolean;
+  results: Record<ContentCategory, BoardResult>;
+}
+
+/** A person's leaderboard history. Visible to them and to admins. */
+export interface ProfileResponse {
+  employee: EmployeeWithEmail;
+  timeZone: string;
+  challenge: ProfileLeaderboard;
+  /** Rounds that have started, newest first, including ones they didn't take part in. */
+  rounds: ProfileLeaderboard[];
+}
+
 export interface RequestOptions {
   signal?: AbortSignal;
 }
@@ -457,4 +550,29 @@ export interface ApiAdapter {
     input: ChallengeInput,
     options?: RequestOptions,
   ): Promise<ChallengeWindow>;
+
+  getAdminLeaderboards(
+    options?: RequestOptions,
+  ): Promise<AdminLeaderboardsResponse>;
+  getAdminLeaderboard(
+    boardId: string,
+    category: ContentCategory,
+    options?: RequestOptions,
+  ): Promise<AdminLeaderboardDetail>;
+  /** Takes someone off one leaderboard; their posts still count elsewhere. */
+  removeFromLeaderboard(
+    boardId: string,
+    employeeId: string,
+    options?: RequestOptions,
+  ): Promise<void>;
+  restoreToLeaderboard(
+    boardId: string,
+    employeeId: string,
+    options?: RequestOptions,
+  ): Promise<void>;
+  /** Yourself, or anyone for an admin. */
+  getProfile(
+    employeeId: string,
+    options?: RequestOptions,
+  ): Promise<ProfileResponse>;
 }

@@ -38,6 +38,8 @@ export interface BoardFilter {
   category: ContentCategory;
   platform: Platform | "all";
   range: { start: Date; end: Date };
+  /** Employees an admin took off this leaderboard; their posts don't count here. */
+  excluded?: ReadonlySet<string>;
 }
 
 export interface TopPost {
@@ -78,6 +80,7 @@ export function countsOnBoard(
 ): boolean {
   return (
     post.status === "approved" &&
+    !filter.excluded?.has(post.employeeId) &&
     post.category === filter.category &&
     (filter.platform === "all" || post.platform === filter.platform) &&
     isWithin(post.publishedAt, filter.range)
@@ -249,6 +252,54 @@ export function postsAsOf<P extends RankablePost & PostHistory>(
         reactions: snapshot?.reactions ?? 0,
       },
     ];
+  });
+}
+
+/**
+ * The numbers for a moment: the snapshot that held then (snapshotAt), or, for
+ * a post first fetched later, its first snapshot afterwards (the first manual
+ * one while locked).
+ */
+export function snapshotNear(
+  post: PostHistory,
+  at: Date,
+): Snapshot | undefined {
+  const held = snapshotAt(post, at);
+  if (held) return held;
+  let first: Snapshot | undefined;
+  let firstManual: Snapshot | undefined;
+  for (const snapshot of post.snapshots) {
+    if (snapshot.fetchedAt <= at) continue;
+    if (!first || snapshot.fetchedAt < first.fetchedAt) first = snapshot;
+    if (
+      snapshot.source === "manual" &&
+      (!firstManual || snapshot.fetchedAt < firstManual.fetchedAt)
+    )
+      firstManual = snapshot;
+  }
+  return (post.metricsLocked ? firstManual : undefined) ?? first;
+}
+
+/**
+ * A finished round's posts, their numbers frozen at its end: each post keeps
+ * the metrics that held when the round ended (snapshotNear), so views won't
+ * keep growing a past result. Approval time doesn't matter: a post from the
+ * round approved afterwards still counts. A post never fetched keeps its own
+ * numbers.
+ */
+export function postsFrozenAt<P extends RankablePost & PostHistory>(
+  posts: readonly P[],
+  end: Date,
+): P[] {
+  return posts.map((post) => {
+    const snapshot = snapshotNear(post, end);
+    return snapshot
+      ? {
+          ...post,
+          views: snapshot.views ?? null,
+          reactions: snapshot.reactions ?? 0,
+        }
+      : post;
   });
 }
 

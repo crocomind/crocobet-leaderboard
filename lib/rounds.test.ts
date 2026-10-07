@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
-  currentRound,
   dayRange,
   generateRounds,
   rangeDates,
@@ -9,6 +8,7 @@ import {
   type RoundRange,
   roundNumbers,
   roundProblem,
+  runningRound,
   startOfDay,
 } from "@/lib/rounds";
 
@@ -55,30 +55,30 @@ describe("calendar dates", () => {
   });
 });
 
-describe("currentRound and resolveBoardRange", () => {
-  it("shows the round covering today", () => {
+describe("runningRound and resolveBoardRange", () => {
+  it("finds the round running at a moment, or none", () => {
     expect(
-      currentRound("week", weeks, at("2026-10-15T12:00:00+04:00"))?.id,
-    ).toBe("w2");
-    // Sunday 23:59 belongs to w2, Monday 00:00 to nothing (the gap) → the last started round.
-    expect(
-      currentRound("week", weeks, at("2026-10-19T23:59:00+04:00"))?.id,
+      runningRound("week", weeks, at("2026-10-15T12:00:00+04:00"))?.id,
     ).toBe("w2");
     expect(
-      currentRound("week", weeks, at("2026-10-21T12:00:00+04:00"))?.id,
+      runningRound("week", weeks, at("2026-10-19T23:59:00+04:00"))?.id,
     ).toBe("w2");
+    // Monday 00:00 falls in the gap, before and after the rounds too.
     expect(
-      currentRound("week", weeks, at("2026-09-01T12:00:00+04:00"))?.id,
-    ).toBe("w1");
+      runningRound("week", weeks, at("2026-10-20T00:00:00+04:00")),
+    ).toBeNull();
     expect(
-      currentRound("week", weeks, at("2026-12-01T12:00:00+04:00"))?.id,
-    ).toBe("w3");
+      runningRound("week", weeks, at("2026-09-01T12:00:00+04:00")),
+    ).toBeNull();
     expect(
-      currentRound("month", weeks, at("2026-10-15T12:00:00+04:00")),
+      runningRound("week", weeks, at("2026-12-01T12:00:00+04:00")),
+    ).toBeNull();
+    expect(
+      runningRound("month", weeks, at("2026-10-15T12:00:00+04:00")),
     ).toBeNull();
   });
 
-  it("uses a chosen round, the current one, or the calendar", () => {
+  it("uses a chosen round that has started, or the running one", () => {
     const now = at("2026-10-15T12:00:00+04:00");
     const chosen = resolveBoardRange("week", {
       roundId: "w1",
@@ -86,17 +86,37 @@ describe("currentRound and resolveBoardRange", () => {
       campaign,
       rounds: weeks,
     });
-    expect(chosen).toMatchObject({ round: { id: "w1" }, isCurrent: false });
+    expect(chosen).toMatchObject({
+      period: "week",
+      round: { id: "w1" },
+      isCurrent: false,
+    });
     expect(chosen.start).toEqual(at("2026-10-06T00:00:00+04:00"));
 
-    const current = resolveBoardRange("week", {
-      reference: now,
-      campaign,
-      rounds: weeks,
-    });
-    expect(current).toMatchObject({ round: { id: "w2" }, isCurrent: true });
+    expect(
+      resolveBoardRange("week", { reference: now, campaign, rounds: weeks }),
+    ).toMatchObject({ period: "week", round: { id: "w2" }, isCurrent: true });
 
-    // A round id of another kind is ignored.
+    // A round that hasn't started can't be shown; the running one is.
+    expect(
+      resolveBoardRange("week", {
+        roundId: "w3",
+        reference: now,
+        campaign,
+        rounds: weeks,
+      }),
+    ).toMatchObject({ round: { id: "w2" } });
+  });
+
+  it("shows the whole challenge when no round applies", () => {
+    const challenge = {
+      period: "all",
+      round: null,
+      start: campaign.startsAt,
+      end: campaign.endsAt,
+    };
+    const now = at("2026-10-15T12:00:00+04:00");
+    // No monthly rounds at all (a weekly id doesn't count for a month).
     expect(
       resolveBoardRange("month", {
         roundId: "w1",
@@ -104,11 +124,15 @@ describe("currentRound and resolveBoardRange", () => {
         campaign,
         rounds: weeks,
       }),
-    ).toMatchObject({
-      round: null,
-      start: at("2026-10-06T00:00:00+04:00"),
-      end: at("2026-11-01T00:00:00+04:00"),
-    });
+    ).toMatchObject(challenge);
+    // In the gap between weekly rounds.
+    expect(
+      resolveBoardRange("week", {
+        reference: at("2026-10-22T12:00:00+04:00"),
+        campaign,
+        rounds: weeks,
+      }),
+    ).toMatchObject(challenge);
     expect(
       resolveBoardRange("all", {
         roundId: "w1",
@@ -116,11 +140,7 @@ describe("currentRound and resolveBoardRange", () => {
         campaign,
         rounds: weeks,
       }),
-    ).toMatchObject({
-      round: null,
-      start: campaign.startsAt,
-      end: campaign.endsAt,
-    });
+    ).toMatchObject(challenge);
   });
 
   it("clips a round to the challenge", () => {

@@ -9,9 +9,11 @@ work on TikTok, Instagram, Facebook and LinkedIn. Posts must use **#CrocoBySquad
 | **Video**  | TikTok videos, Instagram Reels, Facebook videos       | views + reactions |
 | **Static** | LinkedIn posts, Facebook posts, Instagram photo posts | reactions         |
 
-Each board has **This week**, **This month** and the whole **3-Month Challenge**. Admins set the
-weekly and monthly rounds (any date ranges) and the challenge dates in the app; past rounds stay
-browsable. A post counts in the round it was published in, in Tbilisi time. Metrics refresh
+Each board has the whole **3-Month Challenge**, plus **This week** and **This month** while an
+admin-made weekly or monthly round is running. Admins set the rounds (any date ranges) and the
+challenge dates in the app, see who's on each leaderboard and can take someone off one; past
+rounds stay browsable. Everyone has a profile with their results on every leaderboard (only they
+and admins can see it). A post counts in the round it was published in, in Tbilisi time. Metrics refresh
 automatically twice a day from the posts' public pages, through [Apify](#automatic-metrics-apify):
 no platform accounts are needed.
 
@@ -130,10 +132,18 @@ and regenerated after three days; clear that key to start over.
   [`post-ids`](lib/post-ids.ts) (publish times from TikTok and LinkedIn post IDs).
 - **Rounds.** Admins add weekly and monthly rounds with any dates under **Admin → Leaderboards**
   (or generate 7-day weeks from the challenge start and calendar months in one click), and set the
-  challenge dates there. "This week" and "This month" show the round that's on now (between
-  rounds: the next one before the first starts, otherwise the last one); past rounds are in the
-  period menu. Without rounds of a kind, the board uses calendar weeks or months. Rounds of a kind
+  challenge dates there. Weekly and monthly leaderboards exist only as rounds: "This week" and
+  "This month" appear only while a round of that kind is running, and started rounds (running or
+  finished) are in the period menu. Without one, the board shows the challenge. Rounds of a kind
   can't overlap and must fall inside the challenge. See [`rounds`](lib/rounds.ts).
+- **Leaderboard management.** Under **Admin → Leaderboards**, "Running now" lists the live
+  leaderboards; the challenge and every started round open a participants panel (rank, email,
+  score, profile), where an admin can **remove** someone from that one leaderboard or put them
+  back. Their posts still count everywhere else. See [`leaderboards`](lib/leaderboards.ts).
+- **Profiles** (`?view=profile`, from the account menu): your results on the challenge and every
+  weekly and monthly round you took part in, per board. Admins can open anyone's (from the
+  participants panel or a leaderboard entry). A finished weekly or monthly round's results are
+  frozen at its end (each post's metrics as they were then); the challenge follows the latest ones.
 - **Moderation.** Admins approve every post; the automated check (tag, author account, inside the
   window) is evidence, never an automatic approval. Only approved posts count. Admins can
   disqualify approved posts at any time; every admin action is audited.
@@ -147,7 +157,7 @@ lib/server/config.ts               validated server configuration
 lib/server/db/{schema,client}.ts   Drizzle schema and the Postgres client
 lib/server/auth.ts                 requireEmployee() / requireAdmin()
 lib/server/http.ts, route.ts       error envelope, input parsing, same-origin check
-lib/server/services/               leaderboard, rounds, posts, checks, sync, admin, employees, profile
+lib/server/services/               leaderboard, rounds, boards, exclusions, posts, checks, sync, admin, employees, profile
 lib/server/providers/              PostDataProvider: apify, fixture, manual
 lib/server/link-resolver.ts        short-link resolution with an SSRF guard
 drizzle/                           SQL migrations
@@ -173,7 +183,7 @@ that create the app's tables (employees, posts, snapshots, rounds, …), their c
 indexes, and lock them down. `npm run db:migrate` applies the ones the database hasn't had yet
 and records them in a `drizzle.__drizzle_migrations` table, so running it again is safe. It has
 to run once before the first deploy that uses the database, and again whenever a new file appears
-in `drizzle/` (this release adds `0001_rounds_and_challenge.sql`). Without it, the API answers
+in `drizzle/` (this release adds `0002_leaderboard_exclusions.sql`). Without it, the API answers
 `500` because the tables it queries don't exist.
 
 1. In Supabase: **Project → Connect**. Copy the **Transaction pooler** URI (port 6543) into
@@ -191,8 +201,8 @@ run the real migrations in PGlite (Postgres in WebAssembly).
 
 ### Admins
 
-Admins see the **Admin** view (`?view=admin`): the review queue and **Leaderboards** (rounds and
-challenge dates). The admins are `tekizashvili@crocobet.com` and `gbedoshvili@crocobet.com` by
+Admins see the **Admin** view (`?view=admin`): the review queue and **Leaderboards** (what's
+running, participants, rounds and challenge dates). The admins are `tekizashvili@crocobet.com` and `gbedoshvili@crocobet.com` by
 default. `ADMIN_EMAILS` replaces that list (redeploy to apply); or, in SQL, once someone has
 signed in:
 

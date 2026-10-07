@@ -1,6 +1,7 @@
 import "server-only";
 import {
   and,
+  asc,
   desc,
   eq,
   gte,
@@ -20,13 +21,24 @@ import type {
   PlatformFilter,
   RoundRef,
 } from "@/lib/api/types";
-import { type BoardRange, resolveBoardRange, roundNumbers } from "@/lib/rounds";
+import {
+  type BoardRange,
+  frozenAt,
+  resolveBoardRange,
+  roundNumbers,
+} from "@/lib/rounds";
 import { CATEGORY_PLATFORMS } from "@/lib/platforms";
-import { type BoardFilter, rankBoard, rankMap } from "@/lib/ranking";
+import {
+  type BoardFilter,
+  type RankablePost,
+  rankBoard,
+  rankMap,
+} from "@/lib/ranking";
 import type { ServerConfig } from "@/lib/server/config";
 import type { Db } from "@/lib/server/db/client";
 import { postMetricSnapshots, posts, syncRuns } from "@/lib/server/db/schema";
 import { loadEmployees } from "@/lib/server/services/employees";
+import { loadExcluded } from "@/lib/server/services/exclusions";
 import { loadRounds } from "@/lib/server/services/rounds";
 import { toRankable } from "@/lib/server/services/mappers";
 
@@ -93,6 +105,58 @@ export async function rowsAsOf(db: Db, filter: BoardFilter, asOf: Date) {
   }));
 }
 
+/**
+ * Approved posts published in `range` (every category and platform), their
+ * numbers frozen at `end`: the snapshot that held then, else the first one
+ * after (the manual one first while locked), else the post's own numbers.
+ * lib/ranking.ts postsFrozenAt, in SQL.
+ */
+export async function frozenPosts(
+  db: Db,
+  range: { start: Date; end: Date },
+  end: Date,
+): Promise<RankablePost[]> {
+  const at = sql`${end.toISOString()}::timestamptz`;
+  const near = db
+    .select({
+      fetchedAt: postMetricSnapshots.fetchedAt,
+      views: postMetricSnapshots.views,
+      reactions: postMetricSnapshots.reactions,
+    })
+    .from(postMetricSnapshots)
+    .where(eq(postMetricSnapshots.postId, posts.id))
+    .orderBy(
+      sql`case when ${postMetricSnapshots.fetchedAt} <= ${at} then 0 else 1 end`,
+      sql`case when ${posts.metricsLocked} and ${postMetricSnapshots.source} = 'manual' then 0 else 1 end`,
+      sql`case when ${postMetricSnapshots.fetchedAt} <= ${at} then ${postMetricSnapshots.fetchedAt} end desc nulls last`,
+      asc(postMetricSnapshots.fetchedAt),
+    )
+    .limit(1)
+    .as("near");
+  const rows = await db
+    .select({
+      post: posts,
+      fetchedAt: near.fetchedAt,
+      views: near.views,
+      reactions: near.reactions,
+    })
+    .from(posts)
+    .leftJoinLateral(near, sql`true`)
+    .where(
+      and(
+        eq(posts.status, "approved"),
+        gte(posts.publishedAt, range.start),
+        lt(posts.publishedAt, range.end),
+      ),
+    );
+  return rows.map(({ post, fetchedAt, views, reactions }) => {
+    const rankable = toRankable(post);
+    return fetchedAt
+      ? { ...rankable, views, reactions: reactions ?? 0 }
+      : rankable;
+  });
+}
+
 export async function lastSyncedAt(db: Db): Promise<Date | null> {
   const [row] = await db
     .select({ at: max(syncRuns.finishedAt) })
@@ -110,8 +174,9 @@ export interface ResolvedBoard {
 
 /**
  * Which posts a board counts: the category, the platform (only one that's
- * on the board) and the dates (a chosen round, the current round, or the
- * calendar week/month; always inside the challenge).
+ * on the board), the dates (a started round chosen by id, the running round,
+ * or the whole challenge; always inside the challenge) and who an admin took
+ * off that leaderboard.
  */
 export async function resolveBoard(
   db: Db,
@@ -137,11 +202,13 @@ export async function resolveBoard(
   const number = range.round
     ? roundNumbers(rounds).get(range.round.id)
     : undefined;
+  const excluded = await loadExcluded(db, range.round?.id ?? null);
   return {
     filter: {
       category: query.category,
       platform: boardPlatform(query.category, query.platform),
       range: { start: range.start, end: range.end },
+      excluded,
     },
     range,
     round: range.round
@@ -163,17 +230,22 @@ export async function getLeaderboard(
   now: Date,
 ): Promise<LeaderboardResponse> {
   const { filter, range, round } = await resolveBoard(db, config, query, now);
+  // A finished round's results are frozen at its end, so its ranks don't
+  // move any more either (yesterday is the same board).
+  const end = frozenAt(range, now);
   const [current, yesterday, syncedAt] = await Promise.all([
-    countedRows(db, filter),
-    rowsAsOf(db, filter, new Date(now.getTime() - DAY_MS)),
+    end
+      ? frozenPosts(db, filter.range, end)
+      : countedRows(db, filter).then((rows) => rows.map(toRankable)),
+    end ? null : rowsAsOf(db, filter, new Date(now.getTime() - DAY_MS)),
     lastSyncedAt(db),
   ]);
   const employees = await loadEmployees(db, [
     ...current.map((row) => row.employeeId),
-    ...yesterday.map((row) => row.employeeId),
+    ...(yesterday ?? []).map((row) => row.employeeId),
   ]);
-  const before = rankBoard(yesterday, employees, filter);
-  const board = rankBoard(current.map(toRankable), employees, filter, {
+  const before = rankBoard(yesterday ?? current, employees, filter);
+  const board = rankBoard(current, employees, filter, {
     search: query.search,
     meId,
     previousRanks: rankMap(before),
@@ -183,7 +255,9 @@ export async function getLeaderboard(
     query: {
       ...query,
       platform: filter.platform,
-      // The round actually shown, so the UI can mark it in the menu.
+      // What's actually shown: the challenge when no round of the asked kind
+      // applies, and the round only if it's the one asked for.
+      period: range.period,
       round: query.round && round?.id === query.round ? query.round : null,
     },
     period: {

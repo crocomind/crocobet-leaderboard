@@ -23,6 +23,7 @@ import {
   updateAdminPost,
 } from "@/lib/server/services/admin";
 import { getLeaderboard } from "@/lib/server/services/leaderboard";
+import { createRound } from "@/lib/server/services/rounds";
 
 let db: Db;
 let close: () => Promise<void>;
@@ -629,6 +630,13 @@ describe("sync and export", () => {
           reactions: 0,
         },
       ],
+    });
+    const admin = await makeEmployee(db, { role: "admin" });
+    await createRound(db, testConfig, admin, {
+      kind: "week",
+      name: null,
+      startDate: "2026-10-12",
+      endDate: "2026-10-18",
     });
     const { filename, csv } = await exportStandings(
       db,

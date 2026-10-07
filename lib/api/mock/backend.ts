@@ -17,6 +17,7 @@ import {
   countedPosts,
   type PostHistory,
   postsAsOf,
+  postsFrozenAt,
   type RankablePost,
   rankBoard,
   rankMap,
@@ -24,6 +25,7 @@ import {
 import {
   type BoardRange,
   dayRange,
+  frozenAt,
   generateRounds,
   rangeDates,
   resolveBoardRange,
@@ -35,11 +37,22 @@ import {
   toRoundsResponse,
 } from "@/lib/rounds";
 import { displayedViews, postScore } from "@/lib/scoring";
+import {
+  type BoardDef,
+  boardDefs,
+  exclusionKey,
+  frozenEnd,
+  leaderboardInfo,
+  profileLeaderboard,
+  rankLeaderboard,
+} from "@/lib/leaderboards";
 import { standingsCsv } from "@/lib/standings-csv";
 import { normalizeForSearch } from "@/lib/utils";
 import { ApiError, type ApiErrorCode } from "../errors";
 import type {
   AdminAction,
+  AdminLeaderboardDetail,
+  AdminLeaderboardsResponse,
   AdminPost,
   AdminPostDetail,
   AdminPostPatch,
@@ -55,6 +68,7 @@ import type {
   Employee,
   EmployeePostsQuery,
   EmployeeRole,
+  EmployeeWithEmail,
   ExportQuery,
   LeaderboardQuery,
   LeaderboardResponse,
@@ -62,6 +76,7 @@ import type {
   ModerationPayload,
   MyPostsResponse,
   Post,
+  ProfileResponse,
   Round,
   RoundInput,
   RoundPatch,
@@ -140,8 +155,13 @@ function employeeOf(post: MockPost): MockEmployee {
   return employee;
 }
 
-function toPost(post: MockPost): Post {
+/** `metrics` replaces the post's own numbers (a finished round's frozen ones). */
+function toPost(
+  post: MockPost,
+  metrics?: { views: number | null; reactions: number },
+): Post {
   const category = categoryOf(post.contentType);
+  const { views, reactions } = metrics ?? post;
   return {
     id: post.id,
     employeeId: post.employeeId,
@@ -156,9 +176,9 @@ function toPost(post: MockPost): Post {
     statusReason: post.statusReason,
     statusNote: post.statusNote,
     check: post.check,
-    views: displayedViews(category, post.views),
-    reactions: post.reactions,
-    score: postScore(category, post.views, post.reactions),
+    views: displayedViews(category, views),
+    reactions,
+    score: postScore(category, views, reactions),
     metricsUpdatedAt: post.metricsUpdatedAt,
     thumbnailUrl: post.thumbnailUrl,
   };
@@ -274,7 +294,16 @@ export class MockBackend {
     }));
   }
 
-  /** The same resolution as the server: a chosen round, the current round, or the calendar. */
+  /** Employees taken off one leaderboard (a round, or the challenge for null). */
+  private excludedFrom(roundId: string | null): Set<string> {
+    return new Set(
+      this.state.exclusions
+        .filter((exclusion) => exclusion.roundId === roundId)
+        .map((exclusion) => exclusion.employeeId),
+    );
+  }
+
+  /** The same resolution as the server: a started round chosen by id, the running round, or the challenge. */
   private resolveBoard(
     query: {
       category: ContentCategory;
@@ -305,6 +334,7 @@ export class MockBackend {
         category: query.category,
         platform: valid ? query.platform : "all",
         range: { start: range.start, end: range.end },
+        excluded: this.excludedFrom(range.round?.id ?? null),
       },
       range,
       round: range.round
@@ -321,9 +351,11 @@ export class MockBackend {
   getLeaderboard(query: LeaderboardQuery, now: Date): LeaderboardResponse {
     const campaign = campaignOf(this.state);
     const { filter, range, round } = this.resolveBoard(query, now);
-    const posts = this.rankables();
+    // A finished round's results are frozen at its end (and so are its ranks).
+    const end = frozenAt(range, now);
+    const posts = end ? postsFrozenAt(this.rankables(), end) : this.rankables();
     const yesterday = rankBoard(
-      postsAsOf(posts, new Date(now.getTime() - DAY_MS)),
+      end ? posts : postsAsOf(posts, new Date(now.getTime() - DAY_MS)),
       PUBLIC_EMPLOYEES,
       filter,
     );
@@ -336,6 +368,7 @@ export class MockBackend {
       query: {
         ...query,
         platform: filter.platform,
+        period: range.period,
         round: query.round && round?.id === query.round ? query.round : null,
       },
       period: {
@@ -377,7 +410,7 @@ export class MockBackend {
       };
     };
     return {
-      posts: mine.map(toPost),
+      posts: mine.map((row) => toPost(row)),
       summary: {
         postCount: mine.length,
         approvedCount: mine.filter((post) => post.status === "approved").length,
@@ -392,10 +425,12 @@ export class MockBackend {
     query: EmployeePostsQuery,
     now: Date,
   ): Post[] {
-    const { filter } = this.resolveBoard(query, now);
+    const { filter, range } = this.resolveBoard(query, now);
+    const end = frozenAt(range, now);
     const byId = new Map(this.state.posts.map((post) => [post.id, post]));
-    return countedPosts(this.rankables(), employeeId, filter).map((post) =>
-      toPost(byId.get(post.id)!),
+    const posts = end ? postsFrozenAt(this.rankables(), end) : this.rankables();
+    return countedPosts(posts, employeeId, filter).map((post) =>
+      toPost(byId.get(post.id)!, end ? post : undefined),
     );
   }
 
@@ -895,7 +930,7 @@ export class MockBackend {
       query.period !== "all" && query.periodStart
         ? (postedDateToInstant(query.periodStart, campaign.timeZone) ?? now)
         : now;
-    const { filter } = this.resolveBoard(
+    const { filter, range } = this.resolveBoard(
       {
         category: query.category,
         platform: "all",
@@ -909,7 +944,12 @@ export class MockBackend {
     if (Number.isNaN(asOf.getTime()))
       fail(422, "validation_error", "Invalid asOf");
 
-    const posts = postsAsOf(this.rankables(), asOf);
+    // After a round ends, its standings are the frozen ones.
+    const end = frozenAt(range, now);
+    const posts =
+      end && asOf >= end
+        ? postsFrozenAt(this.rankables(), end)
+        : postsAsOf(this.rankables(), asOf);
     const board = rankBoard(posts, PUBLIC_EMPLOYEES, filter);
     return standingsCsv(
       board.entries.map((entry) => {
@@ -1016,6 +1056,10 @@ export class MockBackend {
     );
     if (this.state.rounds.length === before)
       fail(404, "not_found", "Round not found");
+    // Like the database's cascade.
+    this.state.exclusions = this.state.exclusions.filter(
+      (exclusion) => exclusion.roundId !== roundId,
+    );
   }
 
   generateRounds(kind: RoundKind): RoundsResponse {
@@ -1049,5 +1093,164 @@ export class MockBackend {
     };
     this.state.campaignSource = "admin";
     return this.getRounds().challenge;
+  }
+  // ------------------------------------------- leaderboards and profiles
+
+  /** The challenge and every round, dated and numbered like the server's. */
+  private boards(now: Date): BoardDef[] {
+    return boardDefs(
+      campaignOf(this.state),
+      this.roundRanges(),
+      this.getRounds().rounds,
+      now,
+    );
+  }
+
+  /** A board's posts: a finished round's have their numbers frozen at its end. */
+  private boardPosts(
+    board: BoardDef,
+    posts: Rankable[] = this.rankables(),
+  ): Rankable[] {
+    const end = frozenEnd(board);
+    return end ? postsFrozenAt(posts, end) : posts;
+  }
+
+  private findBoard(boardId: string, now: Date): BoardDef {
+    const board = this.boards(now).find(
+      (candidate) => candidate.id === boardId,
+    );
+    if (!board) fail(404, "not_found", "Leaderboard not found");
+    return board;
+  }
+
+  private withEmail(employeeId: string): EmployeeWithEmail | null {
+    const employee = EMPLOYEES.get(employeeId);
+    return employee
+      ? { ...publicEmployee(employee), email: employee.email }
+      : null;
+  }
+
+  getAdminLeaderboards(now: Date): AdminLeaderboardsResponse {
+    this.requireAdmin();
+    const posts = this.rankables();
+    return {
+      challenge: this.getRounds().challenge,
+      leaderboards: this.boards(now).map((board) =>
+        leaderboardInfo(
+          board,
+          posts,
+          this.excludedFrom(exclusionKey(board.id)),
+        ),
+      ),
+    };
+  }
+
+  getAdminLeaderboard(
+    boardId: string,
+    category: ContentCategory,
+    now: Date,
+  ): AdminLeaderboardDetail {
+    this.requireAdmin();
+    const board = this.findBoard(boardId, now);
+    const key = exclusionKey(board.id);
+    const excluded = this.excludedFrom(key);
+    const posts = this.boardPosts(board);
+    const people = new Map(
+      MOCK_EMPLOYEES.map((employee) => [
+        employee.id,
+        this.withEmail(employee.id)!,
+      ]),
+    );
+    const ranked = rankLeaderboard(board, category, posts, people, excluded);
+    return {
+      leaderboard: leaderboardInfo(board, posts, excluded),
+      category,
+      participants: ranked.entries.map((entry) => ({
+        rank: entry.rank,
+        employee: entry.employee,
+        postCount: entry.postCount,
+        totalViews: entry.totalViews,
+        totalReactions: entry.totalReactions,
+        score: entry.score,
+        platforms: entry.platforms,
+      })),
+      removed: this.state.exclusions
+        .filter((exclusion) => exclusion.roundId === key)
+        .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+        .flatMap((exclusion) => {
+          const employee = this.withEmail(exclusion.employeeId);
+          const actor = exclusion.createdBy
+            ? EMPLOYEES.get(exclusion.createdBy)
+            : undefined;
+          return employee
+            ? [
+                {
+                  employee,
+                  removedAt: exclusion.createdAt,
+                  removedBy: actor ? { id: actor.id, name: actor.name } : null,
+                },
+              ]
+            : [];
+        }),
+    };
+  }
+
+  removeFromLeaderboard(boardId: string, employeeId: string, now: Date): void {
+    this.requireAdmin();
+    const key = exclusionKey(this.findBoard(boardId, now).id);
+    if (!EMPLOYEES.has(employeeId))
+      fail(404, "not_found", "Employee not found");
+    if (
+      this.state.exclusions.some(
+        (exclusion) =>
+          exclusion.roundId === key && exclusion.employeeId === employeeId,
+      )
+    )
+      return;
+    this.state.exclusions.push({
+      roundId: key,
+      employeeId,
+      createdBy: this.me.id,
+      createdAt: now.toISOString(),
+    });
+  }
+
+  restoreToLeaderboard(boardId: string, employeeId: string, now: Date): void {
+    this.requireAdmin();
+    const key = exclusionKey(this.findBoard(boardId, now).id);
+    this.state.exclusions = this.state.exclusions.filter(
+      (exclusion) =>
+        !(exclusion.roundId === key && exclusion.employeeId === employeeId),
+    );
+  }
+
+  getProfile(employeeId: string, now: Date): ProfileResponse {
+    if (employeeId !== this.me.id && this.me.role !== "admin")
+      fail(403, "forbidden", "You can only see your own profile");
+    const employee = this.withEmail(employeeId);
+    if (!employee) fail(404, "not_found", "Employee not found");
+    const posts = this.rankables();
+    const result = (board: BoardDef) =>
+      profileLeaderboard(
+        board,
+        employeeId,
+        this.boardPosts(board, posts),
+        PUBLIC_EMPLOYEES,
+        this.excludedFrom(exclusionKey(board.id)),
+      );
+    const [challenge, ...rounds] = this.boards(now);
+    return {
+      employee,
+      timeZone: campaignOf(this.state).timeZone,
+      challenge: result(challenge!),
+      rounds: rounds
+        .filter((board) => board.status !== "upcoming")
+        .sort(
+          (a, b) =>
+            b.range.start.getTime() - a.range.start.getTime() ||
+            b.range.end.getTime() - a.range.end.getTime(),
+        )
+        .map(result),
+    };
   }
 }

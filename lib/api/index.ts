@@ -45,6 +45,11 @@ export const updateRound = forward("updateRound");
 export const deleteRound = forward("deleteRound");
 export const generateRounds = forward("generateRounds");
 export const updateChallenge = forward("updateChallenge");
+export const getAdminLeaderboards = forward("getAdminLeaderboards");
+export const getAdminLeaderboard = forward("getAdminLeaderboard");
+export const removeFromLeaderboard = forward("removeFromLeaderboard");
+export const restoreToLeaderboard = forward("restoreToLeaderboard");
+export const getProfile = forward("getProfile");
 
 export * from "./types";
 export { ApiError, isApiError } from "./errors";

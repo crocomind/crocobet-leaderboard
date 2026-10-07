@@ -1,6 +1,6 @@
 "use client";
 
-import { LoaderCircle, LogOut, Moon, Sun } from "lucide-react";
+import { LoaderCircle, LogOut, Moon, Sun, UserRound } from "lucide-react";
 import { useState } from "react";
 import { EmployeeAvatar } from "@/components/common/employee-avatar";
 import { useThemeSwitch } from "@/components/layout/use-theme-switch";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MotionButton } from "@/components/ui/motion-button";
 import { signOut } from "@/lib/auth/client";
+import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
 
 export function UserMenu() {
   const { t } = useI18n();
@@ -25,6 +26,7 @@ export function UserMenu() {
   const current = useCurrentUser();
 
   const [signingOut, setSigningOut] = useState(false);
+  const { openProfile } = useAppUrlState();
 
   if (current.status === "signed-out") return null;
   const { user } = current;
@@ -56,6 +58,12 @@ export function UserMenu() {
             )}
           </div>
         </div>
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => openProfile()}>
+          <UserRound />
+          {t.header.myProfile}
+        </DropdownMenuItem>
 
         <DropdownMenuSeparator />
         <DropdownMenuLabel>{t.header.theme}</DropdownMenuLabel>

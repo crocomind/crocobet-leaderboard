@@ -12,6 +12,7 @@ import {
   lastSyncedAt,
 } from "@/lib/server/services/leaderboard";
 import { toRankable } from "@/lib/server/services/mappers";
+import { createRound } from "@/lib/server/services/rounds";
 
 let db: Db;
 let close: () => Promise<void>;
@@ -204,6 +205,17 @@ describe("getLeaderboard", () => {
       views: 20,
       reactions: 0,
     });
+    const admin = await makeEmployee(db, { role: "admin" });
+    for (const [kind, startDate, endDate] of [
+      ["week", "2026-10-19", "2026-10-25"],
+      ["month", "2026-10-01", "2026-10-31"],
+    ] as const)
+      await createRound(db, testConfig, admin, {
+        kind,
+        name: null,
+        startDate,
+        endDate,
+      });
     const week = await getLeaderboard(
       db,
       testConfig,

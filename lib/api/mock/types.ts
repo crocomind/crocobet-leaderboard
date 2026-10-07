@@ -96,6 +96,14 @@ export interface MockRound {
   endsAt: IsoDateTime;
 }
 
+/** Someone an admin took off one leaderboard (roundId null: the challenge). */
+export interface MockExclusion {
+  roundId: string | null;
+  employeeId: string;
+  createdBy: string | null;
+  createdAt: IsoDateTime;
+}
+
 export interface MockState {
   version: number;
   generatedAt: IsoDateTime;
@@ -103,6 +111,7 @@ export interface MockState {
   /** "admin" once an admin saved the challenge dates. */
   campaignSource: "admin" | "default";
   rounds: MockRound[];
+  exclusions: MockExclusion[];
   posts: MockPost[];
   socialAccounts: LinkedHandle[];
   /** Newest first. */
