@@ -566,6 +566,10 @@ describe("leaderboards and profiles", () => {
   it("shows only your own profile, unless you're an admin", () => {
     const mine = employee.getProfile(MOCK_CURRENT_USER_ID, start);
     expect(mine.employee.id).toBe(MOCK_CURRENT_USER_ID);
+    // Every post, whatever its status, like My Posts.
+    expect(mine.posts.map((post) => post.id)).toEqual(
+      employee.getMyPosts(start).posts.map((post) => post.id),
+    );
     expect(mine.rounds.length).toBeGreaterThan(0);
     expect(
       mine.rounds.every((round) => Date.parse(round.startsAt) <= +start),

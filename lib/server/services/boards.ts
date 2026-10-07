@@ -39,7 +39,7 @@ import {
   loadExcluded,
 } from "@/lib/server/services/exclusions";
 import { frozenPosts } from "@/lib/server/services/leaderboard";
-import { toRankable } from "@/lib/server/services/mappers";
+import { toPost, toRankable } from "@/lib/server/services/mappers";
 import { loadCampaign, loadRounds } from "@/lib/server/services/rounds";
 
 const NONE: ReadonlySet<string> = new Set();
@@ -323,9 +323,15 @@ export async function getProfile(
       excluded.get(exclusionKey(board.id) ?? "") ?? NONE,
     );
   const [challenge, ...rounds] = boards;
+  const theirPosts = await db
+    .select()
+    .from(posts)
+    .where(eq(posts.employeeId, employeeId))
+    .orderBy(desc(posts.submittedAt));
   return {
     employee,
     timeZone: campaign.timeZone,
+    posts: theirPosts.map((row) => toPost(row)),
     challenge: result(challenge!),
     rounds: rounds
       .filter((board) => board.status !== "upcoming")

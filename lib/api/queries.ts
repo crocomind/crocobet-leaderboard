@@ -239,6 +239,8 @@ export function useRecheckPostMutation() {
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.myPosts }),
         queryClient.invalidateQueries({ queryKey: queryKeys.adminAll }),
+        // Profiles list the posts too.
+        queryClient.invalidateQueries({ queryKey: queryKeys.employeesAll }),
       ]);
     },
   });
@@ -543,5 +545,12 @@ export function useProfileQuery(employeeId: string | undefined) {
     staleTime: STATS_STALE_MS,
     gcTime: STATS_GC_MS,
     enabled: employeeId !== undefined,
+    // Like My Posts: follow a running check until it finishes.
+    refetchInterval: (query) =>
+      pollWhileChecking(
+        `profile:${employeeId}`,
+        query.state.data?.posts.some((post) => checkRunning(post.check)) ??
+          false,
+      ),
   });
 }

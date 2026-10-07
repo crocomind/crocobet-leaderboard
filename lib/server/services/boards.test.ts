@@ -246,6 +246,29 @@ describe("profiles", () => {
     });
   });
 
+  it("lists every post they have, in any status, newest first", async () => {
+    const { ana } = await setup();
+    const rejected = await makePost(db, ana.id, "instagram_reel", {
+      status: "rejected",
+      submittedAt: new Date("2026-10-14T12:00:00+04:00"),
+    });
+    const pending = await makePost(db, ana.id, "facebook_video", {
+      status: "pending",
+      submittedAt: new Date("2026-10-15T09:00:00+04:00"),
+    });
+    const profile = await getProfile(db, testConfig, auth(ana), ana.id, now);
+    expect(profile.posts).toHaveLength(4);
+    expect(
+      profile.posts.slice(0, 2).map((post) => [post.id, post.status]),
+    ).toEqual([
+      [pending.id, "pending"],
+      [rejected.id, "rejected"],
+    ]);
+    expect(profile.posts.every((post) => post.employeeId === ana.id)).toBe(
+      true,
+    );
+  });
+
   it("marks leaderboards an admin took them off", async () => {
     const { admin, ana, week1 } = await setup();
     await removeFromLeaderboard(db, testConfig, admin, week1.id, ana.id, now);
