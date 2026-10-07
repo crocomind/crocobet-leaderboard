@@ -18,10 +18,10 @@ export function Logo({
 }) {
   return (
     <svg
-      viewBox="0 0 210 40"
+      viewBox="0 0 194 40"
       role="img"
       aria-label={label}
-      className={cn("h-8 w-auto shrink-0", className)}
+      className={cn("h-10 w-auto shrink-0", className)}
     >
       <path
         d="M30.72 11A14 14 0 1 0 30.72 29"
@@ -37,8 +37,11 @@ export function Logo({
         strokeLinecap="round"
         className="stroke-foreground"
       />
-      <path d={CROCO} className="fill-foreground" />
-      <path d={CREATORS} className="fill-brand-text" />
+      {/* The words at 90%, scaled around their left edge and the mark's middle. */}
+      <g transform="matrix(0.9 0 0 0.9 4.7 2)">
+        <path d={CROCO} className="fill-brand-text" />
+        <path d={CREATORS} className="fill-foreground" />
+      </g>
     </svg>
   );
 }

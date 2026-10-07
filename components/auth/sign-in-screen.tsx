@@ -97,9 +97,9 @@ export function SignInScreen({
         transition={reduceMotion ? REDUCED_FADE : springGentle}
       >
         <div className="rounded-panel border border-border bg-elevated/85 p-7 shadow-lifted backdrop-blur-2xl sm:p-9">
-          <Logo label={t.app.name} />
+          <Logo label={t.app.name} className="mx-auto block" />
 
-          <h1 className="mt-8 text-2xl font-extrabold tracking-tight text-balance sm:text-3xl">
+          <h1 className="mt-8 text-center text-2xl font-extrabold tracking-tight text-balance sm:text-3xl">
             {t.auth.title}
           </h1>
 
