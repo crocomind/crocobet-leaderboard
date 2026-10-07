@@ -83,8 +83,6 @@ const en = {
   },
   leaderboard: {
     title: "Leaderboard",
-    subtitle:
-      "Post with #CrocoBySquad or tag @Croco Squad, collect views and reactions, and climb the ranks.",
     updating: "Updating…",
     dateRange: "Dates: {range}",
     categoryLabel: "Board",
@@ -130,21 +128,16 @@ const en = {
       rank: "You're #{rank}",
       behind: "{gap} behind #{nextRank}",
       tied: "Tied with #{nextRank}",
-      leading: "You're in the lead. Keep it up!",
+      leading: "You're in the lead",
       notRanked: "You're not on this board yet",
-      notRankedHint: "Submit a post to join in.",
       show: "Show my position",
     },
     empty: {
       title: "No posts here yet",
-      description:
-        "Nobody has an approved post for this board and period yet. Be the first!",
       searchTitle: "No one matches “{query}”",
-      searchDescription: "Check the spelling or try another name.",
     },
     error: {
       title: "Couldn't load the leaderboard",
-      description: "Check your connection and try again.",
     },
     announce: "{category}, {period}. {count} participants.",
     announceStanding: "You're ranked {rank}.",
@@ -159,15 +152,12 @@ const en = {
   },
   myPosts: {
     title: "My Posts",
-    subtitle: "Your submissions, their review status and their scores.",
     summary: {
       rankOf: "of {total}",
       notRanked: "Not ranked yet",
       period: "3-Month Challenge",
       approved: "Approved",
       pending: "Pending review",
-      approvedHint: "Counting on the boards",
-      pendingHint: "An admin will review them",
     },
     status: {
       pending: "Pending review",
@@ -184,14 +174,10 @@ const en = {
     reason: "Reason: {reason}",
     reviewerNote: "Reviewer's note",
     countsAs: "Counts as {category}",
-    notCounted: "Doesn't count on the leaderboard.",
-    statsPending: "Stats show up after the first check.",
     recheck: "Re-check",
     recheckTooSoon: "You can re-check once every 10 minutes.",
     delete: "Delete post",
     deleteTitle: "Delete this post?",
-    deleteDescription:
-      "It's removed from My Posts and from every board, with its numbers. You can submit it again later.",
     deleteConfirm: "Delete post",
     actionError: "That didn't work. Try again.",
     posted: "Posted {date}",
@@ -199,12 +185,10 @@ const en = {
     listLabel: "Your posts",
     empty: {
       title: "No posts yet",
-      description: "Share your first post and start climbing the leaderboard.",
       cta: "Submit your first post",
     },
     error: {
       title: "Couldn't load your posts",
-      description: "Check your connection and try again.",
     },
   },
   reasons: {
@@ -220,7 +204,6 @@ const en = {
   },
   submit: {
     title: "Submit a post",
-    description: "Paste the link to your post on {platforms}.",
     rule: "It must include #CrocoBySquad or tag Croco Squad (@croco.squad on Instagram).",
     urlLabel: "Post link",
     urlPlaceholder: "Paste your post link",
@@ -229,12 +212,10 @@ const en = {
     pasteFailed:
       "Couldn't read the clipboard. Paste with Ctrl+V (⌘V on Mac) instead.",
     detected: "{platform} link detected",
-    supported: "Works with {platforms}",
     countsAs: "Counts as {category}",
     titleLabel: "Title or caption",
     titlePlaceholder: "What's your post about?",
     postedAtLabel: "Posted on",
-    postedAtHint: "Only used if we can't read the date from the post.",
     optional: "Optional",
     characterCount: "{count}/{max}",
     previewLabel: "Preview",
@@ -242,16 +223,10 @@ const en = {
     submit: "Submit post",
     submitting: "Submitting…",
     successTitle: "Post submitted!",
-    successDescription:
-      "An admin will review it. Once it's approved, it counts on the {board}.",
     submitAnother: "Submit another",
     viewMyPosts: "See my posts",
     errorTitle: "Couldn't submit your post",
-    errorDescription:
-      "Something went wrong on our side. Your link is still here, so you can try again.",
     closedTitle: "Submissions are closed",
-    closedDescription:
-      "The challenge has ended, so new posts can't be submitted.",
   },
   validation: {
     required: "Paste a link to your post to continue.",
@@ -275,8 +250,6 @@ const en = {
     },
     leaderboards: {
       challenge: "3-Month Challenge",
-      challengeHint:
-        "Posts published outside these dates never count on any board.",
       sourceAdmin: "Set here",
       sourceDefault: "From the server settings",
       editDates: "Edit dates",
@@ -285,10 +258,8 @@ const en = {
       save: "Save",
       weeklyTitle: "Weekly rounds",
       monthlyTitle: "Monthly rounds",
-      weeklyEmpty:
-        'No weekly rounds yet. Until you add some, "This week" uses calendar weeks (Monday to Sunday).',
-      monthlyEmpty:
-        'No monthly rounds yet. Until you add some, "This month" uses calendar months.',
+      weeklyEmpty: "No weekly rounds yet.",
+      monthlyEmpty: "No monthly rounds yet.",
       add: "Add round",
       generateWeeks: "Create weekly rounds for the whole challenge",
       generateMonths: "Create monthly rounds for the whole challenge",
@@ -296,7 +267,7 @@ const en = {
       addMonthTitle: "Add a monthly round",
       editTitle: "Edit round",
       name: "Name",
-      namePlaceholder: 'Optional. Shown instead of "{label}"',
+      namePlaceholder: "{label}",
       status: {
         current: "Current",
         upcoming: "Upcoming",
@@ -305,8 +276,6 @@ const en = {
       edit: "Edit",
       delete: "Delete",
       deleteTitle: "Delete this round?",
-      deleteDescription:
-        "It disappears from the period menu. Posts and their numbers aren't affected.",
       deleteConfirm: "Delete round",
       errors: {
         round_overlap: "It overlaps another round of the same kind.",
@@ -321,7 +290,6 @@ const en = {
     },
     forbidden: {
       title: "Admins only",
-      description: "You don't have access to this page.",
       back: "Back to the leaderboard",
     },
     tabsLabel: "Queue",
@@ -392,7 +360,6 @@ const en = {
     notFetched: "Not fetched yet",
     empty: {
       title: "Nothing here",
-      description: "No posts match these filters.",
     },
     error: "Couldn't load the queue.",
     actions: {
@@ -434,8 +401,6 @@ const en = {
     drawer: {
       label: "Post review",
       deleteTitle: "Delete this post?",
-      deleteDescription:
-        "It's removed entirely, with its numbers and history, from every board and from the employee's My Posts. This can't be undone.",
       submitted: "Submitted {date}",
       reviewed: "Reviewed by {name} · {date}",
       caption: "Caption",
@@ -446,11 +411,11 @@ const en = {
       noHistory: "No snapshots yet.",
       audit: "Audit log",
       edit: "Edit numbers and details",
-      lock: "Lock the numbers (syncs won't overwrite them)",
+      lock: "Lock the numbers",
       locked: "Numbers locked",
-      publishedAt: "Published (your local time)",
+      publishedAt: "Published",
       contentType: "Content type",
-      editNote: "Note for the audit log",
+      editNote: "Note",
       saveChanges: "Save changes",
       noChanges: "Nothing to save.",
       source: {
@@ -487,8 +452,6 @@ const en = {
       noteMissing: "Add a note.",
       reasonMissing: "Choose a reason.",
       confirmTitle: "Disqualify this post?",
-      confirmDescription:
-        "It's removed from every board immediately. The employee sees the reason and your note.",
       confirm: "Yes, disqualify",
       continue: "Continue",
     },
@@ -515,7 +478,6 @@ const en = {
     },
     sync: {
       title: "Metrics sync",
-      schedule: "Runs automatically at 12:00 and 23:59 Tbilisi time.",
       lastRun: "Last run {time}",
       never: "No runs yet",
       running: "Running…",
@@ -530,16 +492,14 @@ const en = {
     export: {
       button: "Export CSV",
       title: "Export standings",
-      description:
-        "Download the standings for any week or month, as they stood at a chosen time.",
       category: "Board",
       period: "Period",
       week: "Week",
       month: "Month",
       all: "Whole challenge",
-      periodDate: "Any day in that week or month",
+      periodDate: "Date",
       round: "Round",
-      asOf: "As of (your local time)",
+      asOf: "As of",
       download: "Download CSV",
       error: "Couldn't create the file. Try again.",
     },
@@ -547,12 +507,8 @@ const en = {
   auth: {
     pageTitle: "Sign in",
     title: "Welcome to Croco Creators",
-    subtitle:
-      "Sign in with your Crocobet work account to see the leaderboard and submit your posts.",
     signInWithMicrosoft: "Sign in with Microsoft",
     redirecting: "Redirecting to Microsoft…",
-    onlyEmployees:
-      "Only Crocobet employees with a {domains} account can sign in.",
     signedOut: "You've been signed out.",
     errors: {
       domainNotAllowed:
@@ -568,8 +524,6 @@ const en = {
   },
   errors: {
     pageTitle: "Something went wrong",
-    pageDescription:
-      "An unexpected error occurred. Try again, and if it keeps happening, let the team know.",
   },
 };
 

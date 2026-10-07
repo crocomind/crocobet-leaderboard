@@ -65,9 +65,6 @@ export function SyncPanel({
             )}
           </p>
         )}
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {t.admin.sync.schedule}
-        </p>
       </div>
       <MotionButton
         variant="secondary"

@@ -170,7 +170,6 @@ export function EmployeeSheet({
               ) : posts.isError ? (
                 <ErrorState
                   title={t.employee.error}
-                  description={t.leaderboard.error.description}
                   retryLabel={t.common.retry}
                   onRetry={() => void posts.refetch()}
                   retrying={posts.isFetching}

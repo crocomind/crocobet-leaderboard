@@ -54,7 +54,7 @@ export function StatePanel({
 
 interface ErrorStateProps {
   title: string;
-  description: string;
+  description?: string;
   retryLabel: string;
   onRetry: () => void;
   retrying?: boolean;

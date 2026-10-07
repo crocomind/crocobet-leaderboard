@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleAlert, CircleCheck, ShieldCheck } from "lucide-react";
+import { CircleAlert, CircleCheck } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { GlowBackdrop } from "@/components/common/glow-backdrop";
@@ -102,9 +102,6 @@ export function SignInScreen({
           <h1 className="mt-8 text-2xl font-extrabold tracking-tight text-balance sm:text-3xl">
             {t.auth.title}
           </h1>
-          <p className="mt-2 text-pretty text-muted-foreground">
-            {t.auth.subtitle}
-          </p>
 
           {errorText && (
             <motion.p
@@ -151,14 +148,6 @@ export function SignInScreen({
             <MicrosoftLogo className="size-5" />
             {t.auth.signInWithMicrosoft}
           </MotionButton>
-
-          <p className="mt-6 flex items-start gap-2 text-xs text-muted-foreground">
-            <ShieldCheck
-              className="size-4 shrink-0 text-brand-text"
-              aria-hidden="true"
-            />
-            {format(t.auth.onlyEmployees, { domains })}
-          </p>
         </div>
       </motion.div>
     </main>

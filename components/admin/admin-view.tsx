@@ -302,7 +302,6 @@ export default function AdminPanel() {
             ) : queue.isError && !queue.data ? (
               <ErrorState
                 title={t.admin.error}
-                description={t.leaderboard.error.description}
                 retryLabel={t.common.retry}
                 onRetry={() => void queue.refetch()}
                 retrying={queue.isFetching}
@@ -312,7 +311,6 @@ export default function AdminPanel() {
                 role="status"
                 icon={<Inbox />}
                 title={t.admin.empty.title}
-                description={t.admin.empty.description}
               />
             ) : (
               <div

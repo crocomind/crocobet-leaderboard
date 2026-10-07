@@ -25,7 +25,7 @@ interface PostUrlFieldProps {
   contentType: ContentType | null;
   valid: boolean;
   invalid: boolean;
-  describedBy: string;
+  describedBy?: string;
   onPasteText: (text: string) => void;
   onNativePaste: () => void;
 }

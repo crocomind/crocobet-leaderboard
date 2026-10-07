@@ -44,7 +44,8 @@ export function MyStandingBar({
     ? format(t.leaderboard.standing.rank, { rank: standing.entry.rank })
     : t.leaderboard.standing.notRanked;
 
-  let detail: string = t.leaderboard.standing.notRankedHint;
+  // Not ranked yet: just the headline and the submit button.
+  let detail: string | null = null;
   if (standing) {
     const nextRank = standing.entry.rank - 1;
     if (standing.gapToNext === null) detail = t.leaderboard.standing.leading;
@@ -112,9 +113,11 @@ export function MyStandingBar({
               animate={{ opacity: 1, transition: tween(DURATION.base) }}
             >
               <p className="truncate text-sm font-bold">{headline}</p>
-              <p className="truncate text-xs text-muted-foreground tabular-nums">
-                {detail}
-              </p>
+              {detail && (
+                <p className="truncate text-xs text-muted-foreground tabular-nums">
+                  {detail}
+                </p>
+              )}
             </motion.div>
             <MotionButton
               size="sm"

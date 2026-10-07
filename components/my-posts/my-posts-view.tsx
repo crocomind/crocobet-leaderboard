@@ -27,9 +27,6 @@ export function MyPostsView() {
       <h1 className="text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
         {t.myPosts.title}
       </h1>
-      <p className="mt-1.5 max-w-xl text-pretty text-muted-foreground">
-        {t.myPosts.subtitle}
-      </p>
 
       <Crossfade
         className="mt-8"
@@ -56,7 +53,6 @@ export function MyPostsView() {
         ) : myPosts.isError ? (
           <ErrorState
             title={t.myPosts.error.title}
-            description={t.myPosts.error.description}
             retryLabel={t.common.retry}
             onRetry={() => void myPosts.refetch()}
             retrying={myPosts.isFetching}

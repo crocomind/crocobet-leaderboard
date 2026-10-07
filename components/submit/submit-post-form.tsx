@@ -84,7 +84,6 @@ export function SubmitPostForm({
   const { t, format, formatList } = useI18n();
   const ids = useId();
   const urlId = `${ids}-url`;
-  const urlHintId = `${ids}-url-hint`;
   const urlErrorId = `${ids}-url-error`;
 
   // Already-submitted links power the instant duplicate check; the server re-checks.
@@ -200,7 +199,7 @@ export function SubmitPostForm({
           contentType={contentType}
           valid={urlValid}
           invalid={Boolean(urlError)}
-          describedBy={urlError ? urlErrorId : urlHintId}
+          describedBy={urlError ? urlErrorId : undefined}
           onPasteText={(text) => {
             form.setValue("url", text, {
               shouldDirty: true,
@@ -227,18 +226,7 @@ export function SubmitPostForm({
                 />
                 {urlError}
               </motion.p>
-            ) : (
-              <motion.p
-                key="hint"
-                id={urlHintId}
-                {...message}
-                className="text-sm text-muted-foreground"
-              >
-                {format(t.submit.supported, {
-                  platforms: formatList(platformNames, "and"),
-                })}
-              </motion.p>
-            )}
+            ) : null}
           </AnimatePresence>
         </div>
       </div>
@@ -321,19 +309,9 @@ export function SubmitPostForm({
             type="date"
             max={toIsoDate(new Date())}
             aria-invalid={Boolean(postedAtError) || undefined}
-            aria-describedby={
-              postedAtError ? `${ids}-posted-error` : `${ids}-posted-hint`
-            }
+            aria-describedby={postedAtError ? `${ids}-posted-error` : undefined}
             {...form.register("postedAt")}
           />
-          {!postedAtError && (
-            <p
-              id={`${ids}-posted-hint`}
-              className="mt-1.5 text-xs text-muted-foreground"
-            >
-              {t.submit.postedAtHint}
-            </p>
-          )}
           <AnimatePresence initial={false}>
             {postedAtError && (
               <motion.p
@@ -363,9 +341,6 @@ export function SubmitPostForm({
               />
               <div>
                 <p className="text-sm font-semibold">{t.submit.closedTitle}</p>
-                <p className="text-sm text-muted-foreground">
-                  {t.submit.closedDescription}
-                </p>
               </div>
             </div>
           </motion.div>
@@ -387,9 +362,6 @@ export function SubmitPostForm({
                 />
                 <div>
                   <p className="text-sm font-semibold">{t.submit.errorTitle}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {t.submit.errorDescription}
-                  </p>
                 </div>
               </div>
               <MotionButton

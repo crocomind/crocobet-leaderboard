@@ -16,7 +16,6 @@ import type { Post } from "@/lib/api/types";
 import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
 import { useIsDesktop } from "@/lib/hooks/use-media-query";
 import { DURATION, exitTween, tween } from "@/lib/motion";
-import { PLATFORM_LIST } from "@/lib/platforms";
 
 /** Centered modal on desktop, bottom sheet on mobile. Opened via useSubmitPost(). */
 export function SubmitPostDialog() {
@@ -42,7 +41,7 @@ export function SubmitPostDialog() {
 
 /** Mounted only while the dialog is open, so every open starts fresh. */
 function SubmitPostFlow({ onClose }: { onClose: () => void }) {
-  const { t, format, formatList } = useI18n();
+  const { t } = useI18n();
   const isDesktop = useIsDesktop();
   const { setView } = useAppUrlState();
   const [submitted, setSubmitted] = useState<Post | null>(null);
@@ -53,14 +52,9 @@ function SubmitPostFlow({ onClose }: { onClose: () => void }) {
       <div className="flex items-start gap-3 px-5 pt-2 pb-5 md:px-7 md:pt-7">
         <div className="min-w-0 flex-1">
           <ResponsiveDialogTitle>{t.submit.title}</ResponsiveDialogTitle>
+          {/* The one rule employees need to know before submitting. */}
           <ResponsiveDialogDescription className="mt-1">
-            {format(t.submit.description, {
-              platforms: formatList(
-                PLATFORM_LIST.map((platform) => platform.name),
-                "or",
-              ),
-            })}{" "}
-            <span className="font-medium text-foreground">{t.submit.rule}</span>
+            {t.submit.rule}
           </ResponsiveDialogDescription>
         </div>
         <ResponsiveDialogClose label={t.common.close} className="-mt-1 -mr-2" />
