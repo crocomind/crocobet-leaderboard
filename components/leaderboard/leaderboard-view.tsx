@@ -50,8 +50,18 @@ export function LeaderboardView() {
   const reduceMotion = useReducedMotion();
 
   // The input updates instantly; the query and URL follow after a short pause.
+  // Clearing applies at once.
   const [searchText, setSearchText] = useState(state.q);
-  const search = useDebouncedValue(searchText.trim(), 300);
+  const typed = searchText.trim();
+  const debounced = useDebouncedValue(typed, 300);
+  const search = typed === "" ? "" : debounced;
+  // The URL can also change from outside (the logo clears every filter; Back
+  // and Forward), so the input follows it.
+  const [urlSearch, setUrlSearch] = useState(state.q);
+  if (state.q !== urlSearch) {
+    setUrlSearch(state.q);
+    if (state.q !== search) setSearchText(state.q);
+  }
   useEffect(() => {
     update({ q: search });
   }, [search, update]);
