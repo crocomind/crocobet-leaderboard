@@ -299,8 +299,10 @@ unfinished `sync_runs` row (a crashed run stops blocking after 15 minutes).
   so components added later with `npx shadcn add` match automatically.
 - **Radii:** `rounded-control` (16px, inputs and buttons), `rounded-card` (24px) and
   `rounded-panel` (32px, modals and podium cards). They're defined in `app/globals.css`.
-- **Logo:** put the official logo at `public/logo.svg` and the header uses it. Until then it
-  shows the text "Croco Creators", and the browser console logs a 404 for `/logo.svg`.
+- **Logo:** [`components/layout/logo.tsx`](components/layout/logo.tsx), an inline SVG: the mark
+  (a white "C" inside a green one, also the favicon in `app/icon.svg`) and "Croco Creators" in Inter
+  ExtraBold as outlines. Its colors come from the tokens, so it follows the theme. Clicking it in
+  the header opens the leaderboard with every filter reset.
 - **Fonts:** Inter, loaded with `next/font`. Georgian characters in what employees write (post
   titles and captions) fall back to Noto Sans Georgian, which only downloads when such text is on
   screen.

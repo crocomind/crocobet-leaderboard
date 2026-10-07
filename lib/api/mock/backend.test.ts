@@ -342,16 +342,16 @@ describe("admin", () => {
       expect(errorOf(call)).toMatchObject({ status: 403, code: "forbidden" });
   });
 
-  it("lists the queue oldest pending first, with counts and paging", () => {
+  it("lists the queue newest first, with counts and paging", () => {
     const first = admin.getAdminPosts(queue(), null);
     const pending = state.posts.filter((post) => post.status === "pending");
     expect(first.counts.pending).toBe(pending.length);
     expect(first.counts.flagged).toBeGreaterThan(0);
     const times = first.posts.map((post) => post.submittedAt);
-    expect(times).toEqual([...times].sort());
+    expect(times).toEqual([...times].sort().reverse());
     if (first.nextCursor) {
       const next = admin.getAdminPosts(queue(), first.nextCursor);
-      expect(next.posts[0]!.submittedAt >= times.at(-1)!).toBe(true);
+      expect(next.posts[0]!.submittedAt <= times.at(-1)!).toBe(true);
     }
   });
 

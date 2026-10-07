@@ -53,7 +53,6 @@ describe("submitPost", () => {
     const post = await submitPost(context, employee, {
       url: "https://www.instagram.com/reel/AbCdEf123/?igsh=xyz",
       title: "Team lunch",
-      postedAt: "2026-10-19",
     });
     expect(post).toMatchObject({
       url: "https://instagram.com/reel/AbCdEf123",
@@ -145,18 +144,6 @@ describe("submitPost", () => {
         url: "https://tiktok.com/@a/video/7400000000000000001",
       }),
     ).resolves.toMatchObject({ status: "pending" });
-  });
-
-  it("refuses a posted date in the future (in Tbilisi time)", async () => {
-    const employee = await makeEmployee(db);
-    expect(
-      await failure(() =>
-        submitPost(serviceContext(db, now), employee, {
-          url: "https://instagram.com/p/Photo1",
-          postedAt: "2026-10-21",
-        }),
-      ),
-    ).toEqual({ status: 422, code: "validation_error" });
   });
 
   it(`allows ${SUBMISSIONS_PER_DAY} submissions per employee per day`, async () => {

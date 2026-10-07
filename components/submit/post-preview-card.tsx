@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Clapperboard, ImageIcon } from "lucide-react";
+import { Clapperboard, ImageIcon } from "lucide-react";
 import { PlatformBadge } from "@/components/common/platform-badge";
 import { PostThumbnail } from "@/components/common/post-thumbnail";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -11,7 +11,6 @@ interface PostPreviewCardProps {
   contentType: ContentType;
   url: string;
   title: string;
-  postedAt: string;
 }
 
 /** What will be submitted, and which board it counts on: shown once the link is valid. */
@@ -20,9 +19,8 @@ export function PostPreviewCard({
   contentType,
   url,
   title,
-  postedAt,
 }: PostPreviewCardProps) {
-  const { t, format, formatDate } = useI18n();
+  const { t, format } = useI18n();
   const category = categoryOf(contentType);
   const CategoryIcon = category === "video" ? Clapperboard : ImageIcon;
 
@@ -58,17 +56,9 @@ export function PostPreviewCard({
           >
             {url.replace(/^https:\/\//, "")}
           </p>
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            <span className="inline-flex items-center gap-1 font-medium text-brand-text">
-              <CategoryIcon className="size-3.5" aria-hidden="true" />
-              {format(t.submit.countsAs, { category: t.categories[category] })}
-            </span>
-            {postedAt && (
-              <span className="inline-flex items-center gap-1 text-muted-foreground">
-                <CalendarDays className="size-3.5" aria-hidden="true" />
-                {format(t.myPosts.posted, { date: formatDate(postedAt) })}
-              </span>
-            )}
+          <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-brand-text">
+            <CategoryIcon className="size-3.5" aria-hidden="true" />
+            {format(t.submit.countsAs, { category: t.categories[category] })}
           </p>
         </div>
       </div>

@@ -4,12 +4,7 @@ import {
   type ModerationError,
   NOTE_MAX_LENGTH,
 } from "@/lib/moderation";
-import {
-  isWithin,
-  postedDateToInstant,
-  submissionsOpen,
-  zonedToday,
-} from "@/lib/periods";
+import { isWithin, postedDateToInstant, submissionsOpen } from "@/lib/periods";
 import {
   analyzePostUrl,
   CATEGORY_PLATFORMS,
@@ -203,19 +198,8 @@ function inTab(post: MockPost, tab: AdminQueueTab): boolean {
   return post.status === tab;
 }
 
-const byTime =
-  (key: "submittedAt" | "reviewedAt", direction: 1 | -1) =>
-  (a: MockPost, b: MockPost) =>
-    direction * (Date.parse(a[key] ?? "") - Date.parse(b[key] ?? ""));
-
-/** Oldest pending first; the other tabs show the latest decisions first. */
-const TAB_ORDER: Record<AdminQueueTab, (a: MockPost, b: MockPost) => number> = {
-  pending: byTime("submittedAt", 1),
-  approved: byTime("reviewedAt", -1),
-  rejected: byTime("reviewedAt", -1),
-  disqualified: byTime("reviewedAt", -1),
-  flagged: byTime("submittedAt", -1),
-};
+const newestSubmittedFirst = (a: MockPost, b: MockPost) =>
+  Date.parse(b.submittedAt) - Date.parse(a.submittedAt);
 
 /** The mock API: the same contract as the real backend, over in-memory state. */
 export class MockBackend {
@@ -371,7 +355,7 @@ export class MockBackend {
   getMyPosts(now: Date): MyPostsResponse {
     const mine = this.state.posts
       .filter((post) => post.employeeId === this.me.id)
-      .sort(byTime("submittedAt", -1));
+      .sort(newestSubmittedFirst);
     const posts = this.rankables();
     const summary = (category: ContentCategory): BoardSummary => {
       const board = rankBoard(
@@ -435,13 +419,6 @@ export class MockBackend {
     const title = payload.title?.trim() || null;
     if (title && title.length > TITLE_MAX_LENGTH)
       fail(422, "validation_error", "Title too long");
-    const postedAt = payload.postedAt?.trim() || null;
-    if (
-      postedAt &&
-      (!postedDateToInstant(postedAt, campaign.timeZone) ||
-        postedAt > zonedToday(now, campaign.timeZone))
-    )
-      fail(422, "validation_error", "Invalid posted date");
 
     const recent = this.state.posts.filter(
       (post) =>
@@ -517,7 +494,7 @@ export class MockBackend {
       authorName: null,
       publishedAt: null,
       publishedAtSource: null,
-      submittedPostedAt: postedAt,
+      submittedPostedAt: null,
       submittedAt: now.toISOString(),
       status: "pending",
       statusReason: null,
@@ -693,7 +670,8 @@ export class MockBackend {
 
     const inQueue = filtered
       .filter((post) => inTab(post, query.status))
-      .sort(TAB_ORDER[query.status]);
+      // Most recently submitted first, like the real backend.
+      .sort(newestSubmittedFirst);
     const offset = Math.max(0, Number(cursor) || 0);
     const page = inQueue.slice(offset, offset + ADMIN_PAGE_SIZE);
     return {

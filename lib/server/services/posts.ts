@@ -8,11 +8,7 @@ import type {
   SubmitPostPayload,
 } from "@/lib/api/types";
 import { applyModeration } from "@/lib/moderation";
-import {
-  postedDateToInstant,
-  submissionsOpen,
-  zonedToday,
-} from "@/lib/periods";
+import { submissionsOpen } from "@/lib/periods";
 import { analyzePostUrl, type PostUrlAnalysis } from "@/lib/platforms";
 import { countedPosts } from "@/lib/ranking";
 import type { ServerConfig } from "@/lib/server/config";
@@ -46,10 +42,6 @@ export interface ServiceContext {
 export const submitPostSchema = z.object({
   url: z.string().trim().min(1).max(2048),
   title: z.string().trim().max(TITLE_MAX_LENGTH).optional(),
-  postedAt: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
 });
 
 export async function getMyPosts(
@@ -138,14 +130,6 @@ export async function submitPost(
   if (!submissionsOpen(now, config.campaign, config.submissionGraceDays))
     throw new HttpError(403, "challenge_closed", "Submissions are closed");
 
-  const postedAt = payload.postedAt ?? null;
-  if (
-    postedAt &&
-    (!postedDateToInstant(postedAt, config.campaign.timeZone) ||
-      postedAt > zonedToday(now, config.campaign.timeZone))
-  )
-    throw new HttpError(422, "validation_error", "Invalid posted date");
-
   const [recent] = await db
     .select({ total: count() })
     .from(posts)
@@ -192,7 +176,6 @@ export async function submitPost(
       urlCanonical: analysis.normalizedUrl,
       externalId: analysis.externalId,
       title: payload.title?.trim() || null,
-      submittedPostedAt: postedAt,
       submittedAt: now,
     })
     .onConflictDoNothing()

@@ -126,7 +126,10 @@ export const posts = pgTable(
     authorName: text("author_name"),
     publishedAt: timestamptz("published_at"),
     publishedAtSource: text("published_at_source").$type<PublishedAtSource>(),
-    /** The submitter's optional "posted on" date (a fallback only). */
+    /**
+     * The "posted on" date a submitter typed in (a fallback only). The form
+     * no longer asks for it; older posts may still have one.
+     */
     submittedPostedAt: date("submitted_posted_at", { mode: "string" }),
     submittedAt: timestamptz("submitted_at").notNull().defaultNow(),
     status: text("status").$type<PostStatus>().notNull().default("pending"),

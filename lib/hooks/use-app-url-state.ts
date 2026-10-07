@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import {
   type AppUrlState,
+  DEFAULT_URL_STATE,
   parseUrlState,
   serializeUrlState,
 } from "@/lib/url-state";
@@ -44,7 +45,13 @@ export function useAppUrlState() {
     [update],
   );
 
-  return { state, update, setView };
+  /** Back to the leaderboard with every filter at its default (the logo). */
+  const reset = useCallback(() => {
+    update(DEFAULT_URL_STATE, "push");
+    window.scrollTo({ top: 0 });
+  }, [update]);
+
+  return { state, update, setView, reset };
 }
 
 /** href for a view link, keeping the current filters. */
