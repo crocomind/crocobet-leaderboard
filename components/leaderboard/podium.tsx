@@ -40,6 +40,8 @@ const MEDALS = {
     wash: "from-gold/25",
     card: "border-gold/45 sm:pt-10 sm:pb-9",
     // DOM order stays 1-2-3 for screen readers; CSS order puts #1 in the middle.
+    // The top padding is the podium step: each card fills its slot, so #1 is
+    // the tallest, then #2, then #3, whatever is on them.
     slot: "col-span-2 sm:col-span-1 sm:order-2",
   },
   2: {
@@ -47,14 +49,14 @@ const MEDALS = {
     chip: "bg-silver",
     wash: "from-silver/20",
     card: "border-silver/30",
-    slot: "sm:order-1",
+    slot: "sm:order-1 sm:pt-8",
   },
   3: {
     ring: "ring-bronze",
     chip: "bg-bronze",
     wash: "from-bronze/20",
     card: "border-bronze/35",
-    slot: "sm:order-3",
+    slot: "pt-6 sm:order-3 sm:pt-16",
   },
 } as const;
 
@@ -88,16 +90,20 @@ export const Podium = memo(function Podium({
       <h2 id="podium-heading" className="sr-only">
         {t.leaderboard.podiumLabel}
       </h2>
-      <ol className="grid grid-cols-2 items-end gap-3 sm:grid-cols-3 sm:gap-4">
+      <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         {([1, 2, 3] as const).map((rank) => {
           const entry = entries.find((candidate) => candidate.rank === rank);
           return (
-            <li key={rank} className={cn("min-w-0", MEDALS[rank].slot)}>
+            <li
+              key={rank}
+              className={cn("flex min-w-0 flex-col", MEDALS[rank].slot)}
+            >
               <AnimatePresence mode="popLayout">
                 {entry && (
                   // Cards rise in with springGentle, #3 first and #1 last.
                   <motion.div
                     key={`${boardKey}:${entry.employee.id}`}
+                    className="flex flex-1 flex-col"
                     initial={
                       reduceMotion
                         ? { opacity: 0 }
@@ -198,7 +204,7 @@ function PodiumCard({
       whileTap={{ scale: SCALE.cardPress }}
       transition={springPress}
       className={cn(
-        "group relative isolate flex w-full flex-col items-center rounded-panel border bg-surface/85 px-3 pt-7 pb-6 text-center shadow-soft backdrop-blur",
+        "group relative isolate flex w-full flex-1 flex-col items-center justify-center rounded-panel border bg-surface/85 px-3 pt-7 pb-6 text-center shadow-soft backdrop-blur",
         "card-depth card-spotlight motion-colors hover:will-change-transform",
         medal.card,
       )}
