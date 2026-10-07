@@ -156,18 +156,26 @@ export function useEmployeePostsQuery(
   });
 }
 
-/** Loads boards in the background (cached ones are skipped), so switching to them is instant. */
+/**
+ * Loads boards in the background (cached ones are skipped), so switching to
+ * them is instant. One at a time, so the server never gets a burst of them.
+ */
 export function usePrefetchBoards() {
   const queryClient = useQueryClient();
   return useCallback(
-    (queries: readonly LeaderboardQuery[]) => {
-      for (const query of queries)
-        void queryClient.prefetchQuery({
-          queryKey: queryKeys.leaderboard(query),
-          queryFn: ({ signal }) => getLeaderboard(query, { signal }),
-          staleTime: STATS_STALE_MS,
-          gcTime: STATS_GC_MS,
-        });
+    (queries: readonly LeaderboardQuery[], signal?: AbortSignal) => {
+      void (async () => {
+        for (const query of queries) {
+          if (signal?.aborted) return;
+          await queryClient.prefetchQuery({
+            queryKey: queryKeys.leaderboard(query),
+            queryFn: ({ signal: querySignal }) =>
+              getLeaderboard(query, { signal: querySignal }),
+            staleTime: STATS_STALE_MS,
+            gcTime: STATS_GC_MS,
+          });
+        }
+      })();
     },
     [queryClient],
   );
