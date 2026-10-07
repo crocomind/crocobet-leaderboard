@@ -201,7 +201,6 @@ function PodiumCard({
         "group relative isolate flex w-full flex-col items-center rounded-panel border bg-surface/85 px-3 pt-7 pb-6 text-center shadow-soft backdrop-blur",
         "card-depth card-spotlight motion-colors hover:will-change-transform",
         medal.card,
-        isMe && "ring-2 ring-brand/60",
       )}
     >
       <button
