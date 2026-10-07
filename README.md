@@ -159,6 +159,13 @@ checks the session itself (on top of `proxy.ts`), admin handlers also check the 
 20 submissions per employee per day, one re-check per post per 10 minutes, one manual sync per
 15 minutes.
 
+**Database connections on Vercel.** Vercel pauses a function instance between requests, and a
+connection left open while it's paused can die unnoticed; the next query on it would hang until the
+function is killed (300 s). So connections close after 5 idle seconds and the instance stays up
+until they have ([`lib/server/db/client.ts`](lib/server/db/client.ts), the same idea as Vercel's
+`attachDatabasePool`, which only supports `pg`). As a safety net, a read that takes over 20
+seconds answers 503 and reopens the connections; the browser retries once.
+
 ### Database setup
 
 The Supabase database starts empty. **Migrations** are the SQL files in [`drizzle/`](drizzle/)

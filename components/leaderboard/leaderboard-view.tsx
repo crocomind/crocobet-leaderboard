@@ -82,6 +82,8 @@ export function LeaderboardView() {
   const loaded = data !== undefined && !leaderboard.isPlaceholderData;
   useEffect(() => {
     if (!loaded) return;
+    // Stop when the board changes; the next one starts its own queue.
+    const stop = new AbortController();
     const timer = setTimeout(() => {
       const { category, platform, period, search } = query;
       const neighbours: LeaderboardQuery[] = [
@@ -101,9 +103,12 @@ export function LeaderboardView() {
           }),
         ),
       ];
-      prefetchBoards(neighbours);
+      prefetchBoards(neighbours, stop.signal);
     }, 400);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      stop.abort();
+    };
   }, [loaded, query, prefetchBoards]);
 
   // An employee's posts start loading on hover, so their sheet opens filled.

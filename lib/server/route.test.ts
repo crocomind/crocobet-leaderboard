@@ -17,15 +17,22 @@ import { HttpError } from "@/lib/server/http";
 let db: Db;
 let close: () => Promise<void>;
 let signedIn: EmployeeRow | null = null;
+/** Makes the next requests hang, like a query on a dead connection. */
+let hang = false;
+const dbClient = vi.hoisted(() => ({ reset: vi.fn() }));
 
 vi.mock("next/server", () => ({ after: (task: () => unknown) => void task() }));
 vi.mock("@/lib/server/config", async (original) => ({
   ...(await original<typeof ConfigModule>()),
   getServerConfig: () => testConfig,
 }));
-vi.mock("@/lib/server/db/client", () => ({ getDb: () => db }));
+vi.mock("@/lib/server/db/client", () => ({
+  getDb: () => db,
+  resetDb: dbClient.reset,
+}));
 vi.mock("@/lib/server/auth", () => ({
   requireEmployee: async () => {
+    if (hang) return new Promise(() => {});
     if (!signedIn) throw new HttpError(401, "unauthorized", "Not signed in");
     return { employee: signedIn, isAdmin: signedIn.role === "admin" };
   },
@@ -53,9 +60,30 @@ afterAll(() => close());
 beforeEach(async () => {
   await resetDb(db);
   signedIn = null;
+  hang = false;
 });
 
 describe("/api/v1 routes", () => {
+  it("answer a stuck read with 503 after 20 seconds and reopen the connections", async () => {
+    vi.useFakeTimers();
+    try {
+      hang = true;
+      const pending = getBoard(
+        new Request(`${ORIGIN}/api/v1/leaderboard`),
+        noParams,
+      );
+      await vi.advanceTimersByTimeAsync(20_000);
+      const response = await pending;
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({
+        error: { code: "service_unavailable" },
+      });
+      expect(dbClient.reset).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("answer 401 with the error envelope when signed out", async () => {
     const response = await getMe(new Request(`${ORIGIN}/api/v1/me`), noParams);
     expect(response.status).toBe(401);
