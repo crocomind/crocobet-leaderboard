@@ -1,8 +1,8 @@
-import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 // "Croco" and "Creators" in Inter ExtraBold, as outlines so the logo looks
-// the same everywhere. The mark is the favicon's: a "C" around a glowing dot.
+// the same everywhere. The mark is the favicon's: a white "C" inside a green
+// one (the inner "C" takes the text color, so it's dark on the light theme).
 const CROCO =
   "M55.5 28.2Q53.3 28.2 51.6 27.3Q49.9 26.3 48.9 24.5Q47.9 22.6 47.9 20Q47.9 17.4 48.9 15.5Q49.9 13.7 51.6 12.7Q53.3 11.8 55.5 11.8Q56.9 11.8 58.1 12.2Q59.3 12.6 60.2 13.3Q61.2 14.1 61.8 15.2Q62.4 16.2 62.5 17.6H58.7Q58.6 17.1 58.3 16.6Q58.1 16.1 57.7 15.8Q57.3 15.5 56.7 15.3Q56.2 15.1 55.5 15.1Q54.4 15.1 53.5 15.7Q52.7 16.3 52.2 17.4Q51.8 18.5 51.8 20Q51.8 21.6 52.2 22.7Q52.7 23.8 53.5 24.3Q54.4 24.9 55.5 24.9Q56.2 24.9 56.7 24.7Q57.2 24.5 57.7 24.2Q58.1 23.9 58.3 23.4Q58.6 22.9 58.7 22.4H62.5Q62.4 23.4 61.9 24.5Q61.4 25.5 60.5 26.4Q59.6 27.2 58.4 27.7Q57.1 28.2 55.5 28.2ZM64.3 28V16H67.9V18.2H68Q68.4 17 69.1 16.4Q69.9 15.8 70.8 15.8Q71.1 15.8 71.4 15.9Q71.7 15.9 71.9 16V19.2Q71.6 19.1 71.2 19.1Q70.8 19 70.4 19Q69.7 19 69.2 19.3Q68.6 19.7 68.3 20.2Q68 20.7 68 21.4V28ZM78.8 28.2Q76.9 28.2 75.5 27.5Q74.2 26.7 73.4 25.3Q72.7 23.9 72.7 22Q72.7 20.2 73.4 18.8Q74.2 17.4 75.5 16.6Q76.9 15.8 78.8 15.8Q80.6 15.8 82 16.6Q83.3 17.4 84.1 18.8Q84.8 20.2 84.8 22Q84.8 23.9 84.1 25.3Q83.3 26.7 82 27.5Q80.6 28.2 78.8 28.2ZM78.8 25.4Q79.5 25.4 80 24.9Q80.5 24.5 80.7 23.8Q81 23 81 22Q81 21 80.7 20.3Q80.5 19.5 80 19.1Q79.5 18.7 78.8 18.7Q78 18.7 77.5 19.1Q77 19.5 76.8 20.3Q76.5 21 76.5 22Q76.5 23 76.8 23.8Q77 24.5 77.5 24.9Q78 25.4 78.8 25.4ZM92 28.2Q90.2 28.2 88.8 27.5Q87.5 26.7 86.7 25.3Q86 23.9 86 22Q86 20.2 86.7 18.8Q87.5 17.4 88.8 16.6Q90.2 15.8 92 15.8Q93.2 15.8 94.1 16.1Q95.1 16.4 95.8 17Q96.5 17.6 97 18.3Q97.4 19.1 97.6 20.1L94.1 20.7Q94 20.2 93.8 19.8Q93.7 19.5 93.4 19.2Q93.2 19 92.8 18.8Q92.5 18.7 92.1 18.7Q91.4 18.7 90.9 19.1Q90.4 19.5 90.1 20.2Q89.8 21 89.8 22Q89.8 23.1 90.1 23.8Q90.4 24.6 90.9 25Q91.4 25.4 92.1 25.4Q92.5 25.4 92.8 25.2Q93.2 25.1 93.4 24.8Q93.7 24.6 93.9 24.2Q94 23.8 94.1 23.3L97.6 23.9Q97.4 24.9 97 25.7Q96.5 26.5 95.8 27.1Q95.1 27.6 94.2 27.9Q93.2 28.2 92 28.2ZM104.8 28.2Q102.9 28.2 101.6 27.5Q100.2 26.7 99.5 25.3Q98.8 23.9 98.8 22Q98.8 20.2 99.5 18.8Q100.2 17.4 101.6 16.6Q102.9 15.8 104.8 15.8Q106.7 15.8 108 16.6Q109.4 17.4 110.1 18.8Q110.8 20.2 110.8 22Q110.8 23.9 110.1 25.3Q109.4 26.7 108 27.5Q106.7 28.2 104.8 28.2ZM104.8 25.4Q105.5 25.4 106 24.9Q106.5 24.5 106.8 23.8Q107 23 107 22Q107 21 106.8 20.3Q106.5 19.5 106 19.1Q105.5 18.7 104.8 18.7Q104.1 18.7 103.6 19.1Q103.1 19.5 102.8 20.3Q102.6 21 102.6 22Q102.6 23 102.8 23.8Q103.1 24.5 103.6 24.9Q104.1 25.4 104.8 25.4Z";
 const CREATORS =
@@ -16,7 +16,6 @@ export function Logo({
   label: string;
   className?: string;
 }) {
-  const haloId = useId();
   return (
     <svg
       viewBox="0 0 210 40"
@@ -24,21 +23,6 @@ export function Logo({
       aria-label={label}
       className={cn("h-8 w-auto shrink-0", className)}
     >
-      <defs>
-        <radialGradient id={haloId}>
-          <stop
-            offset="0"
-            stopColor="var(--brand-primary-bright)"
-            stopOpacity="0.45"
-          />
-          <stop
-            offset="1"
-            stopColor="var(--brand-primary-bright)"
-            stopOpacity="0"
-          />
-        </radialGradient>
-      </defs>
-      <circle cx="20" cy="20" r="9.5" fill={`url(#${haloId})`} />
       <path
         d="M30.72 11A14 14 0 1 0 30.72 29"
         fill="none"
@@ -46,7 +30,13 @@ export function Logo({
         strokeLinecap="round"
         className="stroke-brand"
       />
-      <circle cx="20" cy="20" r="4.3" className="fill-brand-text" />
+      <path
+        d="M24.63 16.12A6.04 6.04 0 1 0 24.63 23.88"
+        fill="none"
+        strokeWidth="3.7"
+        strokeLinecap="round"
+        className="stroke-foreground"
+      />
       <path d={CROCO} className="fill-foreground" />
       <path d={CREATORS} className="fill-brand-text" />
     </svg>

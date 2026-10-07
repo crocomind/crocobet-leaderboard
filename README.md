@@ -300,7 +300,7 @@ unfinished `sync_runs` row (a crashed run stops blocking after 15 minutes).
 - **Radii:** `rounded-control` (16px, inputs and buttons), `rounded-card` (24px) and
   `rounded-panel` (32px, modals and podium cards). They're defined in `app/globals.css`.
 - **Logo:** [`components/layout/logo.tsx`](components/layout/logo.tsx), an inline SVG: the mark
-  (a "C" around a glowing dot, also the favicon in `app/icon.svg`) and "Croco Creators" in Inter
+  (a white "C" inside a green one, also the favicon in `app/icon.svg`) and "Croco Creators" in Inter
   ExtraBold as outlines. Its colors come from the tokens, so it follows the theme. Clicking it in
   the header opens the leaderboard with every filter reset.
 - **Fonts:** Inter, loaded with `next/font`. Georgian characters in what employees write (post
