@@ -229,6 +229,8 @@ const en = {
   profile: {
     title: "Profile",
     history: "Leaderboard history",
+    posts: "Posts",
+    noPosts: "No posts yet.",
     rank: "#{rank} of {total}",
     notRanked: "Not ranked",
     removed: "Removed by an admin",

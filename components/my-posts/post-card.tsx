@@ -115,7 +115,14 @@ function CheckNotice({
   );
 }
 
-export function PostCard({ post }: { post: Post }) {
+/** `readOnly` hides the owner's actions (delete, re-check), e.g. on someone else's profile. */
+export function PostCard({
+  post,
+  readOnly = false,
+}: {
+  post: Post;
+  readOnly?: boolean;
+}) {
   const { t, format, formatDate, plural } = useI18n();
   const href = safeExternalUrl(post.url);
   const title = post.title ?? t.common.untitled;
@@ -144,19 +151,21 @@ export function PostCard({ post }: { post: Post }) {
           className="aspect-[16/9] w-full rounded-t-card"
         />
         {/* Every post can be deleted by its owner, whatever its status. */}
-        <MotionButton
-          variant="icon"
-          size="icon-sm"
-          aria-label={`${t.myPosts.delete}: ${title}`}
-          title={t.myPosts.delete}
-          className="absolute top-3 right-3 z-10 border border-white/15 bg-black/45 text-white backdrop-blur hover:bg-danger hover:text-white"
-          onClick={() => {
-            withdraw.reset();
-            setConfirmOpen(true);
-          }}
-        >
-          <Trash2 aria-hidden="true" />
-        </MotionButton>
+        {!readOnly && (
+          <MotionButton
+            variant="icon"
+            size="icon-sm"
+            aria-label={`${t.myPosts.delete}: ${title}`}
+            title={t.myPosts.delete}
+            className="absolute top-3 right-3 z-10 border border-white/15 bg-black/45 text-white backdrop-blur hover:bg-danger hover:text-white"
+            onClick={() => {
+              withdraw.reset();
+              setConfirmOpen(true);
+            }}
+          >
+            <Trash2 aria-hidden="true" />
+          </MotionButton>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
@@ -263,7 +272,7 @@ export function PostCard({ post }: { post: Post }) {
           )}
         </div>
 
-        {pending && (
+        {pending && !readOnly && (
           <div className="flex flex-wrap gap-2 border-t border-border pt-3">
             <MotionButton
               variant="secondary"

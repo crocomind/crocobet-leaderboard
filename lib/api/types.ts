@@ -476,6 +476,8 @@ export interface ProfileResponse {
   challenge: ProfileLeaderboard;
   /** Rounds that have started, newest first, including ones they didn't take part in. */
   rounds: ProfileLeaderboard[];
+  /** Every post they have, in any status, newest submission first. */
+  posts: Post[];
 }
 
 export interface PostCounts {

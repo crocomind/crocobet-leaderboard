@@ -1268,6 +1268,10 @@ export class MockBackend {
     return {
       employee,
       timeZone: campaignOf(this.state).timeZone,
+      posts: this.state.posts
+        .filter((post) => post.employeeId === employeeId)
+        .sort(newestSubmittedFirst)
+        .map((post) => toPost(post)),
       challenge: result(challenge!),
       rounds: rounds
         .filter((board) => board.status !== "upcoming")

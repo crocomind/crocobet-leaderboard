@@ -1,11 +1,13 @@
 "use client";
 
 import { Clapperboard, ImageIcon, UserMinus } from "lucide-react";
+import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { Crossfade } from "@/components/common/crossfade";
 import { EmployeeAvatar } from "@/components/common/employee-avatar";
 import { GlowBackdrop } from "@/components/common/glow-backdrop";
 import { ErrorState } from "@/components/common/state-panel";
+import { PostCard } from "@/components/my-posts/post-card";
 import {
   StatusBadge,
   useBoardLabel,
@@ -20,6 +22,7 @@ import type {
   ProfileLeaderboard,
 } from "@/lib/api/types";
 import { useAppUrlState } from "@/lib/hooks/use-app-url-state";
+import { enterUp } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const CATEGORY_ICONS: Record<ContentCategory, ReactNode> = {
@@ -49,7 +52,10 @@ export function ProfileView() {
         stateKey={profile.data ? "content" : failed ? "error" : "loading"}
       >
         {profile.data ? (
-          <ProfileContent data={profile.data} />
+          <ProfileContent
+            data={profile.data}
+            isMine={profile.data.employee.id === me.data?.id}
+          />
         ) : failed ? (
           <>
             <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
@@ -87,10 +93,13 @@ export function ProfileView() {
 
 function ProfileContent({
   data,
+  isMine,
 }: {
   data: NonNullable<ReturnType<typeof useProfileQuery>["data"]>;
+  /** Your own profile: the posts keep their delete and re-check actions. */
+  isMine: boolean;
 }) {
-  const { t, formatDateRange } = useI18n();
+  const { t, format, plural, formatDateRange } = useI18n();
   const boardLabel = useBoardLabel();
   const { employee, timeZone, challenge } = data;
   // Rounds with a result, or that an admin took them off.
@@ -131,6 +140,46 @@ function ProfileContent({
           large
         />
         <Results board={challenge} large />
+      </section>
+
+      <section aria-labelledby="profile-posts" className="mt-10">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <h2 id="profile-posts" className="text-lg font-bold">
+            {t.profile.posts}
+          </h2>
+          {data.posts.length > 0 && (
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {[
+                plural(t.participants.posts, data.posts.length),
+                ...(
+                  [
+                    [["approved"], t.participants.approved],
+                    [["pending"], t.participants.pending],
+                    [["rejected", "disqualified"], t.participants.rejected],
+                  ] as const
+                ).flatMap(([statuses, label]) => {
+                  const count = data.posts.filter((post) =>
+                    (statuses as readonly string[]).includes(post.status),
+                  ).length;
+                  return count > 0 ? [format(label, { count })] : [];
+                }),
+              ].join(" · ")}
+            </p>
+          )}
+        </div>
+        {data.posts.length === 0 ? (
+          <p className="rounded-card border border-border bg-surface/70 p-5 text-sm text-muted-foreground">
+            {t.profile.noPosts}
+          </p>
+        ) : (
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {data.posts.map((post, index) => (
+              <motion.li key={post.id} {...enterUp(Math.min(index, 9))}>
+                <PostCard post={post} readOnly={!isMine} />
+              </motion.li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section aria-labelledby="profile-history" className="mt-10">
