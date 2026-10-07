@@ -93,16 +93,19 @@ export function LeaderboardToolbar({
   ];
 
   return (
-    <div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)] md:items-center">
+    // Desktop: Video/Static on top; the platform chips with the period and
+    // search on one row below. Tablet: period and search next to Video/Static.
+    // Phone: search, then Video/Static, then period and chips in one row.
+    <div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)] md:items-center lg:grid-cols-[minmax(0,1fr)_auto]">
       <SegmentedControl
         label={t.leaderboard.categoryLabel}
         value={category}
         onValueChange={onCategoryChange}
         options={categoryOptions}
-        className="order-2 w-full md:order-1 md:w-auto [&>button]:px-3 sm:[&>button]:px-4"
+        className="order-2 w-full md:order-1 md:w-auto lg:col-span-2 lg:justify-self-start [&>button]:px-3 sm:[&>button]:px-4"
       />
 
-      <div className="order-1 flex gap-2 md:order-2 md:justify-self-end">
+      <div className="order-1 flex gap-2 md:order-2 md:justify-self-end lg:order-3">
         <PeriodMenu
           period={period}
           round={round}
@@ -119,7 +122,7 @@ export function LeaderboardToolbar({
       </div>
 
       {/* On mobile the period and platform filters share one swipeable row. */}
-      <div className="order-3 -mx-4 no-scrollbar overflow-x-auto fade-x px-4 py-1 md:col-span-2 md:mx-0 md:overflow-visible md:[mask-image:none] md:px-0">
+      <div className="order-3 -mx-4 no-scrollbar overflow-x-auto fade-x px-4 py-1 md:col-span-2 md:mx-0 md:overflow-visible md:[mask-image:none] md:px-0 lg:order-2 lg:col-span-1">
         <div className="flex w-max items-center gap-2">
           <PeriodMenu
             period={period}
