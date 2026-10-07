@@ -92,6 +92,25 @@ function PostCell({ post }: { post: AdminPost }) {
   );
 }
 
+/** When the post was submitted here, in the viewer's local time. */
+function SubmittedAt({
+  post,
+  className,
+}: {
+  post: AdminPost;
+  className?: string;
+}) {
+  const { formatDateTime } = useI18n();
+  return (
+    <time
+      dateTime={post.submittedAt}
+      className={cn("text-xs tabular-nums", className)}
+    >
+      {formatDateTime(post.submittedAt)}
+    </time>
+  );
+}
+
 function PublishedCell({ post }: { post: AdminPost }) {
   const { t, formatDate } = useI18n();
   return (
@@ -122,7 +141,11 @@ function MetricsCell({ post }: { post: AdminPost }) {
           />
         )}
       </p>
-      <ScoreBreakdown views={post.views} reactions={post.reactions} />
+      <ScoreBreakdown
+        views={post.views}
+        reactions={post.reactions}
+        className="flex-wrap gap-x-2.5 gap-y-0.5"
+      />
       <p className="mt-0.5 text-muted-foreground">
         {!post.metricsUpdatedAt
           ? t.admin.notFetched
@@ -194,25 +217,33 @@ export function AdminQueue({
                   />
                 </th>
               )}
-              <th scope="col" className="w-[15%] px-3 py-3">
+              <th scope="col" className="w-[14%] px-3 py-3">
                 {columns.employee}
               </th>
-              <th scope="col" className="w-[17%] px-3 py-3">
+              <th scope="col" className="w-[15%] px-3 py-3">
                 {columns.post}
               </th>
-              <th scope="col" className="w-[8%] px-3 py-3">
+              {/* The queue is listed newest submission first. */}
+              <th
+                scope="col"
+                aria-sort="descending"
+                className="w-[11%] px-3 py-3"
+              >
+                {columns.submitted}
+              </th>
+              <th scope="col" className="w-[9%] px-3 py-3">
                 {columns.published}
               </th>
-              <th scope="col" className="w-[16%] px-3 py-3">
+              <th scope="col" className="w-[14%] px-3 py-3">
                 {columns.evidence}
               </th>
-              <th scope="col" className="w-[11%] px-3 py-3">
+              <th scope="col" className="w-[10%] px-3 py-3">
                 {columns.metrics}
               </th>
               <th scope="col" className="w-[12%] px-3 py-3">
                 {columns.flags}
               </th>
-              <th scope="col" className="w-44 px-3 py-3 pr-4 text-right">
+              <th scope="col" className="w-36 px-3 py-3 pr-4 text-right">
                 {columns.actions}
               </th>
             </tr>
@@ -253,6 +284,9 @@ export function AdminQueue({
                 </td>
                 <td className="px-3 py-3">
                   <PostCell post={post} />
+                </td>
+                <td className="px-3 py-3">
+                  <SubmittedAt post={post} />
                 </td>
                 <td className="px-3 py-3">
                   <PublishedCell post={post} />
@@ -314,6 +348,10 @@ export function AdminQueue({
                   {post.employee.email}
                 </p>
               </div>
+              <SubmittedAt
+                post={post}
+                className="shrink-0 pt-0.5 text-muted-foreground"
+              />
             </div>
             <CheckBadge check={post.check} className="mt-3" />
             <div className="mt-3 grid grid-cols-2 gap-3">

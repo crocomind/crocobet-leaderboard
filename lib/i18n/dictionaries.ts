@@ -337,6 +337,7 @@ const en = {
       select: "Select",
       employee: "Employee",
       post: "Post",
+      submitted: "Submitted",
       published: "Published",
       evidence: "Check",
       metrics: "Metrics",

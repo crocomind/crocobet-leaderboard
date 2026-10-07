@@ -433,7 +433,25 @@ describe("overrides", () => {
 });
 
 describe("queue", () => {
-  it("lists tabs with counts, oldest pending first, filters, search and pages", async () => {
+  it("orders reviewed tabs by submission time, not review time", async () => {
+    const ana = await makeEmployee(db);
+    const older = await makePost(db, ana.id, "instagram_reel", {
+      submittedAt: new Date("2026-10-12T09:00:00+04:00"),
+      reviewedAt: new Date("2026-10-14T09:00:00+04:00"),
+    });
+    const newer = await makePost(db, ana.id, "instagram_reel", {
+      submittedAt: new Date("2026-10-13T09:00:00+04:00"),
+      reviewedAt: new Date("2026-10-13T10:00:00+04:00"),
+    });
+    const approved = await listAdminPosts(
+      db,
+      query({ status: "approved" }),
+      null,
+    );
+    expect(approved.posts.map((post) => post.id)).toEqual([newer.id, older.id]);
+  });
+
+  it("lists tabs with counts, newest first, filters, search and pages", async () => {
     const ana = await makeEmployee(db, {
       email: "ana@crocobet.com",
       givenName: "Ana",
@@ -475,8 +493,9 @@ describe("queue", () => {
     });
     expect(first.posts).toHaveLength(20);
     const times = first.posts.map((post) => post.submittedAt);
-    expect(times).toEqual([...times].sort());
-    expect(first.posts[0]?.employee).toMatchObject({
+    expect(times).toEqual([...times].sort().reverse());
+    expect(first.posts[0]?.employee).toMatchObject({ name: "Nino" });
+    expect(first.posts[1]?.employee).toMatchObject({
       name: "Ana Gelashvili",
       email: "ana@crocobet.com",
     });

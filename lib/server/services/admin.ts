@@ -185,15 +185,8 @@ function tabCondition(tab: AdminQueueTab): SQL {
   return tab === "flagged" ? flagged : eq(posts.status, tab);
 }
 
-function tabOrder(tab: AdminQueueTab): SQL[] {
-  if (tab === "pending") return [asc(posts.submittedAt), asc(posts.id)];
-  if (tab === "flagged") return [desc(posts.submittedAt), asc(posts.id)];
-  return [
-    sql`${posts.reviewedAt} desc nulls last`,
-    desc(posts.submittedAt),
-    asc(posts.id),
-  ];
-}
+/** Every tab lists the most recently submitted posts first. */
+const QUEUE_ORDER = [desc(posts.submittedAt), asc(posts.id)];
 
 /** Filters other than the tab: check, flag, category, platform and search. */
 function queueFilters(query: AdminPostsQuery): SQL | undefined {
@@ -242,7 +235,7 @@ export async function listAdminPosts(
       .where(filters),
     selectQueueRows(db)
       .where(and(tabCondition(query.status), filters))
-      .orderBy(...tabOrder(query.status))
+      .orderBy(...QUEUE_ORDER)
       .limit(PAGE_SIZE + 1)
       .offset(offset),
   ]);
