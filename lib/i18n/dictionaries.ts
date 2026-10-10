@@ -4,9 +4,9 @@
  */
 const en = {
   app: {
-    name: "Croco Creators",
+    name: "Croco by Squad",
     description:
-      "The Croco By Squad content leaderboard for the Crocobet team.",
+      "The Croco by Squad content leaderboard for the Crocobet team.",
     skipToContent: "Skip to content",
   },
   nav: {
@@ -566,7 +566,7 @@ const en = {
   },
   auth: {
     pageTitle: "Sign in",
-    title: "Welcome to Croco Creators",
+    title: "Welcome to Croco by Squad",
     signInWithMicrosoft: "Sign in with Microsoft",
     redirecting: "Redirecting to Microsoft…",
     signedOut: "You've been signed out.",

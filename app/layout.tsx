@@ -21,7 +21,7 @@ const notoSansGeorgian = Noto_Sans_Georgian({
 });
 
 export const metadata: Metadata = {
-  title: "Croco Creators",
+  title: "Croco by Squad",
   description: "The post creators leaderboard for the Crocobet team.",
   robots: { index: false, follow: false },
 };

@@ -1,4 +1,4 @@
-# Croco By Squad API contract (v1)
+# Croco by Squad API contract (v1)
 
 The backend lives in this repo: Next.js Route Handlers under **`/api/v1`**, Supabase Postgres and
 Vercel Cron. The frontend's TypeScript types are in [`lib/api/types.ts`](lib/api/types.ts). The
