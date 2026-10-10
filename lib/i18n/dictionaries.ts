@@ -566,7 +566,6 @@ const en = {
   },
   auth: {
     pageTitle: "Sign in",
-    title: "Welcome to Croco by Squad",
     signInWithMicrosoft: "Sign in with Microsoft",
     redirecting: "Redirecting to Microsoft…",
     signedOut: "You've been signed out.",
