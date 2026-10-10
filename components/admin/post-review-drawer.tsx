@@ -84,8 +84,10 @@ export function PostReviewDrawer({
       variant="side"
       className="md:w-[min(calc(100vw-1.5rem),34rem)]"
     >
+      {/* Both levels pass the panel's height down, so the details can scroll. */}
       <Crossfade
         className="flex min-h-0 flex-1 flex-col"
+        contentClassName="flex min-h-0 flex-1 flex-col"
         stateKey={detail.data ? "detail" : detail.isError ? "error" : "loading"}
       >
         {detail.data ? (
@@ -235,7 +237,7 @@ function DrawerContent({
         <ResponsiveDialogClose label={t.common.close} className="-mt-1 -mr-2" />
       </div>
 
-      <div className="flex flex-1 flex-col gap-5 overflow-y-auto overscroll-contain px-5 pb-8 md:px-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain px-5 pb-8 md:px-6">
         <div className="rounded-control border border-border bg-surface/70 p-3.5">
           <div className="flex items-start gap-3">
             <PlatformBadge platform={post.platform} size="md" />
