@@ -311,12 +311,35 @@ export function isAutoRejectReason(
   return (AUTO_REJECT_REASONS as readonly string[]).includes(reason ?? "");
 }
 
-export const AUTO_REJECT_NOTES: Record<AutoRejectReason, string> = {
-  missing_tag:
-    "Rejected automatically: the post has neither #CrocoBySquad nor a Croco Squad tag. Add one, then check the post again.",
-  outside_challenge:
-    "Rejected automatically: the post was published outside the challenge dates.",
+const AUTO_REJECT_NOTES: Record<AutoRejectReason, string> = {
+  missing_tag: "the post has neither #CrocoBySquad nor a Croco Squad tag",
+  outside_challenge: "the post was published outside the leaderboard dates",
 };
+
+/**
+ * Every rule a post the check rejected breaks, its stored reason first. The
+ * reason is the one that matters most (dates can't be fixed), but a post
+ * outside the dates may also be missing the tag, and the owner sees both.
+ */
+export function autoRejectReasons(
+  reason: AutoRejectReason,
+  check: Pick<PostCheck, "tagFound">,
+): AutoRejectReason[] {
+  return reason !== "missing_tag" && check.tagFound === false
+    ? [reason, "missing_tag"]
+    : [reason];
+}
+
+/** The note stored with an automatic rejection, for the admins' audit log. */
+export function autoRejectNote(
+  reason: AutoRejectReason,
+  check: Pick<PostCheck, "tagFound">,
+): string {
+  const reasons = autoRejectReasons(reason, check).map(
+    (each) => AUTO_REJECT_NOTES[each],
+  );
+  return `Rejected by the system: ${reasons.join("; ")}.`;
+}
 
 /**
  * Whether the check rejects a pending post by itself, so admins only see
@@ -331,7 +354,7 @@ export function autoRejection(
   publishedAtSource: PublishedAtSource | null,
 ): AutoRejectReason | null {
   if (status !== "pending") return null;
-  // Outside the challenge first: adding the tag wouldn't help such a post.
+  // Outside the dates first: adding the tag wouldn't help such a post.
   if (
     check.status !== "queued" &&
     check.status !== "running" &&

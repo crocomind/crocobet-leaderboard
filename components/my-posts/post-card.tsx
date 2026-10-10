@@ -30,7 +30,7 @@ import {
 import type { Post, PostCheck, PostStatus } from "@/lib/api/types";
 import { squadTag } from "@/lib/campaign-tag";
 import { type Platform, safeExternalUrl } from "@/lib/platforms";
-import { isAutoRejectReason } from "@/lib/post-check";
+import { autoRejectReasons, isAutoRejectReason } from "@/lib/post-check";
 import { trackSpotlight } from "@/lib/spotlight";
 import { cn } from "@/lib/utils";
 
@@ -131,12 +131,17 @@ export function PostCard({
   const counted = post.status === "approved" || pending;
   const checking =
     post.check.status === "queued" || post.check.status === "running";
-  // Rejected by the check itself: the reason in the owner's words, and a
-  // missing tag can be fixed and checked again.
+  // Rejected by the check itself: every rule the post breaks, and a post
+  // that's only missing the tag can be fixed and checked again.
   const autoReason =
     post.autoRejected && isAutoRejectReason(post.statusReason)
       ? post.statusReason
       : null;
+  const reasons = autoReason
+    ? autoRejectReasons(autoReason, post.check)
+    : post.statusReason
+      ? [post.statusReason]
+      : [];
   const canRecheck = pending || autoReason === "missing_tag";
 
   const recheck = useRecheckPostMutation();
@@ -215,31 +220,32 @@ export function PostCard({
           <div className="rounded-xl border border-danger/25 bg-danger/10 px-3 py-2 text-xs">
             {autoReason && (
               <p className="mb-1 text-muted-foreground">
-                {t.myPosts.autoRejected.label}
+                {t.myPosts.rejectedBySystem}
               </p>
             )}
-            {post.statusReason && (
+            {reasons.length === 1 && (
               <p className="font-semibold text-danger-text">
-                {format(t.myPosts.reason, {
-                  reason: t.reasons[post.statusReason],
-                })}
+                {format(t.myPosts.reason, { reason: t.reasons[reasons[0]!] })}
               </p>
             )}
-            {autoReason ? (
+            {reasons.length > 1 && (
+              <div className="font-semibold text-danger-text">
+                <p>{t.myPosts.reasons}</p>
+                <ul className="mt-0.5 list-disc space-y-0.5 pl-4">
+                  {reasons.map((reason) => (
+                    <li key={reason}>{t.reasons[reason]}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {/* The system's note is for the audit log; the reasons say it all. */}
+            {!autoReason && post.statusNote && (
               <p className="mt-1 text-foreground">
-                {format(t.myPosts.autoRejected[autoReason], {
-                  squad: squadTag(post.platform) ?? "@Croco Squad",
-                })}
+                <span className="text-muted-foreground">
+                  {t.myPosts.reviewerNote}:{" "}
+                </span>
+                {post.statusNote}
               </p>
-            ) : (
-              post.statusNote && (
-                <p className="mt-1 text-foreground">
-                  <span className="text-muted-foreground">
-                    {t.myPosts.reviewerNote}:{" "}
-                  </span>
-                  {post.statusNote}
-                </p>
-              )
             )}
           </div>
         )}

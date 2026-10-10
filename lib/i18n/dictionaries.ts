@@ -176,13 +176,8 @@ const en = {
     },
     reason: "Reason: {reason}",
     reviewerNote: "Reviewer's note",
-    autoRejected: {
-      label: "Rejected automatically",
-      missing_tag:
-        "Add #CrocoBySquad or tag {squad} to the post, then check it again. You can also submit the same link again.",
-      outside_challenge:
-        "Only posts published during the challenge count. Post something new and submit that link.",
-    },
+    reasons: "Reasons:",
+    rejectedBySystem: "Rejected by the system",
     checkAgain: "Check again",
     countsAs: "Counts as {category}",
     recheck: "Re-check",
@@ -250,7 +245,7 @@ const en = {
   reasons: {
     missing_tag: "The post has neither #CrocoBySquad nor a Croco Squad tag",
     not_owner: "It wasn't posted from your own account",
-    outside_challenge: "It was published outside the challenge",
+    outside_challenge: "It was published outside the leaderboard dates",
     duplicate: "It was already submitted",
     unavailable: "The post is unavailable or private",
     rule_violation: "It breaks the challenge rules",
@@ -420,8 +415,8 @@ const en = {
       hashtag: "#CrocoBySquad",
       mention: "Croco Squad tagged",
       none: "No hashtag or tag",
-      inWindow: "Inside the challenge",
-      outsideWindow: "Outside the challenge",
+      inWindow: "Within the leaderboard dates",
+      outsideWindow: "Outside the leaderboard dates",
       windowUnknown: "Publish date unknown",
     },
     publishedUnknown: "Unknown",
@@ -502,7 +497,7 @@ const en = {
     reasonLabels: {
       missing_tag: "Missing tag",
       not_owner: "Not their account",
-      outside_challenge: "Outside the challenge",
+      outside_challenge: "Outside the leaderboard dates",
       duplicate: "Duplicate",
       unavailable: "Unavailable",
       rule_violation: "Rule violation",

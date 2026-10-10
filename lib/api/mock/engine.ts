@@ -6,8 +6,8 @@ import {
 } from "@/lib/moderation";
 import { type CampaignWindow, isWithin } from "@/lib/periods";
 import {
-  AUTO_REJECT_NOTES,
   autoRejection,
+  autoRejectNote,
   evaluateFetch,
   isAutoRejectReason,
   isProviderFailure,
@@ -266,11 +266,12 @@ export function autoReject(
   if (!reason) return;
   post.status = "rejected";
   post.statusReason = reason;
-  post.statusNote = AUTO_REJECT_NOTES[reason];
+  const note = autoRejectNote(reason, post.check);
+  post.statusNote = note;
   post.reviewedBy = null;
   post.reviewedAt = now.toISOString();
   post.approvedAt = null;
-  addEvent(state, post, now, null, "reject", reason, AUTO_REJECT_NOTES[reason]);
+  addEvent(state, post, now, null, "reject", reason, note);
 }
 
 /** The first approved post on a platform links its author handle to the employee. */
