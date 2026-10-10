@@ -5,7 +5,7 @@ import { allowedEmailDomains, missingAuthEnv } from "@/lib/auth/config";
 import { safeReturnTo } from "@/lib/auth/policy";
 import { getSessionUser } from "@/lib/auth/session";
 
-export const metadata: Metadata = { title: "Sign in · Croco Creators" };
+export const metadata: Metadata = { title: "Sign in · Croco by Squad" };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 

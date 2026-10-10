@@ -1,6 +1,6 @@
-# Croco Creators
+# Croco by Squad
 
-The **Croco By Squad** leaderboard: an internal competition for Crocobet employees who post about
+The **Croco by Squad** leaderboard: an internal competition for Crocobet employees who post about
 work on TikTok, Instagram, Facebook and LinkedIn. Posts must use **#CrocoBySquad** or tag
 **@Croco Squad**, an admin approves each one, and approved posts climb two boards:
 
@@ -314,9 +314,9 @@ unfinished `sync_runs` row (a crashed run stops blocking after 15 minutes).
   so components added later with `npx shadcn add` match automatically.
 - **Radii:** `rounded-control` (16px, inputs and buttons), `rounded-card` (24px) and
   `rounded-panel` (32px, modals and podium cards). They're defined in `app/globals.css`.
-- **Logo:** [`components/layout/logo.tsx`](components/layout/logo.tsx), an inline SVG: the mark
-  (a white "C" inside a green one, also the favicon in `app/icon.svg`) and "Croco Creators" in Inter
-  ExtraBold as outlines. Its colors come from the tokens, so it follows the theme. Clicking it in
+- **Logo:** [`components/layout/logo.tsx`](components/layout/logo.tsx) shows the "Croco by Squad"
+  sticker from `public/logo.png` (transparent, so it works on both themes). The favicon in
+  `app/icon.svg` is still the older mark: a white "C" inside a green one. Clicking the logo in
   the header opens the leaderboard with every filter reset.
 - **Fonts:** Inter, loaded with `next/font`. Georgian characters in what employees write (post
   titles and captions) fall back to Noto Sans Georgian, which only downloads when such text is on
@@ -381,7 +381,7 @@ account…", "That account belongs to another organization…").
 In the [Microsoft Entra admin center](https://entra.microsoft.com):
 
 1. **Identity → Applications → App registrations → New registration**
-   - Name: `Croco Creators`
+   - Name: `Croco by Squad`
    - Supported account types: **Accounts in this organizational directory only (single tenant)**
    - Redirect URI: platform **Web**, `http://localhost:3000/api/auth/callback/microsoft`
 2. **Authentication → Add URI:** `https://leaderboard.crocomind.com/api/auth/callback/microsoft`.
@@ -397,7 +397,7 @@ In the [Microsoft Entra admin center](https://entra.microsoft.com):
    for everyone (it's needed only if the tenant blocks user consent). With `User.Read`, at sign-in the app copies each employee's first and last name, department and
    profile photo from Microsoft Graph (at most once a week; photos stay behind sign-in). Without
    it, sign-in still works, but the board shows display names and initials only.
-7. _Optional:_ to allow only some employees, open **Enterprise applications → Croco Creators →
+7. _Optional:_ to allow only some employees, open **Enterprise applications → Croco by Squad →
    Properties**, set **Assignment required** to Yes, and assign users or groups.
 
 Then fill the variables in `.env` (local) and in **Vercel → Settings → Environment

@@ -62,7 +62,7 @@ export async function resolveShortLink(
         signal,
         headers: {
           accept: "text/html",
-          "user-agent": "Mozilla/5.0 (compatible; CrocoCreators/1.0)",
+          "user-agent": "Mozilla/5.0 (compatible; CrocoBySquad/1.0)",
         },
       });
     } catch {

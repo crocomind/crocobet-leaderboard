@@ -17,7 +17,7 @@ function signInErrorRedirect(config: AuthConfig, reason: IdentityRejection) {
 
 function createAuth(config: AuthConfig) {
   return betterAuth({
-    appName: "Croco Creators",
+    appName: "Croco by Squad",
     baseURL: config.baseURL,
     secret: config.secret,
     telemetry: { enabled: false },

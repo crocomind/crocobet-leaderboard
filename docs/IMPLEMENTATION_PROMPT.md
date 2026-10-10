@@ -1,7 +1,7 @@
-# Croco By Squad — implementation brief for the coding agent
+# Croco by Squad — implementation brief for the coding agent
 
-You are extending **Croco Creators**, a working Next.js 16 app in this repository, into the
-**Croco By Squad** leaderboard: employees post on social media with **#CrocoBySquad** (or tag
+You are extending **Croco by Squad**, a working Next.js 16 app in this repository, into the
+**Croco by Squad** leaderboard: employees post on social media with **#CrocoBySquad** (or tag
 **@Croco Squad**), submit the link, admins approve it, and approved posts are ranked on two
 independent leaderboards (Video content and Static content) by week, month and the 3-month
 challenge.
@@ -116,7 +116,7 @@ the code disagree, the code decides _how_ (patterns, conventions) and this brief
 | Admins         | `ADMIN_EMAILS` (comma-separated env var) or `employees.role = 'admin'`. Enforced on the server for every admin endpoint.                                                                                                             |
 | Naming         | Rename the domain **Video → Post** (types, API paths, i18n copy, error codes) now, while no backend depends on the old names. Do it as the first, behavior-neutral commit. Keep `?view=my-videos` working as an alias of `my-posts`. |
 | Period values  | Keep `week \| month \| all` in the URL and API. `all` means the 3-month challenge window and is labeled "3-Month Challenge".                                                                                                         |
-| App name       | Keep "Croco Creators" until the user decides (see §11).                                                                                                                                                                              |
+| App name       | Croco by Squad (decided; was "Croco Creators").                                                                                                                                                                              |
 
 ---
 
@@ -829,7 +829,7 @@ Add these to `.env.example` and the README table. Validate them with Zod in
 3. The initial admin emails.
 4. The data provider account (vendor, token, monthly budget). Until then, use `fixture` and
    `manual`.
-5. Whether to rename the app from "Croco Creators" to "Croco By Squad" (`t.app.name`, metadata).
+5. ~~Whether to rename the app from "Croco Creators" to "Croco by Squad"~~ Decided: renamed.
 
 ---
 

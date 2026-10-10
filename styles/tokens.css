@@ -1,5 +1,5 @@
 /*
- * Croco Creators design tokens: the only place colors and effects are defined.
+ * Croco by Squad design tokens: the only place colors and effects are defined.
  *
  * Swap these values for the official brand values. Components never hardcode
  * colors; they use the Tailwind names mapped in app/globals.css (bg-surface,
