@@ -14,16 +14,20 @@ export function Crossfade({
   stateKey,
   children,
   className,
+  contentClassName,
 }: {
   stateKey: string;
   children: ReactNode;
   className?: string;
+  /** For the wrapper around each state, e.g. to pass a flex layout through. */
+  contentClassName?: string;
 }) {
   return (
     <div className={cn("relative", className)}>
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.div
           key={stateKey}
+          className={contentClassName}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, transition: tween(DURATION.base) }}
           exit={{ opacity: 0, transition: exitTween(DURATION.base) }}
