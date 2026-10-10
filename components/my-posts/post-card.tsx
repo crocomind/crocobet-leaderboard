@@ -30,6 +30,7 @@ import {
 import type { Post, PostCheck, PostStatus } from "@/lib/api/types";
 import { squadTag } from "@/lib/campaign-tag";
 import { type Platform, safeExternalUrl } from "@/lib/platforms";
+import { isAutoRejectReason } from "@/lib/post-check";
 import { trackSpotlight } from "@/lib/spotlight";
 import { cn } from "@/lib/utils";
 
@@ -130,6 +131,13 @@ export function PostCard({
   const counted = post.status === "approved" || pending;
   const checking =
     post.check.status === "queued" || post.check.status === "running";
+  // Rejected by the check itself: the reason in the owner's words, and a
+  // missing tag can be fixed and checked again.
+  const autoReason =
+    post.autoRejected && isAutoRejectReason(post.statusReason)
+      ? post.statusReason
+      : null;
+  const canRecheck = pending || autoReason === "missing_tag";
 
   const recheck = useRecheckPostMutation();
   const withdraw = useWithdrawPostMutation();
@@ -205,6 +213,11 @@ export function PostCard({
 
         {(post.status === "rejected" || post.status === "disqualified") && (
           <div className="rounded-xl border border-danger/25 bg-danger/10 px-3 py-2 text-xs">
+            {autoReason && (
+              <p className="mb-1 text-muted-foreground">
+                {t.myPosts.autoRejected.label}
+              </p>
+            )}
             {post.statusReason && (
               <p className="font-semibold text-danger-text">
                 {format(t.myPosts.reason, {
@@ -212,13 +225,21 @@ export function PostCard({
                 })}
               </p>
             )}
-            {post.statusNote && (
+            {autoReason ? (
               <p className="mt-1 text-foreground">
-                <span className="text-muted-foreground">
-                  {t.myPosts.reviewerNote}:{" "}
-                </span>
-                {post.statusNote}
+                {format(t.myPosts.autoRejected[autoReason], {
+                  squad: squadTag(post.platform) ?? "@Croco Squad",
+                })}
               </p>
+            ) : (
+              post.statusNote && (
+                <p className="mt-1 text-foreground">
+                  <span className="text-muted-foreground">
+                    {t.myPosts.reviewerNote}:{" "}
+                  </span>
+                  {post.statusNote}
+                </p>
+              )
             )}
           </div>
         )}
@@ -272,7 +293,7 @@ export function PostCard({
           )}
         </div>
 
-        {pending && !readOnly && (
+        {canRecheck && !readOnly && (
           <div className="flex flex-wrap gap-2 border-t border-border pt-3">
             <MotionButton
               variant="secondary"
@@ -283,7 +304,7 @@ export function PostCard({
               onClick={() => recheck.mutate(post.id)}
             >
               <RefreshCw aria-hidden="true" />
-              {t.myPosts.recheck}
+              {pending ? t.myPosts.recheck : t.myPosts.checkAgain}
             </MotionButton>
           </div>
         )}

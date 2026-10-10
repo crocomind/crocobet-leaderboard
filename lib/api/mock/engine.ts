@@ -5,7 +5,13 @@ import {
   type ModerationError,
 } from "@/lib/moderation";
 import { type CampaignWindow, isWithin } from "@/lib/periods";
-import { evaluateFetch, isProviderFailure } from "@/lib/post-check";
+import {
+  AUTO_REJECT_NOTES,
+  autoRejection,
+  evaluateFetch,
+  isAutoRejectReason,
+  isProviderFailure,
+} from "@/lib/post-check";
 import type { FetchOutcome } from "@/lib/post-data";
 import type {
   ModerationPayload,
@@ -236,7 +242,35 @@ export function fetchPost(
       null,
       CHECK_EVENTS[evaluation.check.status as keyof typeof CHECK_EVENTS],
     );
+  autoReject(state, post, now);
   return evaluation.snapshot !== null;
+}
+
+/** Rejected by the check itself, not an admin: the owner can fix the post and check it again. */
+export function isAutoRejected(post: MockPost): boolean {
+  return (
+    post.status === "rejected" &&
+    post.reviewedBy === null &&
+    isAutoRejectReason(post.statusReason)
+  );
+}
+
+/** Rejects a pending post the check says can't count (lib/post-check.ts autoRejection). */
+export function autoReject(
+  state: MockState,
+  post: MockPost,
+  now: Date,
+  check: Pick<MockPost["check"], "status" | "publishedInWindow"> = post.check,
+) {
+  const reason = autoRejection(post.status, check, post.publishedAtSource);
+  if (!reason) return;
+  post.status = "rejected";
+  post.statusReason = reason;
+  post.statusNote = AUTO_REJECT_NOTES[reason];
+  post.reviewedBy = null;
+  post.reviewedAt = now.toISOString();
+  post.approvedAt = null;
+  addEvent(state, post, now, null, "reject", reason, AUTO_REJECT_NOTES[reason]);
 }
 
 /** The first approved post on a platform links its author handle to the employee. */
@@ -262,6 +296,19 @@ export function runSync(
 ): SyncRun {
   let ok = 0;
   let failed = 0;
+  // Like the server: pending posts that can't count (checked before the
+  // rule existed, or outside changed challenge dates) are rejected first.
+  const campaign = campaignOf(state);
+  for (const post of state.posts)
+    autoReject(state, post, now, {
+      status: post.check.status,
+      publishedInWindow: post.publishedAt
+        ? isWithin(new Date(post.publishedAt), {
+            start: campaign.startsAt,
+            end: campaign.endsAt,
+          })
+        : null,
+    });
   for (const post of state.posts) {
     if (!isActive(post, state, now)) continue;
     if (post.check.status === "queued" || post.check.status === "running")

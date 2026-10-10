@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { categoryOf } from "@/lib/platforms";
 import { ApiError } from "../errors";
 import type { AdminPostsQuery, LeaderboardQuery } from "../types";
 import { MockBackend } from "./backend";
@@ -80,9 +81,7 @@ describe("leaderboard", () => {
     const expected = state.posts.filter(
       (post) =>
         post.status === "approved" &&
-        ["tiktok_video", "instagram_reel", "facebook_video"].includes(
-          post.contentType,
-        ) &&
+        categoryOf(post.contentType) === "video" &&
         post.publishedAt !== null &&
         post.publishedAt >= campaign.startsAt &&
         post.publishedAt < campaign.endsAt,
@@ -266,10 +265,8 @@ describe("moderation", () => {
   });
 
   it("approves a post whose check didn't pass in one step, and audits it", () => {
-    const post = findPost(
-      (candidate) =>
-        candidate.status === "pending" && candidate.check.status === "failed",
-    );
+    const post = findPost((candidate) => candidate.status === "pending");
+    post.check = { ...post.check, status: "error" };
     const detail = admin.moderatePost(post.id, "approve", {}, start);
     expect(detail.status).toBe("approved");
     expect(detail.events[0]).toMatchObject({
@@ -299,9 +296,9 @@ describe("moderation", () => {
         candidate.status === "pending" && candidate.check.status === "passed",
     );
     const failed = findPost(
-      (candidate) =>
-        candidate.status === "pending" && candidate.check.status === "failed",
+      (candidate) => candidate.status === "pending" && candidate !== passed,
     );
+    failed.check = { ...failed.check, status: "error" };
     const approved = findPost((candidate) => candidate.status === "approved");
     const result = admin.bulkModerate(
       { ids: [passed.id, failed.id, approved.id], action: "approve" },

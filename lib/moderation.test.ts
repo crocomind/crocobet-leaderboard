@@ -99,6 +99,20 @@ describe("allowed transitions", () => {
   });
 });
 
+describe("re-checking a rejected post", () => {
+  it("is allowed only when the check rejected it, and reopens it", () => {
+    const recheck = (autoRejected: boolean) =>
+      applyModeration({
+        status: "rejected",
+        action: "recheck",
+        actor: "owner",
+        autoRejected,
+      });
+    expect(recheck(true)).toEqual({ ok: true, next: "pending" });
+    expect(recheck(false)).toEqual({ ok: false, error: "invalid_transition" });
+  });
+});
+
 describe("refused transitions", () => {
   it.each([
     ["approved", "approve"],

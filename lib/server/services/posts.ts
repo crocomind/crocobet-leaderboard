@@ -28,7 +28,11 @@ import {
   frozenPosts,
   resolveBoard,
 } from "@/lib/server/services/leaderboard";
-import { toPost, toRankable } from "@/lib/server/services/mappers";
+import {
+  isAutoRejected,
+  toPost,
+  toRankable,
+} from "@/lib/server/services/mappers";
 import { TITLE_MAX_LENGTH } from "@/lib/validation/submit-post";
 
 export const SUBMISSIONS_PER_DAY = 20;
@@ -134,7 +138,7 @@ export async function submitPost(
     throw new HttpError(
       422,
       "unsupported_content",
-      "Stories, profiles, feeds and TikTok photo posts don't count",
+      "Stories, profiles and feeds don't count",
     );
   if (analysis.status !== "valid")
     throw new HttpError(422, "invalid_url", "Not a link to a post");
@@ -154,8 +158,8 @@ export async function submitPost(
   if ((recent?.total ?? 0) >= SUBMISSIONS_PER_DAY)
     throw new HttpError(429, "rate_limited", "Too many submissions today");
 
-  const duplicate = await db
-    .select({ id: posts.id })
+  const [duplicate] = await db
+    .select()
     .from(posts)
     .where(
       or(
@@ -169,7 +173,21 @@ export async function submitPost(
       ),
     )
     .limit(1);
-  if (duplicate.length > 0)
+  // Submitting a post the check rejected checks it again: the owner fixed it.
+  if (
+    duplicate &&
+    duplicate.employeeId === employee.id &&
+    isAutoRejected(duplicate)
+  ) {
+    await recheckPost(
+      { db, config, now, defer, clock },
+      employee,
+      false,
+      duplicate.id,
+    );
+    return toPost(await findPost(db, duplicate.id));
+  }
+  if (duplicate)
     throw new HttpError(
       409,
       "duplicate_post",
@@ -251,6 +269,7 @@ export async function recheckPost(
     action: "recheck",
     actor: owner ? "owner" : "admin",
     lastRecheckAt: row.lastRecheckAt,
+    autoRejected: isAutoRejected(row),
     now,
   });
   if (!result.ok) {
@@ -259,7 +278,7 @@ export async function recheckPost(
     throw new HttpError(
       409,
       "invalid_transition",
-      "Only pending posts can be re-checked",
+      "Only pending posts and posts the check rejected can be re-checked",
     );
   }
   await db
@@ -267,6 +286,15 @@ export async function recheckPost(
     .set({
       checkStatus: "running",
       ...(owner ? { lastRecheckAt: now } : {}),
+      // A post the check rejected waits for the new check as pending.
+      ...(row.status === "rejected"
+        ? {
+            status: "pending" as const,
+            statusReason: null,
+            statusNote: null,
+            reviewedAt: null,
+          }
+        : {}),
     })
     .where(eq(posts.id, row.id));
   await db.insert(moderationEvents).values({

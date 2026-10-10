@@ -6,6 +6,7 @@ import {
   isWithin,
   postedDateToInstant,
 } from "@/lib/periods";
+import type { ModerationReason } from "@/lib/moderation";
 import {
   type ContentCategory,
   type ContentType,
@@ -295,4 +296,50 @@ export function evaluateFetch(
     flags: [...flags],
     consecutiveFetchFailures: 0,
   };
+}
+
+/** Reasons the check rejects a post by itself; the owner can fix the post and check it again. */
+export const AUTO_REJECT_REASONS = [
+  "missing_tag",
+  "outside_challenge",
+] as const satisfies readonly ModerationReason[];
+export type AutoRejectReason = (typeof AUTO_REJECT_REASONS)[number];
+
+export function isAutoRejectReason(
+  reason: ModerationReason | null | undefined,
+): reason is AutoRejectReason {
+  return (AUTO_REJECT_REASONS as readonly string[]).includes(reason ?? "");
+}
+
+export const AUTO_REJECT_NOTES: Record<AutoRejectReason, string> = {
+  missing_tag:
+    "Rejected automatically: the post has neither #CrocoBySquad nor a Croco Squad tag. Add one, then check the post again.",
+  outside_challenge:
+    "Rejected automatically: the post was published outside the challenge dates.",
+};
+
+/**
+ * Whether the check rejects a pending post by itself, so admins only see
+ * posts that can count: the tag is missing, or the post was published
+ * outside the challenge. A post whose fetch failed keeps waiting (the
+ * provider may answer next time), and a publish date the submitter typed
+ * in isn't trusted enough to reject on.
+ */
+export function autoRejection(
+  status: PostStatus,
+  check: Pick<PostCheck, "status" | "publishedInWindow">,
+  publishedAtSource: PublishedAtSource | null,
+): AutoRejectReason | null {
+  if (status !== "pending") return null;
+  // Outside the challenge first: adding the tag wouldn't help such a post.
+  if (
+    check.status !== "queued" &&
+    check.status !== "running" &&
+    check.publishedInWindow === false &&
+    publishedAtSource !== null &&
+    publishedAtSource !== "submitter"
+  )
+    return "outside_challenge";
+  if (check.status === "failed") return "missing_tag";
+  return null;
 }

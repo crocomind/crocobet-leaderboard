@@ -13,7 +13,10 @@ import {
   type SyncRunRow,
 } from "@/lib/server/db/schema";
 import { type PostDataProvider, providerFor } from "@/lib/server/providers";
-import { applyFetch } from "@/lib/server/services/checks";
+import {
+  applyFetch,
+  rejectPendingThatCannotCount,
+} from "@/lib/server/services/checks";
 
 /** Any 64-bit number unique to this job. */
 const LOCK_KEY = 7_412_026_101;
@@ -172,6 +175,7 @@ export async function executeRun(
   let stoppedEarly = false;
   let error: string | null = null;
   try {
+    await rejectPendingThatCannotCount(db, config, now);
     const due = await selectDuePosts(db, config, now, options.force ?? false);
     const pick =
       options.providerFor ??

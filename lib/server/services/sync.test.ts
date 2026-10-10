@@ -357,3 +357,126 @@ describe("runSync", () => {
     });
   });
 });
+
+describe("automatic rejection", () => {
+  const statusOf = async (id: string) =>
+    db.query.posts.findFirst({ where: eq(posts.id, id) });
+
+  it("rejects a pending post without the tag, with the reason, before admins see it", async () => {
+    const ana = await makeEmployee(db);
+    const pending = await makePost(db, ana.id, "instagram_reel", {
+      status: "pending",
+      checkStatus: "queued",
+      approvedAt: null,
+    });
+    await runSync(
+      db,
+      testConfig,
+      options(provider(() => fetched({ caption: "Our day at the office" }))),
+    );
+    expect(await statusOf(pending.id)).toMatchObject({
+      status: "rejected",
+      statusReason: "missing_tag",
+      reviewedBy: null,
+      checkStatus: "failed",
+    });
+    const events = await db
+      .select()
+      .from(moderationEvents)
+      .where(eq(moderationEvents.postId, pending.id));
+    expect(events.find((event) => event.action === "reject")).toMatchObject({
+      actorId: null,
+      reason: "missing_tag",
+    });
+  });
+
+  it("rejects a pending post the provider dates outside the challenge", async () => {
+    const ana = await makeEmployee(db);
+    const pending = await makePost(db, ana.id, "instagram_reel", {
+      status: "pending",
+      checkStatus: "queued",
+      publishedAt: null,
+      approvedAt: null,
+    });
+    await runSync(
+      db,
+      testConfig,
+      options(
+        provider(() =>
+          fetched({ publishedAt: new Date("2026-09-20T12:00:00+04:00") }),
+        ),
+      ),
+    );
+    expect(await statusOf(pending.id)).toMatchObject({
+      status: "rejected",
+      statusReason: "outside_challenge",
+    });
+  });
+
+  it("leaves approved posts and posts it couldn't read to the admins", async () => {
+    const ana = await makeEmployee(db);
+    const approved = await makePost(db, ana.id, "tiktok_video");
+    const unreadable = await makePost(db, ana.id, "instagram_reel", {
+      status: "pending",
+      checkStatus: "queued",
+      approvedAt: null,
+    });
+    await runSync(
+      db,
+      testConfig,
+      options(
+        provider((ref) =>
+          ref.url === unreadable.urlCanonical
+            ? failure
+            : fetched({ caption: "No tag here" }),
+        ),
+      ),
+    );
+    expect(await statusOf(approved.id)).toMatchObject({
+      status: "approved",
+    });
+    expect((await statusOf(approved.id))?.flags).toContain("tag_removed");
+    expect(await statusOf(unreadable.id)).toMatchObject({
+      status: "pending",
+      checkStatus: "error",
+    });
+  });
+
+  it("rejects stored pending posts that can't count, without fetching them", async () => {
+    const ana = await makeEmployee(db);
+    // Checked before automatic rejection existed.
+    const untagged = await makePost(db, ana.id, "instagram_reel", {
+      status: "pending",
+      checkStatus: "failed",
+      approvedAt: null,
+      metricsFetchedAt: now,
+    });
+    // Published before the challenge (the sync no longer fetches it).
+    const early = await makePost(db, ana.id, "tiktok_video", {
+      status: "pending",
+      checkStatus: "passed",
+      publishedAt: new Date("2026-09-20T12:00:00+04:00"),
+      publishedAtSource: "provider",
+      approvedAt: null,
+    });
+    const fine = await makePost(db, ana.id, "tiktok_video", {
+      status: "pending",
+      checkStatus: "passed",
+      publishedAtSource: "provider",
+      approvedAt: null,
+      metricsFetchedAt: now,
+    });
+    const answer = provider(() => fetched());
+    await runSync(db, testConfig, options(answer));
+    expect(answer.calls.flat()).toHaveLength(0);
+    expect(await statusOf(untagged.id)).toMatchObject({
+      status: "rejected",
+      statusReason: "missing_tag",
+    });
+    expect(await statusOf(early.id)).toMatchObject({
+      status: "rejected",
+      statusReason: "outside_challenge",
+    });
+    expect(await statusOf(fine.id)).toMatchObject({ status: "pending" });
+  });
+});

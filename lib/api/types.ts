@@ -107,6 +107,8 @@ export interface Post {
   statusReason: ModerationReason | null;
   /** The admin's note, shown to the owner word for word. */
   statusNote: string | null;
+  /** Rejected by the automated check, not an admin: the owner can fix the post and check it again. */
+  autoRejected: boolean;
   check: PostCheck;
   /** null on static content, or while a video's views are unavailable. */
   views: number | null;

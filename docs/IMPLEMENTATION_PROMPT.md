@@ -116,7 +116,7 @@ the code disagree, the code decides _how_ (patterns, conventions) and this brief
 | Admins         | `ADMIN_EMAILS` (comma-separated env var) or `employees.role = 'admin'`. Enforced on the server for every admin endpoint.                                                                                                             |
 | Naming         | Rename the domain **Video → Post** (types, API paths, i18n copy, error codes) now, while no backend depends on the old names. Do it as the first, behavior-neutral commit. Keep `?view=my-videos` working as an alias of `my-posts`. |
 | Period values  | Keep `week \| month \| all` in the URL and API. `all` means the 3-month challenge window and is labeled "3-Month Challenge".                                                                                                         |
-| App name       | Croco by Squad (decided; was "Croco Creators").                                                                                                                                                                              |
+| App name       | Croco by Squad (decided; was "Croco Creators").                                                                                                                                                                                      |
 
 ---
 

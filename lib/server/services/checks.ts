@@ -1,7 +1,13 @@
 import "server-only";
 import { and, desc, eq, ne, or } from "drizzle-orm";
+import { isWithin } from "@/lib/periods";
 import { analyzePostUrl, categoryOf } from "@/lib/platforms";
-import { evaluateFetch, isProviderFailure } from "@/lib/post-check";
+import {
+  AUTO_REJECT_NOTES,
+  autoRejection,
+  evaluateFetch,
+  isProviderFailure,
+} from "@/lib/post-check";
 import type { FetchOutcome } from "@/lib/post-data";
 import type { ServerConfig } from "@/lib/server/config";
 import type { Db } from "@/lib/server/db/client";
@@ -169,6 +175,11 @@ export async function applyFetch(
     publishedInWindow: check.publishedInWindow,
     error: check.error,
   };
+  // Posts that can't count never reach the admins: the check rejects them
+  // with the reason, so the owner knows what to fix.
+  const autoReason = duplicateOf
+    ? null
+    : autoRejection(row.status, check, evaluation.publishedAtSource);
   const newFlags = evaluation.flags.filter((flag) => !row.flags.includes(flag));
   const fetched = evaluation.snapshot !== null;
 
@@ -260,6 +271,31 @@ export async function applyFetch(
         action: CHECK_EVENTS[checkStatus as keyof typeof CHECK_EVENTS],
         createdAt: now,
       });
+    // Only while still pending: an admin may have decided during the fetch.
+    const rejected = autoReason
+      ? await tx
+          .update(posts)
+          .set({
+            status: "rejected",
+            statusReason: autoReason,
+            statusNote: AUTO_REJECT_NOTES[autoReason],
+            reviewedBy: null,
+            reviewedAt: now,
+            approvedAt: null,
+          })
+          .where(and(eq(posts.id, row.id), eq(posts.status, "pending")))
+          .returning({ id: posts.id })
+      : [];
+    if (autoReason && rejected.length > 0)
+      events.push({
+        postId: row.id,
+        action: "reject",
+        reason: autoReason,
+        note: AUTO_REJECT_NOTES[autoReason],
+        before: { status: "pending" },
+        after: { status: "rejected" },
+        createdAt: now,
+      });
     if (events.length > 0) await tx.insert(moderationEvents).values(events);
   });
   return { ok: fetched };
@@ -302,4 +338,65 @@ export async function runCheck(
     outcome = { ok: false, error: "provider_error", retryable: true };
   }
   await applyFetch(db, config, row, outcome, { now, logCheck });
+}
+
+/**
+ * Rejects pending posts that can't count, from what's already stored: posts
+ * checked before automatic rejection existed, and posts that fall outside
+ * the challenge after admins change its dates (the sync no longer fetches
+ * those, so applyFetch never sees them). Returns how many it rejected.
+ */
+export async function rejectPendingThatCannotCount(
+  db: Db,
+  config: ServerConfig,
+  now: Date,
+): Promise<number> {
+  const pending = await db
+    .select()
+    .from(posts)
+    .where(eq(posts.status, "pending"));
+  const window = {
+    start: config.campaign.startsAt,
+    end: config.campaign.endsAt,
+  };
+  let rejected = 0;
+  for (const row of pending) {
+    const reason = autoRejection(
+      row.status,
+      {
+        status: row.checkStatus,
+        publishedInWindow: row.publishedAt
+          ? isWithin(row.publishedAt, window)
+          : null,
+      },
+      row.publishedAtSource,
+    );
+    if (!reason) continue;
+    await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(posts)
+        .set({
+          status: "rejected",
+          statusReason: reason,
+          statusNote: AUTO_REJECT_NOTES[reason],
+          reviewedBy: null,
+          reviewedAt: now,
+          approvedAt: null,
+        })
+        .where(and(eq(posts.id, row.id), eq(posts.status, "pending")))
+        .returning({ id: posts.id });
+      if (!updated) return;
+      rejected += 1;
+      await tx.insert(moderationEvents).values({
+        postId: row.id,
+        action: "reject",
+        reason,
+        note: AUTO_REJECT_NOTES[reason],
+        before: { status: "pending" },
+        after: { status: "rejected" },
+        createdAt: now,
+      });
+    });
+  }
+  return rejected;
 }

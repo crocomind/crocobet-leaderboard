@@ -176,12 +176,13 @@ const TITLES = [
 const ENGLISH_TITLES = TITLES.filter((title) => /^[\x20-\x7e]+$/.test(title));
 
 const TYPE_WEIGHTS: ReadonlyArray<readonly [ContentType, number]> = [
-  ["tiktok_video", 0.24],
+  ["tiktok_video", 0.21],
   ["instagram_reel", 0.2],
   ["facebook_video", 0.1],
   ["instagram_photo", 0.14],
   ["facebook_post", 0.12],
   ["linkedin_post", 0.2],
+  ["tiktok_photo", 0.03],
 ];
 
 /** Relative audience size and like rate per content type. */
@@ -192,9 +193,11 @@ const REACH: Record<ContentType, number> = {
   instagram_photo: 1,
   facebook_post: 0.8,
   linkedin_post: 0.7,
+  tiktok_photo: 1.2,
 };
 const LIKE_RATE: Partial<Record<ContentType, number>> = {
   tiktok_video: 0.075,
+  tiktok_photo: 0.06,
   instagram_reel: 0.09,
   facebook_video: 0.05,
 };
@@ -444,6 +447,7 @@ function randomSpec(context: Context, person: Person): Spec {
   const outside = publishedHoursAgo > elapsedHours;
   const isVideo =
     contentType === "tiktok_video" ||
+    contentType === "tiktok_photo" ||
     contentType === "instagram_reel" ||
     contentType === "facebook_video";
   const datelessType =
@@ -539,6 +543,12 @@ function buildUrl(
         (BigInt(Math.floor(publishedAt.getTime() / 1000)) << 32n) |
         BigInt(Math.floor(random.next() * 2 ** 32));
       return `https://www.tiktok.com/@${employee.handles.tiktok}/video/${id}?is_from_webapp=1`;
+    }
+    case "tiktok_photo": {
+      const id =
+        (BigInt(Math.floor(publishedAt.getTime() / 1000)) << 32n) |
+        BigInt(Math.floor(random.next() * 2 ** 32));
+      return `https://www.tiktok.com/@${employee.handles.tiktok}/photo/${id}`;
     }
     case "instagram_reel":
       return `https://www.instagram.com/reel/${random.chars(11, SHORTCODE)}/?igsh=${random.chars(12, ALNUM)}`;
