@@ -35,6 +35,12 @@ const VALID: ValidCase[] = [
     "tiktok_video",
     "7412345678901234567",
   ],
+  // TikTok photo posts (slideshows) count on the video board, like videos.
+  [
+    "https://www.tiktok.com/@nino.beridze/photo/7412345678901234567?is_from_webapp=1",
+    "tiktok_photo",
+    "7412345678901234567",
+  ],
   ["https://vm.tiktok.com/ZMabc123/", "tiktok_video", null],
   ["https://vt.tiktok.com/ZSxyz789/", "tiktok_video", null],
   ["https://www.tiktok.com/t/ZT8abcdEF/", "tiktok_video", null],
@@ -226,7 +232,6 @@ const UNSUPPORTED: Record<Platform, string[]> = {
   tiktok: [
     "https://www.tiktok.com/",
     "https://www.tiktok.com/@nino.beridze",
-    "https://www.tiktok.com/@nino.beridze/photo/7412345678901234567",
     "https://www.tiktok.com/discover/office",
     "https://www.tiktok.com/@nino.beridze/live",
   ],

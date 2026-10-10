@@ -96,6 +96,7 @@ import {
   cronSlotsBetween,
   DAY_MS,
   fetchPost,
+  isAutoRejected,
   MANUAL_SYNC_COOLDOWN_MS,
   moderate,
   nextId,
@@ -177,6 +178,7 @@ function toPost(
     status: post.status,
     statusReason: post.statusReason,
     statusNote: post.statusNote,
+    autoRejected: isAutoRejected(post),
     check: post.check,
     views: displayedViews(category, views),
     reactions,
@@ -465,13 +467,22 @@ export class MockBackend {
     if (recent.length >= SUBMISSIONS_PER_DAY)
       fail(429, "rate_limited", "Too many submissions today");
 
-    const duplicate = this.state.posts.some(
+    const duplicate = this.state.posts.find(
       (post) =>
         post.url === analysis.normalizedUrl ||
         (analysis.externalId !== null &&
           post.platform === analysis.platform &&
           post.externalId === analysis.externalId),
     );
+    // Submitting a post the check rejected again checks it again: the owner fixed it.
+    if (
+      duplicate &&
+      duplicate.employeeId === this.me.id &&
+      isAutoRejected(duplicate)
+    ) {
+      this.recheckPost(duplicate.id, now);
+      return toPost(duplicate);
+    }
     if (duplicate)
       fail(409, "duplicate_post", "This post has already been submitted");
 
@@ -593,9 +604,16 @@ export class MockBackend {
       action: "recheck",
       actor: owner ? "owner" : "admin",
       lastRecheckAt: post.lastRecheckAt ? new Date(post.lastRecheckAt) : null,
+      autoRejected: isAutoRejected(post),
       now,
     });
     if (!result.ok) failModeration(result.error);
+    if (post.status === "rejected") {
+      post.status = "pending";
+      post.statusReason = null;
+      post.statusNote = null;
+      post.reviewedAt = null;
+    }
 
     // In the mock, the owner usually re-checks because they fixed the post.
     if (owner) {

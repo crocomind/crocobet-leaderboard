@@ -54,9 +54,8 @@ describe("submit post schema: url", () => {
     "https://www.facebook.com/CrocobetOfficial",
     "https://www.tiktok.com/@nino.beridze",
     "https://www.linkedin.com/in/nino-beridze/",
-    "https://www.tiktok.com/@nino.beridze/photo/7412345678901234567",
     "https://www.instagram.com/stories/nino.beridze/3412345678/",
-  ])("rejects profiles, feeds, stories and photo posts: %s", (url) => {
+  ])("rejects profiles, feeds and stories: %s", (url) => {
     // Was "notAPost"; these are now recognized as content that doesn't count.
     expect(errorFor({ url }, "url")).toBe("unsupportedContent");
   });

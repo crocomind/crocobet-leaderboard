@@ -28,6 +28,7 @@ export const CONTENT_TYPES = [
   "instagram_photo",
   "facebook_post",
   "linkedin_post",
+  "tiktok_photo",
 ] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 
@@ -44,6 +45,7 @@ export const CONTENT_TYPE_INFO: Record<
   instagram_photo: { platform: "instagram", category: "static" },
   facebook_post: { platform: "facebook", category: "static" },
   linkedin_post: { platform: "linkedin", category: "static" },
+  tiktok_photo: { platform: "tiktok", category: "video" },
 };
 
 /** Platforms that can appear on each board, in display order. */
@@ -108,7 +110,7 @@ export interface PlatformDefinition {
   hosts: readonly string[];
   /** Accepted post links. The first match wins. */
   posts: readonly PostPattern[];
-  /** Links to content that exists but doesn't count: stories, profiles, feeds, photo posts. */
+  /** Links to content that exists but doesn't count: stories, profiles, feeds. */
   unsupported: readonly RegExp[];
 }
 
@@ -232,6 +234,11 @@ export const PLATFORMS: Record<Platform, PlatformDefinition> = {
         externalId: group(1),
       },
       {
+        contentType: "tiktok_photo",
+        match: /^tiktok\.com\/@[\w.-]+\/photo\/(\d+)$/i,
+        externalId: group(1),
+      },
+      {
         contentType: "tiktok_video",
         match: /^v[mt]\.tiktok\.com\/[\w-]+$/i,
         shortLink: true,
@@ -243,7 +250,6 @@ export const PLATFORMS: Record<Platform, PlatformDefinition> = {
       },
     ],
     unsupported: [
-      /^tiktok\.com\/@[\w.-]+\/photo\/\d+$/i,
       /^tiktok\.com\/@[\w.-]+(?:\/live)?$/i,
       /^tiktok\.com(?:\/(?:foryou|following|friends|explore|discover(?:\/.*)?))?$/i,
     ],
@@ -302,7 +308,7 @@ export type PostUrlAnalysis =
   | { status: "unsupported-platform" }
   /** On a supported platform, but not a link to a post. */
   | { status: "not-a-post"; platform: Platform }
-  /** A story, profile, feed or TikTok photo post: real content that doesn't count. */
+  /** A story, profile or feed: real content that doesn't count. */
   | { status: "unsupported-content"; platform: Platform }
   | {
       status: "valid";

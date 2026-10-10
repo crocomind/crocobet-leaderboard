@@ -1,10 +1,20 @@
 import "server-only";
 import type { Post } from "@/lib/api/types";
+import { isAutoRejectReason } from "@/lib/post-check";
 import type { PostRow } from "@/lib/server/db/schema";
 import type { RankablePost } from "@/lib/ranking";
 import { displayedViews, postScore } from "@/lib/scoring";
 
 const iso = (date: Date | null) => date?.toISOString() ?? null;
+
+/** Rejected by the check itself, not an admin (see lib/post-check.ts). */
+export function isAutoRejected(row: PostRow): boolean {
+  return (
+    row.status === "rejected" &&
+    row.reviewedBy === null &&
+    isAutoRejectReason(row.statusReason)
+  );
+}
 
 /** A post as the API returns it (contract v1). */
 /** `metrics` replaces the post's own numbers (a finished round's frozen ones). */
@@ -27,6 +37,7 @@ export function toPost(
     status: row.status,
     statusReason: row.statusReason,
     statusNote: row.statusNote,
+    autoRejected: isAutoRejected(row),
     check: {
       status: row.checkStatus,
       tagFound: details?.tagFound ?? null,

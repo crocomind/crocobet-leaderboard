@@ -4,10 +4,10 @@ The **Croco by Squad** leaderboard: an internal competition for Crocobet employe
 work on TikTok, Instagram, Facebook and LinkedIn. Posts must use **#CrocoBySquad** or tag
 **@Croco Squad**, an admin approves each one, and approved posts climb two boards:
 
-| Board      | What counts                                           | Score             |
-| ---------- | ----------------------------------------------------- | ----------------- |
-| **Video**  | TikTok videos, Instagram Reels, Facebook videos       | views + reactions |
-| **Static** | LinkedIn posts, Facebook posts, Instagram photo posts | reactions         |
+| Board      | What counts                                                     | Score             |
+| ---------- | --------------------------------------------------------------- | ----------------- |
+| **Video**  | TikTok videos and photo posts, Instagram Reels, Facebook videos | views + reactions |
+| **Static** | LinkedIn posts, Facebook posts, Instagram photo posts           | reactions         |
 
 Each board has the whole **3-Month Challenge**, plus **This week** and **This month** while an
 admin-made weekly or monthly round is running. Admins set the rounds (any date ranges) and the
@@ -150,8 +150,10 @@ and regenerated after three days; clear that key to start over.
   participants panel or a leaderboard entry). A finished weekly or monthly round's results are
   frozen at its end (each post's metrics as they were then); the challenge follows the latest ones.
 - **Moderation.** Admins approve every post; the automated check (tag, author account, inside the
-  window) is evidence, never an automatic approval. Only approved posts count. Admins can
-  disqualify approved posts at any time; every admin action is audited.
+  window) is evidence, never an automatic approval. A pending post without the tag, or published
+  outside the challenge, is rejected automatically with the reason, so admins never see it; the
+  employee can fix it and check it again. Only approved posts count. Admins can disqualify
+  approved posts at any time; every admin action is audited.
 
 ## Backend
 
@@ -315,8 +317,9 @@ unfinished `sync_runs` row (a crashed run stops blocking after 15 minutes).
 - **Radii:** `rounded-control` (16px, inputs and buttons), `rounded-card` (24px) and
   `rounded-panel` (32px, modals and podium cards). They're defined in `app/globals.css`.
 - **Logo:** [`components/layout/logo.tsx`](components/layout/logo.tsx) shows the "Croco by Squad"
-  sticker from `public/logo.png` (transparent, so it works on both themes). The favicon in
-  `app/icon.svg` is still the older mark: a white "C" inside a green one. Clicking the logo in
+  sticker from `public/logo.png` (transparent, so it works on both themes). The favicons
+  (`app/icon.png`, `app/favicon.ico`, `app/apple-icon.png`) are the sticker's green "C" on its
+  lime outline color. Clicking the logo in
   the header opens the leaderboard with every filter reset.
 - **Fonts:** Inter, loaded with `next/font`. Georgian characters in what employees write (post
   titles and captions) fall back to Noto Sans Georgian, which only downloads when such text is on

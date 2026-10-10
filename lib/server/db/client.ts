@@ -63,13 +63,26 @@ export function getDb(): Db {
 }
 
 /**
- * Drops every connection, so the next request opens fresh ones. Used when
- * the database stops answering (a dead connection) instead of letting later
- * requests queue behind it.
+ * Seconds the old connections stay open after resetDb(), so other requests
+ * still using them can finish (their reads give up after 20 seconds anyway).
+ */
+const RESET_GRACE_SECONDS = 30;
+
+/**
+ * Switches to fresh connections for the next requests. Used when the
+ * database stops answering (a dead connection) instead of letting later
+ * requests queue behind it. The old ones aren't closed straight away: other
+ * requests running at the same time may still be using healthy ones, and
+ * closing them would make those requests fail too.
  */
 export function resetDb() {
   const stale = client;
   client = undefined;
   db = undefined;
-  void stale?.end({ timeout: 0 }).catch(() => {});
+  if (!stale) return;
+  const timer = setTimeout(
+    () => void stale.end({ timeout: 0 }).catch(() => {}),
+    RESET_GRACE_SECONDS * 1000,
+  );
+  timer.unref?.();
 }

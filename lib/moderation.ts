@@ -42,6 +42,8 @@ export interface ModerationInput {
   reason?: ModerationReason | null;
   note?: string | null;
   lastRecheckAt?: Date | null;
+  /** The check rejected the post by itself (not an admin): its owner can fix it and check again. */
+  autoRejected?: boolean;
   now?: Date;
 }
 
@@ -77,7 +79,12 @@ const RULES: Record<ModerationAction, Rule> = {
     to: "deleted",
     who: ["owner"],
   },
-  recheck: { from: "pending", to: "pending", who: ["owner", "admin"] },
+  // A post the check rejected by itself goes back to pending for the new check.
+  recheck: {
+    from: ["pending", "rejected"],
+    to: "pending",
+    who: ["owner", "admin"],
+  },
 };
 
 export function isModerationReason(value: unknown): value is ModerationReason {
@@ -109,6 +116,8 @@ export function applyModeration(input: ModerationInput): ModerationResult {
       if (!hasNote(input.note)) return { ok: false, error: "note_required" };
       break;
     case "recheck":
+      if (input.status === "rejected" && !input.autoRejected)
+        return { ok: false, error: "invalid_transition" };
       if (
         input.actor === "owner" &&
         input.lastRecheckAt &&

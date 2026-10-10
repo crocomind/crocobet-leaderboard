@@ -4,6 +4,7 @@ import type { FetchedPost } from "@/lib/post-data";
 import {
   type EvaluatedPost,
   type EvaluationContext,
+  autoRejection,
   evaluateFetch,
   isProviderFailure,
 } from "@/lib/post-check";
@@ -341,5 +342,94 @@ describe("fixtureFetch", () => {
     expect(outcomes.filter((outcome) => outcome.ok).length).toBeGreaterThan(
       150,
     );
+  });
+});
+
+describe("TikTok photo posts", () => {
+  it("count views and reactions on the video board", () => {
+    const result = evaluateFetch(
+      {
+        ...basePost,
+        platform: "tiktok",
+        contentType: "tiktok_photo",
+        externalId: "7412345678901234567",
+      },
+      fetched({ mediaKind: "carousel", views: 900, reactions: 40 }),
+      context,
+    );
+    expect(result).toMatchObject({
+      contentType: "tiktok_photo",
+      category: "video",
+      reclassified: false,
+      views: 900,
+      reactions: 40,
+    });
+  });
+});
+
+describe("autoRejection", () => {
+  it("rejects a pending post without the tag", () => {
+    expect(
+      autoRejection(
+        "pending",
+        { status: "failed", publishedInWindow: true },
+        "provider",
+      ),
+    ).toBe("missing_tag");
+  });
+
+  it("rejects a pending post published outside the challenge, even with the tag", () => {
+    for (const status of ["passed", "failed", "error"] as const)
+      expect(
+        autoRejection(
+          "pending",
+          { status, publishedInWindow: false },
+          "post_id",
+        ),
+      ).toBe("outside_challenge");
+  });
+
+  it("leaves posts the check can't judge for the admins", () => {
+    // Passed, the fetch failed, or the check hasn't run yet.
+    expect(
+      autoRejection(
+        "pending",
+        { status: "passed", publishedInWindow: true },
+        "provider",
+      ),
+    ).toBeNull();
+    expect(
+      autoRejection(
+        "pending",
+        { status: "error", publishedInWindow: null },
+        null,
+      ),
+    ).toBeNull();
+    expect(
+      autoRejection(
+        "pending",
+        { status: "running", publishedInWindow: false },
+        "provider",
+      ),
+    ).toBeNull();
+    // A date the submitter typed in isn't trusted enough.
+    expect(
+      autoRejection(
+        "pending",
+        { status: "passed", publishedInWindow: false },
+        "submitter",
+      ),
+    ).toBeNull();
+  });
+
+  it("never touches a post an admin already decided", () => {
+    for (const status of ["approved", "rejected", "disqualified"] as const)
+      expect(
+        autoRejection(
+          status,
+          { status: "failed", publishedInWindow: false },
+          "provider",
+        ),
+      ).toBeNull();
   });
 });

@@ -57,6 +57,7 @@ const en = {
     instagram_photo: "Instagram post",
     facebook_post: "Facebook post",
     linkedin_post: "LinkedIn post",
+    tiktok_photo: "TikTok photo post",
   },
   metrics: {
     views: "Views",
@@ -175,6 +176,14 @@ const en = {
     },
     reason: "Reason: {reason}",
     reviewerNote: "Reviewer's note",
+    autoRejected: {
+      label: "Rejected automatically",
+      missing_tag:
+        "Add #CrocoBySquad or tag {squad} to the post, then check it again. You can also submit the same link again.",
+      outside_challenge:
+        "Only posts published during the challenge count. Post something new and submit that link.",
+    },
+    checkAgain: "Check again",
     countsAs: "Counts as {category}",
     recheck: "Re-check",
     recheckTooSoon: "You can re-check once every 10 minutes.",
@@ -281,7 +290,7 @@ const en = {
     notAPost:
       "This {platform} link doesn't point to a post. Open the post and copy its link.",
     unsupportedContent:
-      "Stories, profiles, feeds and TikTok photo posts don't count. Paste the link to a single post or video.",
+      "Stories, profiles and feeds don't count. Paste the link to a single post or video.",
     duplicate: "This post has already been submitted.",
     titleTooLong: "Keep the title under {max} characters.",
   },

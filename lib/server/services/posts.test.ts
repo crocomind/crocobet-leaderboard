@@ -301,6 +301,70 @@ describe("withdraw and re-check", () => {
   });
 });
 
+describe("posts the check rejected", () => {
+  const autoRejected = {
+    status: "rejected" as const,
+    statusReason: "missing_tag" as const,
+    statusNote: "Rejected automatically",
+    checkStatus: "failed" as const,
+    approvedAt: null,
+  };
+
+  it("lets the owner fix the post and check it again", async () => {
+    const owner = await makeEmployee(db);
+    const post = await makePost(db, owner.id, "instagram_reel", autoRejected);
+    await recheckPost(serviceContext(db, now), owner, false, post.id);
+    expect(
+      await db.query.posts.findFirst({ where: eq(posts.id, post.id) }),
+    ).toMatchObject({
+      status: "pending",
+      statusReason: null,
+      statusNote: null,
+      checkStatus: "running",
+    });
+  });
+
+  it("checks it again when the owner submits the same link", async () => {
+    const owner = await makeEmployee(db);
+    const other = await makeEmployee(db);
+    const post = await makePost(db, owner.id, "instagram_reel", {
+      ...autoRejected,
+      urlCanonical: "https://instagram.com/reel/Fixed1",
+      externalId: "Fixed1",
+    });
+    expect(
+      await failure(() =>
+        submitPost(serviceContext(db, now), other, {
+          url: "https://www.instagram.com/reel/Fixed1/",
+        }),
+      ),
+    ).toEqual({ status: 409, code: "duplicate_post" });
+    const again = await submitPost(serviceContext(db, now), owner, {
+      url: "https://www.instagram.com/reel/Fixed1/",
+    });
+    expect(again).toMatchObject({
+      id: post.id,
+      status: "pending",
+      autoRejected: false,
+      check: { status: "running" },
+    });
+  });
+
+  it("doesn't reopen a post an admin rejected", async () => {
+    const owner = await makeEmployee(db);
+    const admin = await makeEmployee(db, { role: "admin" });
+    const post = await makePost(db, owner.id, "instagram_reel", {
+      ...autoRejected,
+      reviewedBy: admin.id,
+    });
+    expect(
+      await failure(() =>
+        recheckPost(serviceContext(db, now), owner, false, post.id),
+      ),
+    ).toEqual({ status: 409, code: "invalid_transition" });
+  });
+});
+
 describe("reads", () => {
   it("returns my posts newest first with both board summaries", async () => {
     const me = await makeEmployee(db);
