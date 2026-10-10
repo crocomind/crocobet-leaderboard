@@ -5,6 +5,8 @@ import {
   type EvaluatedPost,
   type EvaluationContext,
   autoRejection,
+  autoRejectNote,
+  autoRejectReasons,
   evaluateFetch,
   isProviderFailure,
 } from "@/lib/post-check";
@@ -431,5 +433,28 @@ describe("autoRejection", () => {
           "provider",
         ),
       ).toBeNull();
+  });
+});
+
+describe("autoRejectReasons", () => {
+  it("lists a missing tag too when the post is outside the dates", () => {
+    expect(autoRejectReasons("outside_challenge", { tagFound: false })).toEqual(
+      ["outside_challenge", "missing_tag"],
+    );
+    expect(autoRejectNote("outside_challenge", { tagFound: false })).toBe(
+      "Rejected by the system: the post was published outside the leaderboard dates; the post has neither #CrocoBySquad nor a Croco Squad tag.",
+    );
+  });
+
+  it("lists one reason when that's all the post breaks", () => {
+    expect(autoRejectReasons("outside_challenge", { tagFound: true })).toEqual([
+      "outside_challenge",
+    ]);
+    expect(autoRejectReasons("outside_challenge", { tagFound: null })).toEqual([
+      "outside_challenge",
+    ]);
+    expect(autoRejectReasons("missing_tag", { tagFound: false })).toEqual([
+      "missing_tag",
+    ]);
   });
 });

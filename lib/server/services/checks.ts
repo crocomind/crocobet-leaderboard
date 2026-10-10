@@ -3,8 +3,8 @@ import { and, desc, eq, ne, or } from "drizzle-orm";
 import { isWithin } from "@/lib/periods";
 import { analyzePostUrl, categoryOf } from "@/lib/platforms";
 import {
-  AUTO_REJECT_NOTES,
   autoRejection,
+  autoRejectNote,
   evaluateFetch,
   isProviderFailure,
 } from "@/lib/post-check";
@@ -278,7 +278,7 @@ export async function applyFetch(
           .set({
             status: "rejected",
             statusReason: autoReason,
-            statusNote: AUTO_REJECT_NOTES[autoReason],
+            statusNote: autoRejectNote(autoReason, check),
             reviewedBy: null,
             reviewedAt: now,
             approvedAt: null,
@@ -291,7 +291,7 @@ export async function applyFetch(
         postId: row.id,
         action: "reject",
         reason: autoReason,
-        note: AUTO_REJECT_NOTES[autoReason],
+        note: autoRejectNote(autoReason, check),
         before: { status: "pending" },
         after: { status: "rejected" },
         createdAt: now,
@@ -378,7 +378,9 @@ export async function rejectPendingThatCannotCount(
         .set({
           status: "rejected",
           statusReason: reason,
-          statusNote: AUTO_REJECT_NOTES[reason],
+          statusNote: autoRejectNote(reason, {
+            tagFound: row.checkDetails?.tagFound ?? null,
+          }),
           reviewedBy: null,
           reviewedAt: now,
           approvedAt: null,
@@ -391,7 +393,9 @@ export async function rejectPendingThatCannotCount(
         postId: row.id,
         action: "reject",
         reason,
-        note: AUTO_REJECT_NOTES[reason],
+        note: autoRejectNote(reason, {
+          tagFound: row.checkDetails?.tagFound ?? null,
+        }),
         before: { status: "pending" },
         after: { status: "rejected" },
         createdAt: now,
