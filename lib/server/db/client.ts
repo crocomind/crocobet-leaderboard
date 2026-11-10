@@ -1,13 +1,13 @@
 import "server-only";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { after } from "next/server";
-import postgres from "postgres";
+import { Pool } from "pg";
 import { getServerConfig } from "@/lib/server/config";
 import { HttpError } from "@/lib/server/http";
 import * as schema from "./schema";
 
-/** Any Drizzle Postgres database with this schema (postgres.js in the app, PGlite in tests). */
+/** Any Drizzle Postgres database with this schema (node-postgres in the app, PGlite in tests). */
 export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 
 /**
@@ -16,7 +16,7 @@ export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
  */
 const IDLE_SECONDS = 5;
 
-let client: postgres.Sql | undefined;
+let pool: Pool | undefined;
 let db: Db | undefined;
 
 /**
@@ -25,7 +25,7 @@ let db: Db | undefined;
  * noticing, and the next query sent on it then hangs until the function is
  * killed. So after each request the instance stays up until unused
  * connections have closed themselves, the same thing Vercel's
- * attachDatabasePool() does for `pg` pools. Outside a request it's a no-op.
+ * attachDatabasePool() does. Outside a request it's a no-op.
  */
 function keepAliveUntilIdleClosed() {
   try {
@@ -41,8 +41,16 @@ function keepAliveUntilIdleClosed() {
 }
 
 /**
- * The app's database. Supabase's transaction pooler (port 6543) doesn't
- * support prepared statements, so they're off.
+ * The app's database, through Supabase's transaction pooler (port 6543).
+ *
+ * node-postgres, not postgres.js: postgres.js pipelines queries (sends more
+ * down a connection that's still busy) whenever a request runs more queries
+ * at once than there are connections, and Supavisor in transaction mode
+ * loses track of pipelined queries: the query never answers and every one
+ * behind it on that connection hangs. Pipelining can't be turned off there
+ * without breaking transactions. node-postgres runs one query per connection
+ * at a time and sends each in one round trip, without prepared statements
+ * (which the transaction pooler doesn't support).
  */
 export function getDb(): Db {
   keepAliveUntilIdleClosed();
@@ -50,15 +58,21 @@ export function getDb(): Db {
   const url = getServerConfig().databaseUrl;
   if (!url)
     throw new HttpError(503, "service_unavailable", "DATABASE_URL is not set");
-  client = postgres(url, {
-    prepare: false,
+  pool = new Pool({
+    connectionString: url,
     max: 5,
-    idle_timeout: IDLE_SECONDS,
+    idleTimeoutMillis: IDLE_SECONDS * 1000,
     // Fresh connections now and then, in case one went bad unnoticed.
-    max_lifetime: 5 * 60,
-    connect_timeout: 10,
+    maxLifetimeSeconds: 5 * 60,
+    connectionTimeoutMillis: 10_000,
+    keepAlive: true,
   });
-  db = drizzle(client, { schema }) as unknown as Db;
+  // An idle connection that drops emits "error" on the pool; unhandled, it
+  // would crash the instance. The pool replaces the connection by itself.
+  pool.on("error", (error) =>
+    console.warn("[db] an idle connection failed", error.message),
+  );
+  db = drizzle(pool, { schema }) as unknown as Db;
   return db;
 }
 
@@ -76,12 +90,12 @@ const RESET_GRACE_SECONDS = 30;
  * closing them would make those requests fail too.
  */
 export function resetDb() {
-  const stale = client;
-  client = undefined;
+  const stale = pool;
+  pool = undefined;
   db = undefined;
   if (!stale) return;
   const timer = setTimeout(
-    () => void stale.end({ timeout: 0 }).catch(() => {}),
+    () => void stale.end().catch(() => {}),
     RESET_GRACE_SECONDS * 1000,
   );
   timer.unref?.();

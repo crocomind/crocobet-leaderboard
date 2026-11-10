@@ -25,7 +25,7 @@ The frontend and the backend live in this repo: Next.js pages plus Route Handler
 
 Next.js 16 (App Router) · TypeScript (strict) · Tailwind CSS v4 · shadcn/ui-style components on
 Radix · Motion · TanStack Query · React Hook Form + Zod · lucide-react · Better Auth (Microsoft
-Entra ID) · Drizzle ORM + postgres.js (Supabase Postgres) · Vercel Cron · Vitest + PGlite ·
+Entra ID) · Drizzle ORM + node-postgres (Supabase Postgres) · Vercel Cron · Vitest + PGlite ·
 ESLint + Prettier
 
 ## Getting started
