@@ -1,4 +1,9 @@
-import type { IsoDate } from "@/lib/api/types";
+import type {
+  ContentCategory,
+  IsoDate,
+  IsoDateTime,
+  Platform,
+} from "@/lib/api/types";
 
 /**
  * The external API: read-only leaderboard results for other projects'
@@ -43,4 +48,34 @@ export interface ExternalLeaderboard {
 export interface ExternalLeaderboardsResponse {
   /** The challenge, then weekly rounds, then monthly, each by start. Upcoming rounds aren't listed. */
   leaderboards: ExternalLeaderboard[];
+}
+
+export interface ExternalContentPost {
+  /** The post's canonical link. */
+  url: string;
+  platform: Platform;
+  /** "video" (scored views + reactions) or "static" (scored reactions). */
+  category: ContentCategory;
+  /** The submitter's title, else the caption's first line; null if neither. */
+  title: string | null;
+  /** When it was published on the platform. */
+  publishedAt: IsoDateTime | null;
+  /** Latest views; null on static posts, or while a video's views are hidden. */
+  views: number | null;
+  reactions: number;
+  score: number;
+  /** From the platform's CDN; may expire. null when unknown. */
+  thumbnailUrl: string | null;
+}
+
+export interface ExternalContentResponse {
+  employee: {
+    /** "First Last" in English when known, else the display name. */
+    name: string;
+    email: string;
+    /** Empty string when unknown. */
+    department: string;
+  };
+  /** Every approved post, newest published first. */
+  posts: ExternalContentPost[];
 }

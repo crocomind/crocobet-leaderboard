@@ -98,8 +98,9 @@ export function employeeRoute<
   }
 }
 
-export interface ApiKeyRouteContext {
+export interface ApiKeyRouteContext<P> {
   request: Request;
+  params: P;
   db: Db;
   config: ServerConfig;
   now: Date;
@@ -111,19 +112,26 @@ export interface ApiKeyRouteContext {
  * every request gets a 401. proxy.ts doesn't guard /api/external, so this
  * check is the only gate. The handler returns the JSON body.
  */
-export function apiKeyRoute(
-  handler: (context: ApiKeyRouteContext) => Promise<unknown>,
-) {
-  return (request: Request) => handle(() => withReadTimeout(run(request)));
+export function apiKeyRoute<
+  P extends Record<string, string> = Record<string, never>,
+>(handler: (context: ApiKeyRouteContext<P>) => Promise<unknown>) {
+  return (request: Request, context: { params: Promise<P> }) =>
+    handle(() => withReadTimeout(run(request, context)));
 
-  async function run(request: Request) {
+  async function run(request: Request, context: { params: Promise<P> }) {
     const { externalApiKey } = getServerConfig();
     const header = request.headers.get("authorization") ?? "";
     if (!externalApiKey || !safeEqual(header, `Bearer ${externalApiKey}`))
       throw new HttpError(401, "unauthorized", "Missing or wrong API key");
     const db = getDb();
     const config = await withCampaign(db, getServerConfig());
-    const body = await handler({ request, db, config, now: new Date() });
+    const body = await handler({
+      request,
+      params: await context.params,
+      db,
+      config,
+      now: new Date(),
+    });
     // Standings change with every approval; callers cache on their side.
     return json(body, { headers: { "Cache-Control": "no-store" } });
   }
