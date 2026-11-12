@@ -295,11 +295,13 @@ unfinished `sync_runs` row (a crashed run stops blocking after 15 minutes).
 
 ### External API
 
-Other projects' backends read leaderboard standings from `GET /api/external/v1/standings` with
-`Authorization: Bearer $EXTERNAL_API_KEY`. The contract for those teams is
-[`docs/EXTERNAL_API.md`](docs/EXTERNAL_API.md). The response includes employees' work emails, so
-share the key only with backends you trust, never put it in a browser, and rotate it (set a new
-`EXTERNAL_API_KEY` in Vercel and redeploy) when a project no longer needs it.
+Other projects' backends read every leaderboard's results (the 3-Month Challenge and each weekly
+and monthly round that has started, with dates and ranked participants) from
+`GET /api/external/v1/leaderboards` with `Authorization: Bearer $EXTERNAL_API_KEY`. The contract
+for those teams is [`docs/EXTERNAL_API.md`](docs/EXTERNAL_API.md). The response includes
+employees' work emails, so share the key only with backends you trust, never put it in a browser,
+and rotate it (set a new `EXTERNAL_API_KEY` in Vercel and redeploy) when a project no longer
+needs it.
 
 ## Deploying (checklist)
 

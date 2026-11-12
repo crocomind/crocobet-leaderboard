@@ -48,7 +48,7 @@ export function exclusionKey(boardId: string): string | null {
   return boardId === CHALLENGE_BOARD_ID ? null : boardId;
 }
 
-export function statusOf(
+function statusOf(
   range: { start: Date; end: Date },
   now: Date,
 ): LeaderboardStatus {

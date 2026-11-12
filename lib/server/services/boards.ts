@@ -251,18 +251,10 @@ export async function restoreToLeaderboard(
 }
 
 /**
- * Someone's results on the challenge and on every round that has started.
- * Only the person themselves and admins may see it.
+ * Every leaderboard with what it counts: the challenge's approved posts, or
+ * a finished round's frozen at its end, minus who an admin took off it.
  */
-export async function getProfile(
-  db: Db,
-  config: ServerConfig,
-  auth: AuthenticatedEmployee,
-  employeeId: string,
-  now: Date,
-): Promise<ProfileResponse> {
-  if (employeeId !== auth.employee.id && !auth.isAdmin)
-    throw new HttpError(403, "forbidden", "You can only see your own profile");
+export async function loadEveryBoard(db: Db, config: ServerConfig, now: Date) {
   const { campaign, boards } = await loadBoards(db, config, now);
   const [rows, excluded, frozen] = await Promise.all([
     challengePosts(db, { start: campaign.startsAt, end: campaign.endsAt }),
@@ -281,6 +273,36 @@ export async function getProfile(
       }),
     ).then((entries) => new Map(entries)),
   ]);
+  return {
+    campaign,
+    boards,
+    /** Every approved post published during the challenge. */
+    rows,
+    postsOn: (board: BoardDef): readonly RankablePost[] =>
+      frozen.get(board.id) ?? rows,
+    removedFrom: (board: BoardDef): ReadonlySet<string> =>
+      excluded.get(exclusionKey(board.id) ?? "") ?? NONE,
+  };
+}
+
+/**
+ * Someone's results on the challenge and on every round that has started.
+ * Only the person themselves and admins may see it.
+ */
+export async function getProfile(
+  db: Db,
+  config: ServerConfig,
+  auth: AuthenticatedEmployee,
+  employeeId: string,
+  now: Date,
+): Promise<ProfileResponse> {
+  if (employeeId !== auth.employee.id && !auth.isAdmin)
+    throw new HttpError(403, "forbidden", "You can only see your own profile");
+  const { campaign, boards, rows, postsOn, removedFrom } = await loadEveryBoard(
+    db,
+    config,
+    now,
+  );
   const people = await loadEmployeesWithEmails(db, [
     employeeId,
     ...rows.map((row) => row.employeeId),
@@ -291,9 +313,9 @@ export async function getProfile(
     profileLeaderboard(
       board,
       employeeId,
-      frozen.get(board.id) ?? rows,
+      postsOn(board),
       people,
-      excluded.get(exclusionKey(board.id) ?? "") ?? NONE,
+      removedFrom(board),
     );
   const [challenge, ...rounds] = boards;
   const theirPosts = await db

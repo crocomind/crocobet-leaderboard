@@ -30,9 +30,7 @@ import {
 import { CATEGORY_PLATFORMS } from "@/lib/platforms";
 import {
   type BoardFilter,
-  type RankableEmployee,
   type RankablePost,
-  type RankedBoard,
   rankBoard,
   rankMap,
 } from "@/lib/ranking";
@@ -224,23 +222,14 @@ export async function resolveBoard(
   };
 }
 
-export type BoardQuery = Omit<LeaderboardQuery, "search">;
-
-/**
- * A board ranked as it stands at `now`, with each entry's rank 24 hours
- * earlier. `loadPeople` decides what each entry's employee carries (the
- * app's public profile, or one with the email for the external API).
- */
-export async function rankCurrentBoard<E extends RankableEmployee>(
+export async function getLeaderboard(
   db: Db,
   config: ServerConfig,
-  query: BoardQuery,
+  query: LeaderboardQuery,
+  meId: string,
   now: Date,
-  loadPeople: (db: Db, ids: readonly string[]) => Promise<Map<string, E>>,
-  options: { search?: string; meId?: string } = {},
-): Promise<ResolvedBoard & { board: RankedBoard<E>; syncedAt: Date | null }> {
-  const resolved = await resolveBoard(db, config, query, now);
-  const { filter, range } = resolved;
+): Promise<LeaderboardResponse> {
+  const { filter, range, round } = await resolveBoard(db, config, query, now);
   // A finished round's results are frozen at its end, so its ranks don't
   // move any more either (yesterday is the same board).
   const end = frozenAt(range, now);
@@ -251,33 +240,16 @@ export async function rankCurrentBoard<E extends RankableEmployee>(
     end ? null : rowsAsOf(db, filter, new Date(now.getTime() - DAY_MS)),
     lastSyncedAt(db),
   ]);
-  const people = await loadPeople(db, [
+  const employees = await loadEmployees(db, [
     ...current.map((row) => row.employeeId),
     ...(yesterday ?? []).map((row) => row.employeeId),
   ]);
-  const before = rankBoard(yesterday ?? current, people, filter);
-  const board = rankBoard(current, people, filter, {
-    ...options,
+  const before = rankBoard(yesterday ?? current, employees, filter);
+  const board = rankBoard(current, employees, filter, {
+    search: query.search,
+    meId,
     previousRanks: rankMap(before),
   });
-  return { ...resolved, board, syncedAt };
-}
-
-export async function getLeaderboard(
-  db: Db,
-  config: ServerConfig,
-  query: LeaderboardQuery,
-  meId: string,
-  now: Date,
-): Promise<LeaderboardResponse> {
-  const { filter, range, round, board, syncedAt } = await rankCurrentBoard(
-    db,
-    config,
-    query,
-    now,
-    loadEmployees,
-    { search: query.search, meId },
-  );
 
   return {
     query: {
