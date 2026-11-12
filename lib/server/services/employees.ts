@@ -1,6 +1,6 @@
 import "server-only";
 import { eq, inArray, sql } from "drizzle-orm";
-import type { Employee, Me } from "@/lib/api/types";
+import type { Employee, EmployeeWithEmail, Me } from "@/lib/api/types";
 import { englishName, romanize } from "@/lib/names";
 import type { ServerConfig } from "@/lib/server/config";
 import type { Db } from "@/lib/server/db/client";
@@ -143,18 +143,36 @@ export async function toMe(
   };
 }
 
+async function loadRows(db: Db, ids: readonly string[]) {
+  if (ids.length === 0) return [];
+  return db
+    .select({ employee: employees, etag: employeePhotos.etag })
+    .from(employees)
+    .leftJoin(employeePhotos, eq(employeePhotos.employeeId, employees.id))
+    .where(inArray(employees.id, [...new Set(ids)]));
+}
+
 /** Public profiles for these employees, keyed by id. */
 export async function loadEmployees(
   db: Db,
   ids: readonly string[],
 ): Promise<Map<string, Employee>> {
-  if (ids.length === 0) return new Map();
-  const rows = await db
-    .select({ employee: employees, etag: employeePhotos.etag })
-    .from(employees)
-    .leftJoin(employeePhotos, eq(employeePhotos.employeeId, employees.id))
-    .where(inArray(employees.id, [...new Set(ids)]));
+  const rows = await loadRows(db, ids);
   return new Map(
     rows.map(({ employee, etag }) => [employee.id, toEmployee(employee, etag)]),
+  );
+}
+
+/** Public profiles with emails: for admins, the person themselves and the external API. */
+export async function loadEmployeesWithEmails(
+  db: Db,
+  ids: readonly string[],
+): Promise<Map<string, EmployeeWithEmail>> {
+  const rows = await loadRows(db, ids);
+  return new Map(
+    rows.map(({ employee, etag }) => [
+      employee.id,
+      { ...toEmployee(employee, etag), email: employee.email },
+    ]),
   );
 }

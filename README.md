@@ -68,6 +68,7 @@ Variables** and redeploy.
 | `DATABASE_URL`                                         | Secret | Supabase Postgres, **transaction pooler** (port 6543).                                                                                                                                   |
 | `MIGRATIONS_DATABASE_URL`                              | Secret | Migrations only: the session pooler or direct connection (port 5432). Falls back to `DATABASE_URL`.                                                                                      |
 | `CRON_SECRET`                                          | Secret | Vercel Cron sends it as a Bearer token; the cron route answers 401 without it. At least 16 characters.                                                                                   |
+| `EXTERNAL_API_KEY`                                     | Secret | The key other projects send to the [external API](docs/EXTERNAL_API.md) as a Bearer token. At least 32 characters (`openssl rand -hex 32`). Unset: that API answers 401.                 |
 | `POST_DATA_PROVIDER`, `POST_DATA_PROVIDER_<PLATFORM>`  | Server | `apify`, `fixture` or `manual` (per platform: `_INSTAGRAM`, `_FACEBOOK`, `_TIKTOK`, `_LINKEDIN`). Default `fixture`; `manual` on Vercel production.                                      |
 | `APIFY_API_TOKEN`                                      | Secret | Apify personal API token, for `POST_DATA_PROVIDER=apify`. Without it, `apify` falls back to manual entry.                                                                                |
 | `APIFY_MAX_CHARGE_USD`                                 | Server | Cost cap per scraper run, in US dollars. Default 1.                                                                                                                                      |
@@ -292,6 +293,14 @@ shortened to finish before it; the next run continues, oldest first. Runs never 
 session-level advisory lock, so a run is claimed with `pg_try_advisory_xact_lock` plus its
 unfinished `sync_runs` row (a crashed run stops blocking after 15 minutes).
 
+### External API
+
+Other projects' backends read leaderboard standings from `GET /api/external/v1/standings` with
+`Authorization: Bearer $EXTERNAL_API_KEY`. The contract for those teams is
+[`docs/EXTERNAL_API.md`](docs/EXTERNAL_API.md). The response includes employees' work emails, so
+share the key only with backends you trust, never put it in a browser, and rotate it (set a new
+`EXTERNAL_API_KEY` in Vercel and redeploy) when a project no longer needs it.
+
 ## Deploying (checklist)
 
 1. **Azure:** the app registration has the production redirect URI and Microsoft Graph
@@ -303,6 +312,7 @@ unfinished `sync_runs` row (a crashed run stops blocking after 15 minutes).
    `NEXT_PUBLIC_USE_MOCKS=false`, `NEXT_PUBLIC_API_BASE_URL=/api/v1`, `NEXT_PUBLIC_API_SCOPE`
    empty, `DATABASE_URL`, `CRON_SECRET`, `POST_DATA_PROVIDER=apify` and `APIFY_API_TOKEN`.
    `ADMIN_EMAILS`, `CAMPAIGN_MENTIONS` and the challenge dates have working defaults.
+   `EXTERNAL_API_KEY` only if other projects read the [external API](#external-api).
 4. **Deploy**, sign in as an admin, open **Admin → Leaderboards**: set the challenge dates and
    add (or generate) the weekly and monthly rounds. Then submit a test post and check that the
    sync panel shows a run after the next cron time (or press **Refresh now**).

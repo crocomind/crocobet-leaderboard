@@ -18,4 +18,9 @@ export const leaderboardQuerySchema = boardQuerySchema.extend({
   search: z.string().trim().max(100).default(""),
 });
 
+/** /api/external/v1/standings: the 3-Month Challenge unless asked otherwise. */
+export const externalStandingsQuerySchema = boardQuerySchema.extend({
+  period: z.enum(LEADERBOARD_PERIODS).default("all"),
+});
+
 export const uuidSchema = z.uuid();

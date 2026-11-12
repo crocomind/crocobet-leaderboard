@@ -7,7 +7,13 @@ import {
 } from "@/lib/server/auth";
 import { getServerConfig, type ServerConfig } from "@/lib/server/config";
 import { type Db, getDb, resetDb } from "@/lib/server/db/client";
-import { assertSameOrigin, handle, HttpError } from "@/lib/server/http";
+import {
+  assertSameOrigin,
+  handle,
+  HttpError,
+  json,
+  safeEqual,
+} from "@/lib/server/http";
 import { withCampaign } from "@/lib/server/services/rounds";
 
 export interface RouteContext<P> {
@@ -89,5 +95,36 @@ export function employeeRoute<
           ),
         ),
     });
+  }
+}
+
+export interface ApiKeyRouteContext {
+  request: Request;
+  db: Db;
+  config: ServerConfig;
+  now: Date;
+}
+
+/**
+ * Wraps a read-only /api/external handler, for other projects' backends.
+ * They send `Authorization: Bearer $EXTERNAL_API_KEY`; while that isn't set,
+ * every request gets a 401. proxy.ts doesn't guard /api/external, so this
+ * check is the only gate. The handler returns the JSON body.
+ */
+export function apiKeyRoute(
+  handler: (context: ApiKeyRouteContext) => Promise<unknown>,
+) {
+  return (request: Request) => handle(() => withReadTimeout(run(request)));
+
+  async function run(request: Request) {
+    const { externalApiKey } = getServerConfig();
+    const header = request.headers.get("authorization") ?? "";
+    if (!externalApiKey || !safeEqual(header, `Bearer ${externalApiKey}`))
+      throw new HttpError(401, "unauthorized", "Missing or wrong API key");
+    const db = getDb();
+    const config = await withCampaign(db, getServerConfig());
+    const body = await handler({ request, db, config, now: new Date() });
+    // Standings change with every approval; callers cache on their side.
+    return json(body, { headers: { "Cache-Control": "no-store" } });
   }
 }

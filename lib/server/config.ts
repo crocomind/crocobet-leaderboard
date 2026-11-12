@@ -10,8 +10,8 @@ import { type Platform, PLATFORM_IDS } from "@/lib/platforms";
 
 /**
  * Server configuration, validated once. Secrets (DATABASE_URL, CRON_SECRET,
- * provider tokens) are server-only and never NEXT_PUBLIC_. Missing optional
- * values fall back to safe defaults; invalid ones fail loudly.
+ * EXTERNAL_API_KEY, provider tokens) are server-only and never NEXT_PUBLIC_.
+ * Missing optional values fall back to safe defaults; invalid ones fail loudly.
  */
 
 /** Placeholder challenge window until the real dates are set (§11). */
@@ -27,6 +27,8 @@ export const DEFAULT_ADMIN_EMAILS = [
 export interface ServerConfig {
   databaseUrl: string | null;
   cronSecret: string | null;
+  /** The key other projects send to /api/external; null turns that API off. */
+  externalApiKey: string | null;
   /** Data provider id per platform ("fixture", "manual" or a third-party id). */
   providers: Record<Platform, string>;
   /** Lowercase. */
@@ -106,6 +108,10 @@ const schema = z.object({
     (value) => value === undefined || value.length >= 16,
     { message: "must be at least 16 characters" },
   ),
+  EXTERNAL_API_KEY: optional.refine(
+    (value) => value === undefined || value.length >= 32,
+    { message: "must be at least 32 characters" },
+  ),
   POST_DATA_PROVIDER: providerId,
   POST_DATA_PROVIDER_INSTAGRAM: providerId,
   POST_DATA_PROVIDER_FACEBOOK: providerId,
@@ -170,6 +176,7 @@ export function parseServerConfig(
   return {
     databaseUrl: value.DATABASE_URL ?? null,
     cronSecret: value.CRON_SECRET ?? null,
+    externalApiKey: value.EXTERNAL_API_KEY ?? null,
     providers: Object.fromEntries(
       PLATFORM_IDS.map((platform) => [
         platform,

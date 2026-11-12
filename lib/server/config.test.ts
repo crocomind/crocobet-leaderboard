@@ -14,6 +14,7 @@ describe("parseServerConfig", () => {
     expect(config).toMatchObject({
       databaseUrl: null,
       cronSecret: null,
+      externalApiKey: null,
       adminEmails: DEFAULT_ADMIN_EMAILS,
       submissionGraceDays: 3,
       metricsGraceDays: 3,
@@ -43,6 +44,7 @@ describe("parseServerConfig", () => {
     const config = parseServerConfig({
       DATABASE_URL: "postgresql://user:pass@host:6543/postgres",
       CRON_SECRET: "a-very-long-cron-secret",
+      EXTERNAL_API_KEY: "an-external-api-key-of-32-characters",
       POST_DATA_PROVIDER: "apify",
       POST_DATA_PROVIDER_LINKEDIN: "manual",
       ADMIN_EMAILS: " Ana@Crocobet.com, nino@crocobet.com ,, nope ",
@@ -59,6 +61,7 @@ describe("parseServerConfig", () => {
     expect(config).toMatchObject({
       databaseUrl: "postgresql://user:pass@host:6543/postgres",
       cronSecret: "a-very-long-cron-secret",
+      externalApiKey: "an-external-api-key-of-32-characters",
       providers: {
         instagram: "apify",
         facebook: "apify",
@@ -116,6 +119,7 @@ describe("parseServerConfig", () => {
       "CAMPAIGN_TIMEZONE",
     );
     expect(issues({ CRON_SECRET: "short" })).toContain("CRON_SECRET");
+    expect(issues({ EXTERNAL_API_KEY: "short" })).toContain("EXTERNAL_API_KEY");
     expect(issues({ DATABASE_URL: "mysql://x" })).toContain("DATABASE_URL");
     expect(issues({ GROWTH_FLAG_MIN: "-1" })).toContain("GROWTH_FLAG_MIN");
     expect(issues({ APIFY_MAX_CHARGE_USD: "0" })).toContain(
