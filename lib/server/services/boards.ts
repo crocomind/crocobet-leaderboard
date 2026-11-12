@@ -1,12 +1,11 @@
 import "server-only";
-import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import type {
   AdminLeaderboardDetail,
   AdminLeaderboardsResponse,
   ContentCategory,
-  EmployeeWithEmail,
   ParticipantsResponse,
   ProfileResponse,
 } from "@/lib/api/types";
@@ -32,7 +31,10 @@ import {
   posts,
 } from "@/lib/server/db/schema";
 import { HttpError } from "@/lib/server/http";
-import { displayName, loadEmployees } from "@/lib/server/services/employees";
+import {
+  displayName,
+  loadEmployeesWithEmails,
+} from "@/lib/server/services/employees";
 import {
   boardCondition,
   loadAllExcluded,
@@ -84,35 +86,6 @@ async function challengePosts(
   return rows.map(toRankable);
 }
 
-async function loadEmails(
-  db: Db,
-  ids: readonly string[],
-): Promise<Map<string, string>> {
-  if (ids.length === 0) return new Map();
-  const rows = await db
-    .select({ id: employees.id, email: employees.email })
-    .from(employees)
-    .where(inArray(employees.id, [...new Set(ids)]));
-  return new Map(rows.map((row) => [row.id, row.email]));
-}
-
-/** Public profiles with emails (admins and the person themselves only). */
-async function loadWithEmails(
-  db: Db,
-  ids: readonly string[],
-): Promise<Map<string, EmployeeWithEmail>> {
-  const [profiles, emails] = await Promise.all([
-    loadEmployees(db, ids),
-    loadEmails(db, ids),
-  ]);
-  return new Map(
-    [...profiles].map(([id, profile]) => [
-      id,
-      { ...profile, email: emails.get(id) ?? "" },
-    ]),
-  );
-}
-
 /** Every leaderboard with its participant counts (admin). */
 export async function listLeaderboards(
   db: Db,
@@ -155,7 +128,7 @@ export async function listParticipants(
     challengePosts(db, { start: campaign.startsAt, end: campaign.endsAt }),
     loadExcluded(db, null),
   ]);
-  const people = await loadWithEmails(
+  const people = await loadEmployeesWithEmails(
     db,
     submissions.map((submission) => submission.employeeId),
   );
@@ -197,7 +170,7 @@ export async function getLeaderboardDetail(
       .orderBy(desc(leaderboardExclusions.createdAt)),
   ]);
   const excluded = new Set(removedRows.map((row) => row.employeeId));
-  const people = await loadWithEmails(db, [
+  const people = await loadEmployeesWithEmails(db, [
     ...rows.map((row) => row.employeeId),
     ...excluded,
   ]);
@@ -308,7 +281,7 @@ export async function getProfile(
       }),
     ).then((entries) => new Map(entries)),
   ]);
-  const people = await loadWithEmails(db, [
+  const people = await loadEmployeesWithEmails(db, [
     employeeId,
     ...rows.map((row) => row.employeeId),
   ]);
