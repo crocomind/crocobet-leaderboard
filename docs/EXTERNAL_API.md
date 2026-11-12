@@ -1,6 +1,6 @@
 # Croco Creators external API (v1)
 
-Read-only leaderboard results for other Crocobet projects. It's for **server-to-server calls
+Read-only leaderboard results and employees' posts for other Crocobet projects. It's for **server-to-server calls
 only**: the key is a secret, so keep it on your backend and never send it to a browser.
 
 - **Base URL:** `https://leaderboard.crocomind.com/api/external/v1`
@@ -111,7 +111,60 @@ curl -s -H "Authorization: Bearer $CROCO_CREATORS_API_KEY" \
   as final only after that.
 - Admins can take someone off one leaderboard; they're then left out of that leaderboard only.
 
-### Errors
+## `GET /content/{username}`
+
+One employee's approved posts (video and static), newest published first, found by the username
+of their work email: `jdoe` for `jdoe@crocobet.com`. Upper or lower case doesn't matter. The
+username is the part of the `email` before `@` in `/leaderboards`.
+
+```bash
+curl -s -H "Authorization: Bearer $CROCO_CREATORS_API_KEY" \
+  https://leaderboard.crocomind.com/api/external/v1/content/jdoe | jq
+```
+
+### Response
+
+```json
+{
+  "employee": {
+    "name": "John Doe",
+    "email": "jdoe@crocobet.com",
+    "department": "Marketing"
+  },
+  "posts": [
+    {
+      "url": "https://www.tiktok.com/@jdoe/video/7432000000000000000",
+      "platform": "tiktok",
+      "category": "video",
+      "title": "Behind the scenes at Croco",
+      "publishedAt": "2026-11-03T06:00:00.000Z",
+      "views": 5000,
+      "reactions": 300,
+      "score": 5300,
+      "thumbnailUrl": "https://p16-sign.tiktokcdn.com/..."
+    }
+  ]
+}
+```
+
+| Field                 | Meaning                                                                                                                          |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `employee.name`       | "First Last" in English when known, else their display name.                                                                     |
+| `employee.department` | Empty string when unknown.                                                                                                       |
+| `posts`               | Every approved post, newest published first. Empty if they have none. Pending, rejected and disqualified posts are never listed. |
+| `url`                 | The post's link.                                                                                                                 |
+| `platform`            | `instagram`, `facebook`, `tiktok` or `linkedin`.                                                                                 |
+| `category`            | `video` (score = views + reactions) or `static` (score = reactions). See [What counts](#what-counts).                            |
+| `title`               | The title the employee gave it, else the caption's first line; `null` if neither.                                                |
+| `publishedAt`         | When it was published on the platform (UTC).                                                                                     |
+| `views`               | Latest views; always `null` on static posts, and `null` while a video's views are hidden.                                        |
+| `reactions`, `score`  | Latest likes and reactions, and the post's score from them.                                                                      |
+| `thumbnailUrl`        | A preview image from the platform's CDN, or `null`. These links can expire; don't store them, fetch them again.                  |
+
+The numbers are the post's **latest** metrics. A finished round in `/leaderboards` counts the
+numbers frozen at that round's end, so they can be lower than here.
+
+## Errors
 
 Errors have this body; `message` is for logs.
 
@@ -122,9 +175,10 @@ Errors have this body; `message` is for logs.
 | HTTP | `code`                | When                                                                                      |
 | ---- | --------------------- | ----------------------------------------------------------------------------------------- |
 | 401  | `unauthorized`        | Missing or wrong key (or the API is switched off on the server).                          |
+| 404  | `not_found`           | `/content/{username}`: no employee has that email username.                               |
 | 503  | `service_unavailable` | The database didn't answer in 20 seconds, or something else went wrong. Retry once later. |
 
-### Freshness and caching
+## Freshness and caching
 
 Responses aren't cached (`Cache-Control: no-store`): each call reads the database. Polling every
 few minutes is plenty. Cache on your side if you show the results to many users.

@@ -32,6 +32,8 @@ vi.mock("@/lib/server/db/client", () => ({
 }));
 
 const { GET } = await import("@/app/api/external/v1/leaderboards/route");
+const { GET: getContent } =
+  await import("@/app/api/external/v1/content/[username]/route");
 
 beforeAll(async () => {
   ({ db, close } = await createTestDb());
@@ -42,13 +44,29 @@ beforeEach(async () => {
   configuredKey = KEY;
   vi.useFakeTimers({ toFake: ["Date"], now });
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllEnvs();
+});
 
 const call = (authorization: string | null = `Bearer ${KEY}`) =>
   GET(
     new Request("https://leaderboard.example/api/external/v1/leaderboards", {
       headers: authorization ? { authorization } : {},
     }),
+    { params: Promise.resolve({}) },
+  );
+
+const content = (
+  username: string,
+  authorization: string | null = `Bearer ${KEY}`,
+) =>
+  getContent(
+    new Request(
+      `https://leaderboard.example/api/external/v1/content/${username}`,
+      { headers: authorization ? { authorization } : {} },
+    ),
+    { params: Promise.resolve({ username }) },
   );
 
 describe("GET /api/external/v1/leaderboards", () => {
@@ -244,5 +262,115 @@ describe("GET /api/external/v1/leaderboards", () => {
         },
       ],
     });
+  });
+});
+
+describe("GET /api/external/v1/content/{username}", () => {
+  it("answers 401 without the right key", async () => {
+    await makeEmployee(db, { email: "jdoe@crocobet.com" });
+    for (const header of [null, "Bearer nope"]) {
+      const response = await content("jdoe", header);
+      expect(response.status).toBe(401);
+    }
+  });
+
+  it("returns the employee and their approved posts, newest first", async () => {
+    vi.stubEnv("AUTH_ALLOWED_EMAIL_DOMAINS", "crocobet.com");
+    const john = await makeEmployee(db, {
+      email: "jdoe@crocobet.com",
+      displayName: "John Doe",
+      givenName: "John",
+      familyName: "Doe",
+      department: "Marketing",
+    });
+    const other = await makeEmployee(db, { email: "jdoe2@crocobet.com" });
+    const reel = await makePost(db, john.id, "instagram_reel", {
+      title: "Behind the scenes",
+      views: 5000,
+      reactions: 300,
+      thumbnailUrl: "https://cdn.example/reel.jpg",
+      publishedAt: new Date("2026-10-15T12:00:00+04:00"),
+    });
+    const linkedin = await makePost(db, john.id, "linkedin_post", {
+      reactions: 70,
+      publishedAt: new Date("2026-10-18T12:00:00+04:00"),
+    });
+    for (const status of ["pending", "rejected", "disqualified"] as const)
+      await makePost(db, john.id, "tiktok_video", { status, views: 99_999 });
+    await makePost(db, other.id, "tiktok_video", { views: 1 });
+
+    const response = await content("JDoe");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toEqual({
+      employee: {
+        name: "John Doe",
+        email: "jdoe@crocobet.com",
+        department: "Marketing",
+      },
+      posts: [
+        {
+          url: linkedin.urlCanonical,
+          platform: "linkedin",
+          category: "static",
+          title: null,
+          publishedAt: "2026-10-18T08:00:00.000Z",
+          views: null,
+          reactions: 70,
+          score: 70,
+          thumbnailUrl: null,
+        },
+        {
+          url: reel.urlCanonical,
+          platform: "instagram",
+          category: "video",
+          title: "Behind the scenes",
+          publishedAt: "2026-10-15T08:00:00.000Z",
+          views: 5000,
+          reactions: 300,
+          score: 5300,
+          thumbnailUrl: "https://cdn.example/reel.jpg",
+        },
+      ],
+    });
+  });
+
+  it("returns an empty list for someone with no approved posts", async () => {
+    await makeEmployee(db, { email: "jdoe@crocobet.com", department: "" });
+    expect(await (await content("jdoe")).json()).toMatchObject({
+      employee: { email: "jdoe@crocobet.com", department: "" },
+      posts: [],
+    });
+  });
+
+  it("prefers the first allowed domain when two people share a username", async () => {
+    vi.stubEnv("AUTH_ALLOWED_EMAIL_DOMAINS", "crocobet.com,croco.ge");
+    await makeEmployee(db, { email: "jdoe@croco.ge" });
+    expect(await (await content("jdoe")).json()).toMatchObject({
+      employee: { email: "jdoe@croco.ge" },
+    });
+    await makeEmployee(db, { email: "jdoe@crocobet.com" });
+    expect(await (await content("jdoe")).json()).toMatchObject({
+      employee: { email: "jdoe@crocobet.com" },
+    });
+  });
+
+  it("answers 404 for an unknown username, one at another domain, or a malformed one", async () => {
+    vi.stubEnv("AUTH_ALLOWED_EMAIL_DOMAINS", "crocobet.com");
+    await makeEmployee(db, { email: "jdoe@crocobet.com" });
+    await makeEmployee(db, { email: "asmith@gmail.com" });
+    for (const username of [
+      "nobody",
+      "asmith",
+      "jdoe@crocobet.com",
+      "%25",
+      "j doe",
+    ]) {
+      const response = await content(username);
+      expect(response.status).toBe(404);
+      expect(await response.json()).toMatchObject({
+        error: { code: "not_found" },
+      });
+    }
   });
 });

@@ -1,5 +1,7 @@
 import "server-only";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type {
+  ExternalContentResponse,
   ExternalLeaderboard,
   ExternalLeaderboardsResponse,
   ExternalParticipant,
@@ -10,8 +12,14 @@ import type { RankablePost } from "@/lib/ranking";
 import { rangeDates } from "@/lib/rounds";
 import type { ServerConfig } from "@/lib/server/config";
 import type { Db } from "@/lib/server/db/client";
+import { employees, posts } from "@/lib/server/db/schema";
+import { HttpError } from "@/lib/server/http";
 import { loadEveryBoard } from "@/lib/server/services/boards";
-import { loadEmployeesWithEmails } from "@/lib/server/services/employees";
+import {
+  displayName,
+  loadEmployeesWithEmails,
+} from "@/lib/server/services/employees";
+import { toPost } from "@/lib/server/services/mappers";
 
 /** The name the app shows: the admin's, else "Week 3" or the month ("October"). */
 function boardName(board: BoardDef, timeZone: string): string {
@@ -78,6 +86,66 @@ export async function getExternalLeaderboards(
         status: board.status === "finished" ? "finished" : "running",
         video: ranked(board, posts, "video"),
         static: ranked(board, posts, "static"),
+      };
+    }),
+  };
+}
+
+/** What an email username can hold (lowercase). */
+const USERNAME = /^[a-z0-9._+-]{1,64}$/;
+
+/**
+ * One employee's approved posts, found by their email username: "jdoe" is
+ * jdoe@ at the first allowed sign-in domain that has someone.
+ */
+export async function getExternalContent(
+  db: Db,
+  username: string,
+  domains: readonly string[],
+): Promise<ExternalContentResponse> {
+  const local = username.trim().toLowerCase();
+  const notFound = new HttpError(
+    404,
+    "not_found",
+    "No employee with this username",
+  );
+  if (!USERNAME.test(local) || domains.length === 0) throw notFound;
+  const emails = domains.map((domain) => `${local}@${domain}`);
+  const matches = await db
+    .select()
+    .from(employees)
+    .where(inArray(employees.email, emails));
+  const employee = emails
+    .map((email) => matches.find((row) => row.email === email))
+    .find((row) => row !== undefined);
+  if (!employee) throw notFound;
+
+  const rows = await db
+    .select()
+    .from(posts)
+    .where(and(eq(posts.employeeId, employee.id), eq(posts.status, "approved")))
+    .orderBy(
+      sql`${posts.publishedAt} desc nulls last`,
+      desc(posts.submittedAt),
+    );
+  return {
+    employee: {
+      name: displayName(employee),
+      email: employee.email,
+      department: employee.department,
+    },
+    posts: rows.map((row) => {
+      const post = toPost(row);
+      return {
+        url: post.url,
+        platform: post.platform,
+        category: post.category,
+        title: post.title,
+        publishedAt: post.publishedAt,
+        views: post.views,
+        reactions: post.reactions,
+        score: post.score,
+        thumbnailUrl: post.thumbnailUrl,
       };
     }),
   };
