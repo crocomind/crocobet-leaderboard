@@ -6,11 +6,7 @@ import {
   AdminActions,
   type OnAdminAction,
 } from "@/components/admin/admin-actions";
-import {
-  CheckBadge,
-  CheckEvidence,
-  FlagBadges,
-} from "@/components/admin/evidence";
+import { CheckBadge, FlagBadges } from "@/components/admin/evidence";
 import { EmployeeAvatar } from "@/components/common/employee-avatar";
 import { PlatformBadge } from "@/components/common/platform-badge";
 import { ScoreBreakdown } from "@/components/leaderboard/score-breakdown";
@@ -292,8 +288,8 @@ export function AdminQueue({
                   <PublishedCell post={post} />
                 </td>
                 <td className="px-3 py-3">
+                  {/* The evidence lines are in the Details drawer. */}
                   <CheckBadge check={post.check} />
-                  <CheckEvidence check={post.check} className="mt-1.5" />
                 </td>
                 <td className="px-3 py-3">
                   <MetricsCell post={post} />
@@ -357,7 +353,6 @@ export function AdminQueue({
             <div className="mt-3 grid grid-cols-2 gap-3">
               <PostCell post={post} />
               <PublishedCell post={post} />
-              <CheckEvidence check={post.check} />
               <MetricsCell post={post} />
             </div>
             <FlagBadges flags={post.flags} className="mt-3" />

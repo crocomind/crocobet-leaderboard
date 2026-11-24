@@ -80,17 +80,19 @@ function Line({
   tone: "ok" | "bad" | "unknown";
   children: ReactNode;
 }) {
+  // The icon stays beside its text; in a cell too narrow for the text, the
+  // text wraps next to the icon rather than dropping below it.
   return (
     <span
       className={cn(
-        "inline-flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs [&_svg]:size-3.5 [&_svg]:shrink-0",
+        "flex min-w-0 items-start gap-1.5 text-xs [&_svg]:mt-px [&_svg]:size-3.5 [&_svg]:shrink-0",
         tone === "ok" && "text-success-text",
         tone === "bad" && "text-danger-text",
         tone === "unknown" && "text-muted-foreground",
       )}
     >
       {icon}
-      {children}
+      <span className="min-w-0">{children}</span>
     </span>
   );
 }
