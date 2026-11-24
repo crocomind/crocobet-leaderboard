@@ -49,6 +49,7 @@ import type {
   AdminPostPatch,
   ContentType,
 } from "@/lib/api/types";
+import { useNow } from "@/lib/hooks/use-now";
 import { NOTE_MAX_LENGTH } from "@/lib/moderation";
 import {
   categoryOf,
@@ -197,7 +198,15 @@ function DrawerContent({
   post: AdminPostDetail;
   onClose: () => void;
 }) {
-  const { t, format, formatDate, formatDateTime, formatNumber } = useI18n();
+  const {
+    t,
+    format,
+    formatDate,
+    formatDateTime,
+    formatNumber,
+    formatRelativeTime,
+  } = useI18n();
+  const now = useNow();
   const refresh = useRefreshPostMutation();
   const recheck = useRecheckPostMutation();
   const remove = useDeleteAdminPostMutation();
@@ -422,13 +431,23 @@ function DrawerContent({
               </span>
             )}
             <span>{t.admin.drawer.source[post.metricsSource]}</span>
-            <span>
-              {post.metricsUpdatedAt
-                ? format(t.admin.updated, {
-                    time: formatDateTime(post.metricsUpdatedAt),
-                  })
-                : t.admin.notFetched}
-            </span>
+            {post.metricsUpdatedAt ? (
+              // "5 minutes ago"; the exact time is in the tooltip.
+              <time
+                dateTime={post.metricsUpdatedAt}
+                title={formatDateTime(post.metricsUpdatedAt)}
+              >
+                {format(t.admin.updated, {
+                  time:
+                    now > 0
+                      ? (formatRelativeTime(post.metricsUpdatedAt, now) ??
+                        t.common.justNow)
+                      : formatDateTime(post.metricsUpdatedAt),
+                })}
+              </time>
+            ) : (
+              <span>{t.admin.notFetched}</span>
+            )}
             <span>· {t.metrics.formula[post.category]}</span>
           </p>
           <div className="mt-4">

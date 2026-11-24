@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowUpRight, Lock, PanelRightOpen } from "lucide-react";
+import { ArrowUpRight, Lock } from "lucide-react";
 import { motion } from "motion/react";
+import type { MouseEvent } from "react";
 import {
   AdminActions,
   type OnAdminAction,
@@ -11,9 +12,8 @@ import { EmployeeAvatar } from "@/components/common/employee-avatar";
 import { PlatformBadge } from "@/components/common/platform-badge";
 import { ScoreBreakdown } from "@/components/leaderboard/score-breakdown";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { MotionButton, MotionLinkButton } from "@/components/ui/motion-button";
+import { MotionLinkButton } from "@/components/ui/motion-button";
 import type { AdminPost } from "@/lib/api/types";
-import { useNow } from "@/lib/hooks/use-now";
 import { enterUp, STAGGER } from "@/lib/motion";
 import { safeExternalUrl } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
@@ -123,9 +123,9 @@ function PublishedCell({ post }: { post: AdminPost }) {
   );
 }
 
+/** Score and counts; when they were fetched is in the Details drawer. */
 function MetricsCell({ post }: { post: AdminPost }) {
-  const { t, format, formatNumber, formatRelativeTime } = useI18n();
-  const now = useNow();
+  const { t, formatNumber } = useI18n();
   return (
     <div className="text-xs">
       <p className="flex items-center gap-1 text-sm font-bold tabular-nums">
@@ -142,22 +142,15 @@ function MetricsCell({ post }: { post: AdminPost }) {
         reactions={post.reactions}
         className="flex-wrap gap-x-2.5 gap-y-0.5"
       />
-      <p className="mt-0.5 text-muted-foreground">
-        {!post.metricsUpdatedAt
-          ? t.admin.notFetched
-          : now > 0
-            ? format(t.admin.updated, {
-                time:
-                  formatRelativeTime(post.metricsUpdatedAt, now) ??
-                  t.common.justNow,
-              })
-            : null}
-      </p>
     </div>
   );
 }
 
-function DetailsButton({
+/**
+ * The employee's name, as the keyboard and screen-reader way into the Details
+ * drawer; pointer users can click anywhere on the row.
+ */
+function EmployeeName({
   post,
   onOpen,
 }: {
@@ -166,18 +159,35 @@ function DetailsButton({
 }) {
   const { t } = useI18n();
   return (
-    <MotionButton
-      variant="ghost"
-      size="sm"
+    <button
+      type="button"
       aria-haspopup="dialog"
       aria-label={`${t.admin.actions.details}: ${post.employee.name}`}
       onClick={() => onOpen(post)}
-      className="h-8 px-2.5 text-xs"
+      className="block max-w-full truncate rounded-sm text-left font-medium"
     >
-      <PanelRightOpen aria-hidden="true" />
-      {t.admin.actions.details}
-    </MotionButton>
+      {post.employee.name}
+    </button>
   );
+}
+
+/** Controls inside a row keep their own click; everything else opens the drawer. */
+const ROW_CONTROLS =
+  "a, button, input, label, select, textarea, [role='button']";
+
+function openOnRowClick(post: AdminPost, onOpen: (post: AdminPost) => void) {
+  return (event: MouseEvent<HTMLElement>) => {
+    const target = event.target as Element;
+    if (
+      // React bubbles clicks from portals (dialogs, menus) through the row.
+      !event.currentTarget.contains(target) ||
+      target.closest(ROW_CONTROLS) ||
+      // Selecting text isn't a click on the row.
+      window.getSelection()?.toString()
+    )
+      return;
+    onOpen(post);
+  };
 }
 
 /** The moderation queue: a table on large screens, cards on small ones. */
@@ -249,8 +259,9 @@ export function AdminQueue({
               <motion.tr
                 key={post.id}
                 {...enterUp(index, STAGGER.rows)}
+                onClick={openOnRowClick(post, onOpen)}
                 className={cn(
-                  "border-b border-border align-top motion-colors last:border-b-0 hover:bg-hover/60",
+                  "cursor-pointer border-b border-border align-top motion-colors last:border-b-0 hover:bg-hover/60",
                   selected.has(post.id) && "bg-brand/8",
                 )}
               >
@@ -269,9 +280,7 @@ export function AdminQueue({
                   <div className="flex min-w-0 items-center gap-2.5">
                     <EmployeeAvatar employee={post.employee} size="sm" />
                     <div className="min-w-0">
-                      <p className="truncate font-medium">
-                        {post.employee.name}
-                      </p>
+                      <EmployeeName post={post} onOpen={onOpen} />
                       <p className="truncate text-xs text-muted-foreground">
                         {post.employee.email}
                       </p>
@@ -298,16 +307,13 @@ export function AdminQueue({
                   <FlagBadges flags={post.flags} />
                 </td>
                 <td className="px-3 py-3 pr-4">
-                  <div className="flex flex-col items-end gap-1.5">
-                    <AdminActions
-                      post={post}
-                      onAction={onAction}
-                      busy={busy}
-                      compact
-                      className="flex-col items-end"
-                    />
-                    <DetailsButton post={post} onOpen={onOpen} />
-                  </div>
+                  <AdminActions
+                    post={post}
+                    onAction={onAction}
+                    busy={busy}
+                    compact
+                    className="flex-col items-end"
+                  />
                 </td>
               </motion.tr>
             ))}
@@ -320,8 +326,9 @@ export function AdminQueue({
           <motion.li
             key={post.id}
             {...enterUp(index, STAGGER.list)}
+            onClick={openOnRowClick(post, onOpen)}
             className={cn(
-              "rounded-card border border-border bg-surface/85 p-4 shadow-soft backdrop-blur",
+              "cursor-pointer rounded-card border border-border bg-surface/85 p-4 shadow-soft backdrop-blur motion-colors hover:bg-hover/60",
               selected.has(post.id) && "border-brand/45 bg-brand/8",
             )}
           >
@@ -339,7 +346,7 @@ export function AdminQueue({
               )}
               <EmployeeAvatar employee={post.employee} size="sm" />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{post.employee.name}</p>
+                <EmployeeName post={post} onOpen={onOpen} />
                 <p className="truncate text-xs text-muted-foreground">
                   {post.employee.email}
                 </p>
@@ -356,14 +363,13 @@ export function AdminQueue({
               <MetricsCell post={post} />
             </div>
             <FlagBadges flags={post.flags} className="mt-3" />
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
               <AdminActions
                 post={post}
                 onAction={onAction}
                 busy={busy}
                 compact
               />
-              <DetailsButton post={post} onOpen={onOpen} />
             </div>
           </motion.li>
         ))}
