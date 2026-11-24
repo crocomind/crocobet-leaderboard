@@ -33,7 +33,9 @@ export const FAILURES_BEFORE_UNAVAILABLE = 3;
 export function isProviderFailure(outcome: FetchOutcome): boolean {
   return (
     !outcome.ok &&
-    (outcome.error === "provider_error" || outcome.error === "rate_limited")
+    (outcome.error === "provider_error" ||
+      outcome.error === "provider_auth" ||
+      outcome.error === "rate_limited")
   );
 }
 export const TITLE_FROM_CAPTION_MAX = 120;

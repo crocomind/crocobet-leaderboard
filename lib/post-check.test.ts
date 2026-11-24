@@ -251,7 +251,11 @@ describe("evaluateFetch", () => {
       reactions: 40,
       consecutiveFetchFailures: 2,
     };
-    for (const error of ["provider_error", "rate_limited"] as const) {
+    for (const error of [
+      "provider_error",
+      "provider_auth",
+      "rate_limited",
+    ] as const) {
       const outcome = { ok: false as const, error, retryable: true };
       expect(isProviderFailure(outcome)).toBe(true);
       const result = evaluateFetch(post, outcome, context);

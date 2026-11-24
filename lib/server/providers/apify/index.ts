@@ -90,12 +90,24 @@ export async function runActor(
   );
 }
 
+/** Apify refused the token: it's invalid, revoked or lacks permission. */
+function isAuthFailure(error: unknown): boolean {
+  return (
+    error instanceof ApifyError &&
+    (error.status === 401 || error.status === 403)
+  );
+}
+
 /** A failed run is the provider's fault, never the post's: nothing counts against it. */
 function runFailure(error: unknown): FetchOutcome {
   const status = error instanceof ApifyError ? error.status : 0;
   return {
     ok: false,
-    error: status === 429 ? "rate_limited" : "provider_error",
+    error: isAuthFailure(error)
+      ? "provider_auth"
+      : status === 429
+        ? "rate_limited"
+        : "provider_error",
     retryable: true,
     detail: error instanceof Error ? error.message.slice(0, 200) : "failed",
   };
@@ -170,7 +182,13 @@ export function createApifyProvider(options: ApifyOptions): PostDataProvider {
             },
           );
         } catch (error) {
-          console.warn(`[apify] ${platform} run failed`, error);
+          // Every fetch fails until someone replaces the token, so say so loudly.
+          if (isAuthFailure(error))
+            console.error(
+              `[apify] auth failed: Apify rejected APIFY_API_TOKEN (${platform} run). Replace the token and redeploy.`,
+              error,
+            );
+          else console.warn(`[apify] ${platform} run failed`, error);
           const outcome = runFailure(error);
           for (const { ref } of inputs) outcomes.set(ref.url, outcome);
           return;

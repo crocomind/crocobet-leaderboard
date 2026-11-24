@@ -386,9 +386,10 @@ const en = {
     checkErrors: {
       not_found: "Post not found",
       private: "Post is private",
-      rate_limited: "Provider rate limit",
+      rate_limited: "Apify rate limit",
       unsupported: "Not supported by the provider",
-      provider_error: "Provider error",
+      provider_auth: "Apify auth failed",
+      provider_error: "Apify request failed",
     },
     flags: {
       suspicious_growth: "Suspicious growth",

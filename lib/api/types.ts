@@ -75,7 +75,13 @@ export interface Me extends Employee {
 }
 
 export type CheckError =
-  "not_found" | "private" | "rate_limited" | "unsupported" | "provider_error";
+  | "not_found"
+  | "private"
+  | "rate_limited"
+  | "unsupported"
+  /** Apify refused the API token (HTTP 401/403): a setup problem, not the post's. */
+  | "provider_auth"
+  | "provider_error";
 
 /** The automated check: evidence for the admin, never an automatic approval. */
 export interface PostCheck {

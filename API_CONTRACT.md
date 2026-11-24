@@ -179,7 +179,8 @@ interface PostCheck {
     | "private"
     | "rate_limited"
     | "unsupported"
-    | "provider_error"
+    | "provider_auth" // Apify refused the API token (401/403)
+    | "provider_error" // Apify failed otherwise: outage, timeout, credits
     | null;
   checkedAt: IsoDateTime | null;
 }

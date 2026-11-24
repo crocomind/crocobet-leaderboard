@@ -37,7 +37,13 @@ export interface FetchedPost {
 }
 
 export type FetchError =
-  "not_found" | "private" | "rate_limited" | "unsupported" | "provider_error";
+  | "not_found"
+  | "private"
+  | "rate_limited"
+  | "unsupported"
+  /** Apify refused the API token (HTTP 401/403): a setup problem, not the post's. */
+  | "provider_auth"
+  | "provider_error";
 
 export type FetchOutcome =
   | { ok: true; post: FetchedPost }
