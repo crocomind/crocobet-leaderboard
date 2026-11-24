@@ -160,6 +160,36 @@ describe("Apify provider", () => {
     expect(outcomes.get(refs.facebook.url)?.ok).toBe(true);
   });
 
+  it("tells a rejected token apart from other failures", async () => {
+    const apify = fakeApify({
+      "harvestapi~linkedin-profile-posts": 401,
+      "clockworks~tiktok-video-scraper": 403,
+      "apify~instagram-scraper": 500,
+    });
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const outcomes = await createApifyProvider({
+      token: "t",
+      maxChargeUsd: 1,
+      fetchImpl: apify.fetchImpl,
+    }).fetchMany([refs.linkedin, refs.tiktok, refs.reel], { signal });
+    for (const url of [refs.linkedin.url, refs.tiktok.url])
+      expect(outcomes.get(url)).toMatchObject({
+        ok: false,
+        error: "provider_auth",
+        retryable: true,
+      });
+    expect(outcomes.get(refs.reel.url)).toMatchObject({
+      ok: false,
+      error: "provider_error",
+    });
+    expect(logged.mock.calls.map(([message]) => message)).toEqual([
+      expect.stringMatching(/^\[apify\] auth failed: .*APIFY_API_TOKEN/),
+      expect.stringMatching(/^\[apify\] auth failed: .*APIFY_API_TOKEN/),
+    ]);
+    vi.restoreAllMocks();
+  });
+
   it("uses actor overrides and splits big batches into runs of 50", async () => {
     const apify = fakeApify();
     const many = Array.from({ length: URLS_PER_RUN + 5 }, (_, i) =>
